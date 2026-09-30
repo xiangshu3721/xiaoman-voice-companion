@@ -107,6 +107,8 @@ export default function Home() {
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [notice, setNotice] = useState("");
   const [interimText, setInterimText] = useState("");
+  const [voiceInputSupported, setVoiceInputSupported] = useState(true);
+  const [textDraft, setTextDraft] = useState("");
   const [conversationActive, setConversationActive] = useState(false);
   const [debugEnabled, setDebugEnabled] = useState(false);
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
@@ -131,6 +133,7 @@ export default function Home() {
 
   useEffect(() => {
     setDebugEnabled(new URLSearchParams(window.location.search).get("debug") === "true");
+    setVoiceInputSupported(asrRef.current.isSupported());
     void fetch(apiUrl("/api/tts/config")).then((response) => response.json()).then((data: { voices?: VoiceOption[] }) => {
       const nextVoices = data.voices || [];
       const storedVoice = window.localStorage.getItem(TTS_VOICE_STORAGE_KEY);
@@ -155,6 +158,18 @@ export default function Home() {
 
   const begin = async () => {
     setNotice("");
+    // 必须在用户点击触发的同步阶段先解锁音频，移动 Safari/部分 WebView
+    // 才允许异步请求完成后播放 AI 语音。
+    ttsRef.current.unlockAudio();
+    if (!asrRef.current.isSupported()) {
+      setVoiceInputSupported(false);
+      setStarted(true);
+      setConversationActive(false);
+      setStatus("idle");
+      setNotice("当前浏览器不支持网页语音识别，已切换为文字对话。想用麦克风，请用系统浏览器打开。");
+      return;
+    }
+    setVoiceInputSupported(true);
     if (navigator.mediaDevices?.getUserMedia) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -252,12 +267,25 @@ export default function Home() {
     }
   };
 
+  const submitText = (value: string) => {
+    const text = value.trim();
+    if (!text || status === "thinking" || status === "speaking") return;
+    const baseHistory = [...historyRef.current, { role: "user", content: text } satisfies ChatMessage];
+    updateMessages(baseHistory);
+    setTextDraft("");
+    void requestReply(text, baseHistory);
+  };
+
   const startListening = () => {
     if (!conversationActiveRef.current) return;
     setNotice("");
     setInterimText("");
     if (!asrRef.current.isSupported()) {
-      setNotice("当前浏览器不支持语音识别，建议使用 Chrome 浏览器。");
+      conversationActiveRef.current = false;
+      setConversationActive(false);
+      setVoiceInputSupported(false);
+      setStatus("idle");
+      setNotice("当前浏览器不支持网页语音识别，已切换为文字对话。微信内置浏览器请用文字发送，或在系统浏览器打开。");
       return;
     }
     setStatus("listening");
@@ -305,6 +333,10 @@ export default function Home() {
   };
 
   const handleMic = () => {
+    if (!voiceInputSupported) {
+      setNotice("当前浏览器不能调用网页语音识别，请直接输入文字，或改用系统浏览器。");
+      return;
+    }
     if (conversationActiveRef.current) endVoiceConversation();
     else startVoiceConversation();
   };
@@ -352,8 +384,16 @@ export default function Home() {
           {hasUserTurn && status !== "thinking" && <div className="mt-7 w-full max-w-xl"><button type="button" onClick={openReview} aria-expanded={reviewOpen} className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-[#1b1818] px-4 py-3 text-left transition hover:border-[#e98972]/40 hover:bg-[#211e1d] active:scale-[.99]"><span><span className="block text-sm text-[#f4efeb]">情绪复盘</span><span className="mt-1 block text-xs text-[#817876]">看看刚刚真正发生了什么</span></span><span className="text-lg text-[#e98972]">{reviewOpen ? "⌃" : "→"}</span></button>{reviewOpen && <EmotionReviewPanel review={review} turns={reviewTurns} question={reviewQuestion} loading={reviewLoading} error={reviewError} onQuestionChange={setReviewQuestion} onContinue={() => void requestReview(reviewQuestion)} onRetry={() => void requestReview()} onClose={() => setReviewOpen(false)} />}</div>}
         </section>
         <footer className="mt-8 flex flex-col items-center">
-          <button type="button" onClick={handleMic} aria-label={conversationActive ? "结束持续语音对话" : "开始持续语音对话"} className={`relative flex h-20 w-20 items-center justify-center rounded-full text-[#241615] shadow-2xl shadow-black/20 transition active:scale-[.96] ${conversationActive ? "breathing bg-[#f6a08b]" : "bg-[#e98972] hover:bg-[#f6a08b]"}`}><span className="mic-glyph" /></button>
-          <p className="mt-5 text-xs text-[#817876]">{conversationActive ? "持续对话中 · 小满说完会继续听" : "点击开始持续语音对话"}</p>
+          {voiceInputSupported ? <>
+            <button type="button" onClick={handleMic} aria-label={conversationActive ? "结束持续语音对话" : "开始持续语音对话"} className={`relative flex h-20 w-20 items-center justify-center rounded-full text-[#241615] shadow-2xl shadow-black/20 transition active:scale-[.96] ${conversationActive ? "breathing bg-[#f6a08b]" : "bg-[#e98972] hover:bg-[#f6a08b]"}`}><span className="mic-glyph" /></button>
+            <p className="mt-5 text-xs text-[#817876]">{conversationActive ? "持续对话中 · 小满说完会继续听" : "点击开始持续语音对话"}</p>
+          </> : <form onSubmit={(event) => { event.preventDefault(); submitText(textDraft); }} className="w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-3">
+            <div className="flex gap-2">
+              <input value={textDraft} onChange={(event) => setTextDraft(event.target.value)} placeholder="先输入一句，和小满聊聊……" className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#141313] px-3 py-3 text-sm text-[#f4efeb] outline-none placeholder:text-[#756d6b] focus:border-[#e98972]/60" aria-label="输入给小满的话" />
+              <button type="submit" disabled={!textDraft.trim() || status === "thinking" || status === "speaking"} className="rounded-xl bg-[#e98972] px-4 py-2 text-sm font-medium text-[#241615] transition hover:bg-[#f6a08b] disabled:cursor-not-allowed disabled:opacity-40">发送</button>
+            </div>
+            <p className="mt-2 px-1 text-[11px] leading-5 text-[#817876]">当前浏览器不支持网页语音识别，文字对话仍然可用；想使用麦克风，请在系统浏览器打开。</p>
+          </form>}
           {notice && <div className="mt-4 flex items-center gap-3 rounded-full border border-[#e98972]/30 bg-[#e98972]/10 px-4 py-2 text-xs text-[#f6a08b]" role="alert">{notice}<button type="button" onClick={() => setNotice("")} className="text-[#f4efeb]">×</button></div>}
           {mode && <p className="mt-3 text-[10px] text-[#5f5856]">{mode === "deepseek" ? "DeepSeek 已连接" : "当前为本地演示回复"}</p>}
           {debugEnabled && ttsDebug && <details open className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-xs text-[#b7adab]"><summary className="cursor-pointer text-[#e98972]">TTS Debug</summary><div className="mt-3 grid gap-2 sm:grid-cols-2"><p>Provider：{ttsDebug.provider === "volcengine" ? "Doubao / 火山引擎" : "Browser SpeechSynthesis fallback"}</p><p>Voice：{ttsDebug.voice}</p><p>Emotion：{ttsDebug.emotion || "neutral"}</p><p>Intensity：{ttsDebug.intensity ?? "-"}</p><p>Streaming：{ttsDebug.streaming ? "yes" : "no"}</p><p>首包延迟：{ttsDebug.firstByteLatencyMs == null ? "-" : `${ttsDebug.firstByteLatencyMs} ms`}</p><p>总耗时：{ttsDebug.totalLatencyMs == null ? "播放中" : `${ttsDebug.totalLatencyMs} ms`}</p>{ttsDebug.fallbackReason && <p className="sm:col-span-2 text-[#f6a08b]">Fallback：{ttsDebug.fallbackReason}</p>}</div></details>}

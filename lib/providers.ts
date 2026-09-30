@@ -276,20 +276,46 @@ export class DoubaoTTSProvider implements TTSProvider {
   private requestGeneration = 0;
 
   isSupported() {
-    return typeof window !== "undefined" && typeof fetch === "function" && typeof MediaSource !== "undefined" && MediaSource.isTypeSupported("audio/mpeg");
+    // Mobile Safari/微信内置浏览器不一定支持 MediaSource，但通常可以播放已经
+    // 生成好的 audio/mpeg。流式 MediaSource 失败时，服务端音频仍应能播放。
+    return typeof window !== "undefined" && typeof fetch === "function" && typeof Audio !== "undefined";
+  }
+
+  /**
+   * 在用户点击“开始对话”时解锁音频播放。
+   * iOS/WebKit 会把异步 fetch 之后的 audio.play() 视为非用户手势，
+   * 先在手势里播放一个静音短音频，可以显著降低移动端静音概率。
+   */
+  unlockAudio() {
+    if (typeof window === "undefined" || typeof Audio === "undefined") return;
+    const audio = this.audio || new Audio();
+    audio.muted = true;
+    audio.setAttribute("playsinline", "true");
+    audio.preload = "auto";
+    audio.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA";
+    this.audio = audio;
+    void audio.play().then(() => {
+      audio.pause();
+      audio.currentTime = 0;
+      audio.removeAttribute("src");
+      audio.load();
+      audio.muted = false;
+    }).catch(() => {
+      audio.muted = false;
+    });
   }
 
   speak(request: TTSRequest, callbacks: TTSCallbacks) {
     this.stop();
     const generation = ++this.requestGeneration;
     if (!this.isSupported()) {
-      this.fallbackWithReason(request, callbacks, "当前浏览器不支持 MediaSource 流式音频");
+      this.fallbackWithReason(request, callbacks, "当前浏览器不支持原生音频播放");
       return;
     }
     const startedAt = performance.now();
     const controller = new AbortController();
     this.abortController = controller;
-    callbacks.onMetrics?.({ provider: "volcengine", voice: request.voiceId || "volcengine-default", emotion: request.emotion, intensity: request.intensity, streaming: true });
+    callbacks.onMetrics?.({ provider: "volcengine", voice: request.voiceId || "volcengine-default", emotion: request.emotion, intensity: request.intensity, streaming: false });
     fetch(apiUrl("/api/tts"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -297,9 +323,11 @@ export class DoubaoTTSProvider implements TTSProvider {
       signal: controller.signal,
     }).then(async (response) => {
       if (generation !== this.requestGeneration || controller.signal.aborted) return;
-      if (!response.ok || !response.body) throw new Error(await response.text() || `TTS request failed: ${response.status}`);
+      if (!response.ok) throw new Error(await response.text() || `TTS request failed: ${response.status}`);
       const voice = response.headers.get("X-TTS-Voice") || request.voiceId || "volcengine-default";
-      await this.playStream(response.body, request, callbacks, startedAt, voice, generation);
+      const audioBlob = await response.blob();
+      if (!audioBlob.size) throw new Error("火山引擎返回了空音频");
+      await this.playBlob(audioBlob, request, callbacks, startedAt, voice, generation);
     }).catch((error: unknown) => {
       if (generation !== this.requestGeneration || controller.signal.aborted) return;
       this.fallbackWithReason(request, callbacks, error instanceof Error ? error.message : "火山引擎 TTS 失败");
@@ -311,71 +339,36 @@ export class DoubaoTTSProvider implements TTSProvider {
     this.fallback.speak(request, callbacks);
   }
 
-  private playStream(body: ReadableStream<Uint8Array>, request: TTSRequest, callbacks: TTSCallbacks, startedAt: number, voice: string, generation: number) {
+  private playBlob(blob: Blob, request: TTSRequest, callbacks: TTSCallbacks, startedAt: number, voice: string, generation: number) {
     return new Promise<void>((resolve, reject) => {
       if (generation !== this.requestGeneration) { resolve(); return; }
-      const mediaSource = new MediaSource();
-      const audio = new Audio();
-      const queue: ArrayBuffer[] = [];
-      let sourceBuffer: SourceBuffer | null = null;
-      let streamDone = false;
-      let firstByteSent = false;
       let settled = false;
       const isCurrent = () => generation === this.requestGeneration;
+      const audio = this.audio || new Audio();
       this.audio = audio;
-      this.objectUrl = URL.createObjectURL(mediaSource);
+      this.objectUrl = URL.createObjectURL(blob);
+      audio.muted = false;
+      audio.setAttribute("playsinline", "true");
+      audio.preload = "auto";
       audio.src = this.objectUrl;
+      callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, firstByteLatencyMs: Math.round(performance.now() - startedAt) });
       audio.onended = () => {
         if (settled || !isCurrent()) return;
         settled = true;
         this.cleanupAudio();
-        callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: true, totalLatencyMs: Math.round(performance.now() - startedAt) });
+        callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, totalLatencyMs: Math.round(performance.now() - startedAt) });
         callbacks.onEnd();
         resolve();
       };
       audio.onerror = () => {
         if (!settled && isCurrent()) { settled = true; this.cleanupAudio(); reject(new Error("浏览器无法播放火山引擎音频")); }
       };
-      const fail = (error: unknown) => {
+      audio.play().then(() => undefined).catch((error) => {
         if (settled || !isCurrent()) return;
         settled = true;
         this.cleanupAudio();
-        reject(error instanceof Error ? error : new Error("TTS stream failed"));
-      };
-      const flush = () => {
-        if (!sourceBuffer || sourceBuffer.updating) return;
-        if (queue.length) {
-          try { sourceBuffer.appendBuffer(queue.shift()!); } catch (error) { fail(error); }
-        } else if (streamDone && mediaSource.readyState === "open") {
-          try { mediaSource.endOfStream(); } catch { /* already closed */ }
-        }
-      };
-      mediaSource.addEventListener("sourceopen", () => {
-        try {
-          sourceBuffer = mediaSource.addSourceBuffer("audio/mpeg");
-          sourceBuffer.addEventListener("updateend", flush);
-          void (async () => {
-            const reader = body.getReader();
-            try {
-              while (true) {
-                if (!isCurrent()) { await reader.cancel(); resolve(); return; }
-                const { done, value } = await reader.read();
-                if (done) break;
-                if (!value?.byteLength) continue;
-                if (!firstByteSent) {
-                  firstByteSent = true;
-                  callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: true, firstByteLatencyMs: Math.round(performance.now() - startedAt) });
-                }
-                queue.push(new Uint8Array(value).buffer);
-                flush();
-                if (firstByteSent && audio.paused) void audio.play().catch((error) => fail(error));
-              }
-              streamDone = true;
-              flush();
-            } catch (error) { fail(error); }
-          })();
-        } catch (error) { fail(error); }
-      }, { once: true });
+        reject(error instanceof Error ? error : new Error("浏览器阻止了音频自动播放"));
+      });
     });
   }
 
