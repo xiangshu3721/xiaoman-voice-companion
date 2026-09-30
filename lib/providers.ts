@@ -271,6 +271,8 @@ function browserEmotionProfile(emotion: NonNullable<TTSRequest["emotion"]>, inte
 export class DoubaoTTSProvider implements TTSProvider {
   private fallback = new BrowserSpeechSynthesisProvider();
   private audio: HTMLAudioElement | null = null;
+  private audioContext: AudioContext | null = null;
+  private audioSource: AudioBufferSourceNode | null = null;
   private objectUrl: string | null = null;
   private abortController: AbortController | null = null;
   private requestGeneration = 0;
@@ -288,6 +290,11 @@ export class DoubaoTTSProvider implements TTSProvider {
    */
   unlockAudio() {
     if (typeof window === "undefined" || typeof Audio === "undefined") return;
+    const AudioContextConstructor = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (AudioContextConstructor && !this.audioContext) {
+      try { this.audioContext = new AudioContextConstructor(); } catch { /* HTMLAudio fallback below */ }
+    }
+    if (this.audioContext?.state === "suspended") void this.audioContext.resume().catch(() => undefined);
     const audio = this.audio || new Audio();
     audio.muted = true;
     audio.setAttribute("playsinline", "true");
@@ -340,6 +347,49 @@ export class DoubaoTTSProvider implements TTSProvider {
   }
 
   private playBlob(blob: Blob, request: TTSRequest, callbacks: TTSCallbacks, startedAt: number, voice: string, generation: number) {
+    if (this.audioContext) {
+      return this.playWithWebAudio(blob, request, callbacks, startedAt, voice, generation).catch(() => {
+        if (generation !== this.requestGeneration) return;
+        return this.playWithHtmlAudio(blob, request, callbacks, startedAt, voice, generation);
+      });
+    }
+    return this.playWithHtmlAudio(blob, request, callbacks, startedAt, voice, generation);
+  }
+
+  private async playWithWebAudio(blob: Blob, request: TTSRequest, callbacks: TTSCallbacks, startedAt: number, voice: string, generation: number) {
+    const context = this.audioContext;
+    if (!context || generation !== this.requestGeneration) return;
+    await context.resume();
+    const buffer = await context.decodeAudioData(await blob.arrayBuffer());
+    if (generation !== this.requestGeneration) return;
+    return new Promise<void>((resolve, reject) => {
+      let settled = false;
+      const source = context.createBufferSource();
+      this.audioSource = source;
+      source.buffer = buffer;
+      source.connect(context.destination);
+      callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, firstByteLatencyMs: Math.round(performance.now() - startedAt) });
+      source.onended = () => {
+        if (settled || generation !== this.requestGeneration) return;
+        settled = true;
+        source.disconnect();
+        this.audioSource = null;
+        callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, totalLatencyMs: Math.round(performance.now() - startedAt) });
+        callbacks.onEnd();
+        resolve();
+      };
+      try {
+        source.start(0);
+      } catch (error) {
+        settled = true;
+        source.disconnect();
+        this.audioSource = null;
+        reject(error instanceof Error ? error : new Error("浏览器无法启动音频播放"));
+      }
+    });
+  }
+
+  private playWithHtmlAudio(blob: Blob, request: TTSRequest, callbacks: TTSCallbacks, startedAt: number, voice: string, generation: number) {
     return new Promise<void>((resolve, reject) => {
       if (generation !== this.requestGeneration) { resolve(); return; }
       let settled = false;
@@ -347,32 +397,49 @@ export class DoubaoTTSProvider implements TTSProvider {
       const audio = this.audio || new Audio();
       this.audio = audio;
       this.objectUrl = URL.createObjectURL(blob);
+      let watchdog: number | null = null;
       audio.muted = false;
       audio.setAttribute("playsinline", "true");
       audio.preload = "auto";
       audio.src = this.objectUrl;
+      audio.load();
       callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, firstByteLatencyMs: Math.round(performance.now() - startedAt) });
       audio.onended = () => {
         if (settled || !isCurrent()) return;
         settled = true;
+        if (watchdog !== null) window.clearTimeout(watchdog);
         this.cleanupAudio();
         callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, totalLatencyMs: Math.round(performance.now() - startedAt) });
         callbacks.onEnd();
         resolve();
       };
       audio.onerror = () => {
-        if (!settled && isCurrent()) { settled = true; this.cleanupAudio(); reject(new Error("浏览器无法播放火山引擎音频")); }
+        if (!settled && isCurrent()) { settled = true; if (watchdog !== null) window.clearTimeout(watchdog); this.cleanupAudio(); reject(new Error("浏览器无法播放火山引擎音频")); }
       };
       audio.play().then(() => undefined).catch((error) => {
         if (settled || !isCurrent()) return;
         settled = true;
+        if (watchdog !== null) window.clearTimeout(watchdog);
         this.cleanupAudio();
         reject(error instanceof Error ? error : new Error("浏览器阻止了音频自动播放"));
       });
+      // 少数 WebView 会让 play() 成功但一直不推进 currentTime，也不触发 error。
+      // 避免 UI 永久停留在“小满正在说”。
+      watchdog = window.setTimeout(() => {
+        if (settled || !isCurrent() || audio.ended || audio.currentTime > 0.05) return;
+        settled = true;
+        this.cleanupAudio();
+        reject(new Error("移动浏览器没有真正开始播放音频"));
+      }, 8000);
     });
   }
 
   private cleanupAudio() {
+    if (this.audioSource) {
+      try { this.audioSource.stop(); } catch { /* already ended */ }
+      try { this.audioSource.disconnect(); } catch { /* already disconnected */ }
+    }
+    this.audioSource = null;
     this.audio?.pause();
     if (this.audio) this.audio.src = "";
     if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);

@@ -14,6 +14,7 @@ import {
 import { apiUrl, sitePath } from "@/lib/api";
 
 type Status = "idle" | "listening" | "thinking" | "speaking";
+type MicrophoneState = "unknown" | "granted" | "denied" | "unavailable";
 
 type DebugInfo = {
   userStrategy: string[];
@@ -108,6 +109,7 @@ export default function Home() {
   const [notice, setNotice] = useState("");
   const [interimText, setInterimText] = useState("");
   const [voiceInputSupported, setVoiceInputSupported] = useState(true);
+  const [microphoneState, setMicrophoneState] = useState<MicrophoneState>("unknown");
   const [textDraft, setTextDraft] = useState("");
   const [conversationActive, setConversationActive] = useState(false);
   const [debugEnabled, setDebugEnabled] = useState(false);
@@ -161,23 +163,29 @@ export default function Home() {
     // 必须在用户点击触发的同步阶段先解锁音频，移动 Safari/部分 WebView
     // 才允许异步请求完成后播放 AI 语音。
     ttsRef.current.unlockAudio();
+    let nextMicrophoneState: MicrophoneState = "unavailable";
+    if (navigator.mediaDevices?.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((track) => track.stop());
+        nextMicrophoneState = "granted";
+      } catch {
+        nextMicrophoneState = "denied";
+      }
+    }
+    setMicrophoneState(nextMicrophoneState);
     if (!asrRef.current.isSupported()) {
       setVoiceInputSupported(false);
       setStarted(true);
       setConversationActive(false);
       setStatus("idle");
-      setNotice("当前浏览器不支持网页语音识别，已切换为文字对话。想用麦克风，请用系统浏览器打开。");
+      setNotice(nextMicrophoneState === "granted" ? "麦克风已授权，但当前浏览器没有语音识别能力，已切换为文字对话。" : "当前浏览器不支持网页语音识别，已切换为文字对话。想用麦克风，请用系统浏览器打开。");
       return;
     }
     setVoiceInputSupported(true);
-    if (navigator.mediaDevices?.getUserMedia) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach((track) => track.stop());
-      } catch {
-        setNotice("需要麦克风权限，才能和小满说话。");
-        return;
-      }
+    if (nextMicrophoneState === "denied") {
+      setNotice("麦克风权限没有打开，请在浏览器设置里允许；也可以先用文字对话。");
+      return;
     }
     setStarted(true);
     startVoiceConversation();
@@ -392,7 +400,7 @@ export default function Home() {
               <input value={textDraft} onChange={(event) => setTextDraft(event.target.value)} placeholder="先输入一句，和小满聊聊……" className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#141313] px-3 py-3 text-sm text-[#f4efeb] outline-none placeholder:text-[#756d6b] focus:border-[#e98972]/60" aria-label="输入给小满的话" />
               <button type="submit" disabled={!textDraft.trim() || status === "thinking" || status === "speaking"} className="rounded-xl bg-[#e98972] px-4 py-2 text-sm font-medium text-[#241615] transition hover:bg-[#f6a08b] disabled:cursor-not-allowed disabled:opacity-40">发送</button>
             </div>
-            <p className="mt-2 px-1 text-[11px] leading-5 text-[#817876]">当前浏览器不支持网页语音识别，文字对话仍然可用；想使用麦克风，请在系统浏览器打开。</p>
+            <p className="mt-2 px-1 text-[11px] leading-5 text-[#817876]">麦克风：{microphoneState === "granted" ? "已授权" : microphoneState === "denied" ? "未授权" : "未检测到"}。当前浏览器不能把麦克风转成文字，文字对话仍然可用。</p>
           </form>}
           {notice && <div className="mt-4 flex items-center gap-3 rounded-full border border-[#e98972]/30 bg-[#e98972]/10 px-4 py-2 text-xs text-[#f6a08b]" role="alert">{notice}<button type="button" onClick={() => setNotice("")} className="text-[#f4efeb]">×</button></div>}
           {mode && <p className="mt-3 text-[10px] text-[#5f5856]">{mode === "deepseek" ? "DeepSeek 已连接" : "当前为本地演示回复"}</p>}
