@@ -19,7 +19,7 @@
         "VOLCENGINE_TTS_MODEL": "{{env.VOLCENGINE_TTS_MODEL}}",
         "VOLCENGINE_TTS_VOICE": "{{env.VOLCENGINE_TTS_VOICE}}",
         "VOLCENGINE_TTS_VOICE_NAME": "{{env.VOLCENGINE_TTS_VOICE_NAME}}",
-        "CORS_ORIGIN": "*"
+          "CORS_ORIGIN": "https://xiangshu3721.github.io"
       }
     }
   ]
