@@ -91,76 +91,74 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `Volcengine TTS failed: ${upstream.status}`, detail: detail.slice(0, 500) }, { status: 502, headers: corsHeaders() });
   }
 
-  const reader = upstream.body.getReader();
-  const decoder = new TextDecoder();
-  let pending = "";
-  let streamClosed = false;
-  const stream = new ReadableStream<Uint8Array>({
-    async pull(controller) {
-      if (streamClosed) return;
-      try {
-        const { done, value } = await reader.read();
-        if (done) {
-          pending += decoder.decode();
-          consumeJsonObjects(pending, controller);
-          streamClosed = true;
-          controller.close();
-          return;
-        }
-        pending += decoder.decode(value, { stream: true });
-        const result = consumeJsonObjects(pending, controller);
-        pending = result.remainder;
-        if (result.finished) {
-          streamClosed = true;
-          void reader.cancel();
-          controller.close();
-        }
-      } catch (error) {
-        if (streamClosed) return;
-        controller.error(error);
-      }
-    },
-    cancel() { void reader.cancel(); },
-  });
+  let audio: Uint8Array;
+  try {
+    // CloudBase HTTP functions may terminate unexpectedly when a Web Stream
+    // is closed from inside an async pull(). Buffering the small TTS response
+    // keeps the function process stable; the browser still starts playback as
+    // soon as this response arrives and can fall back safely on failure.
+    const payload = new Uint8Array(await upstream.arrayBuffer());
+    const contentType = upstream.headers.get("content-type") || "";
+    if (contentType.startsWith("audio/") || looksLikeMp3(payload)) {
+      audio = payload;
+    } else {
+      audio = parseAudioPayload(new TextDecoder().decode(payload));
+    }
+  } catch (error) {
+    console.error("Volcengine TTS response parsing failed", error);
+    return NextResponse.json({ error: "Volcengine TTS returned an invalid audio response" }, { status: 502, headers: corsHeaders() });
+  }
 
-  return new Response(stream, {
+  return new Response(Buffer.from(audio), {
     status: 200,
     headers: {
       "Content-Type": "audio/mpeg",
+      "Content-Length": String(audio.byteLength),
       "Cache-Control": "no-store",
       "X-TTS-Provider": "volcengine",
       "X-TTS-Voice": voice,
-      "X-TTS-Streaming": "true",
+      "X-TTS-Streaming": "false",
       ...corsHeaders(),
     },
   });
 }
 
-function consumeJsonObjects(text: string, controller: ReadableStreamDefaultController<Uint8Array>) {
+function parseAudioPayload(text: string) {
+  const dataFields = [...text.matchAll(/"data"\s*:\s*"([^"]+)"/g)].map((match) => match[1]);
+  if (dataFields.length) return joinAudioChunks(dataFields.map(decodeChunk));
+
   let remainder = text;
-  let finished = false;
-  let emitted = false;
+  const chunks: Uint8Array[] = [];
   while (remainder.length) {
-    const start = remainder.indexOf("{");
-    if (start < 0) return { remainder: "", finished, emitted };
+    const start = remainder.search(/\{/);
+    if (start < 0) break;
     remainder = remainder.slice(start);
     const end = findJsonObjectEnd(remainder);
-    if (end < 0) return { remainder, finished, emitted };
+    if (end < 0) throw new Error("Volcengine TTS returned incomplete JSON");
     const rawJson = remainder.slice(0, end + 1);
     remainder = remainder.slice(end + 1);
     const chunk = JSON.parse(rawJson) as { code?: number; message?: string; data?: string; usage?: { text_words?: number } };
     const success = chunk.code === 0 || chunk.code === 20000000 || chunk.message === "OK";
-    if (chunk.data) {
-      controller.enqueue(decodeChunk(chunk.data));
-      emitted = true;
-    }
+    if (chunk.data) chunks.push(decodeChunk(chunk.data));
     if (typeof chunk.code === "number" && !success) throw new Error(chunk.message || `Volcengine TTS code ${chunk.code}`);
-    if (chunk.usage || (success && !chunk.data)) {
-      finished = true;
-      return { remainder: "", finished, emitted };
-    }
   }
-  return { remainder, finished, emitted };
+  if (!chunks.length) throw new Error("Volcengine TTS returned no audio data");
+  return joinAudioChunks(chunks);
+}
+
+function joinAudioChunks(chunks: Uint8Array[]) {
+  const size = chunks.reduce((total, chunk) => total + chunk.byteLength, 0);
+  const audio = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    audio.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return audio;
+}
+
+function looksLikeMp3(bytes: Uint8Array) {
+  return bytes.length >= 3 && (bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33 || bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0);
 }
 
 function findJsonObjectEnd(text: string) {
