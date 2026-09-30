@@ -20,6 +20,7 @@ type ChatRequest = {
   userMessage?: string;
   sceneContext?: string;
   scenarioId?: string;
+  characterGender?: "female" | "male";
   debug?: boolean;
 };
 
@@ -90,7 +91,9 @@ export async function POST(request: Request) {
   const strategy = selectResponseStrategy({ state, labels: classification.labels, archetype: "Pursuer" });
   const voice = voiceCue(strategy, state);
   const retrieved = retrieveSimilarEpisodes({ scene, archetype: "Pursuer", labels: classification.labels, intensity: state.conflictIntensity, limit: 3 });
-  const prompt = buildConflictPrompt({ scene, state, classification, strategy, retrieved, history, userMessage });
+  const characterGender = body.characterGender === "male" ? "male" : "female";
+  const characterName = characterGender === "male" ? "死鬼" : "臭娘们";
+  const prompt = buildConflictPrompt({ scene, state, classification, strategy, retrieved, history, userMessage, characterGender, characterName });
   const apiKey = process.env.DEEPSEEK_API_KEY;
   let reply = "";
   let mode: "mock" | "deepseek" | "fallback" = "mock";

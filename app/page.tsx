@@ -15,6 +15,7 @@ import { apiUrl, sitePath } from "@/lib/api";
 
 type Status = "idle" | "listening" | "thinking" | "speaking";
 type MicrophoneState = "unknown" | "granted" | "denied" | "unavailable";
+type CharacterGender = "female" | "male";
 
 type DebugInfo = {
   userStrategy: string[];
@@ -42,16 +43,18 @@ const WELCOME: ChatMessage = {
   content: "你来了。今天想跟我说什么？",
 };
 
-function Avatar({ small = false }: { small?: boolean }) {
+function Avatar({ small = false, gender = "female" }: { small?: boolean; gender?: CharacterGender }) {
+  const male = gender === "male";
   return (
-    <div className={`relative shrink-0 overflow-hidden rounded-full bg-[#d7b9aa] ${small ? "h-11 w-11" : "h-44 w-44 sm:h-52 sm:w-52"}`} aria-label="小满的头像">
-      <div className="absolute left-[18%] top-[9%] h-[48%] w-[64%] rounded-[48%_48%_42%_42%] bg-[#372828]" />
-      <div className="absolute left-[24%] top-[20%] h-[48%] w-[52%] rounded-[47%_47%_42%_42%] bg-[#f1c2a7]" />
-      <div className="absolute left-[34%] top-[40%] h-[3px] w-[7px] rounded-full bg-[#382526]" />
-      <div className="absolute right-[34%] top-[40%] h-[3px] w-[7px] rounded-full bg-[#382526]" />
-      <div className="absolute left-1/2 top-[49%] h-[8px] w-[25px] -translate-x-1/2 rounded-[0_0_12px_12px] border-b-2 border-[#9c5f5a]" />
-      <div className="absolute bottom-[-5%] left-[15%] h-[34%] w-[70%] rounded-[45%_45%_0_0] bg-[#eb8e75]" />
-      <div className="absolute bottom-[8%] left-[37%] h-[8px] w-[26%] rounded-full bg-[#f5b09b]/60" />
+    <div className={`relative shrink-0 overflow-hidden rounded-full ${male ? "bg-[#b9a9b0]" : "bg-[#d7b9aa]"} ${small ? "h-11 w-11" : "h-44 w-44 sm:h-52 sm:w-52"}`} aria-label={`${male ? "男性" : "女性"}角色头像`}>
+      <div className={`absolute left-[18%] top-[9%] h-[48%] w-[64%] rounded-[48%_48%_42%_42%] ${male ? "bg-[#211c27]" : "bg-[#372828]"}`} />
+      <div className={`absolute left-[24%] top-[20%] h-[48%] w-[52%] rounded-[47%_47%_42%_42%] ${male ? "bg-[#d7ac94]" : "bg-[#f1c2a7]"}`} />
+      {male && <div className="absolute left-[31%] top-[56%] h-[12%] w-[38%] rounded-b-[45%] bg-[#6d4e4c]/60" />}
+      <div className={`absolute left-[32%] top-[38%] h-[3px] w-[9px] rotate-[10deg] rounded-full ${male ? "bg-[#291f2a]" : "bg-[#382526]"}`} />
+      <div className={`absolute right-[32%] top-[38%] h-[3px] w-[9px] -rotate-[10deg] rounded-full ${male ? "bg-[#291f2a]" : "bg-[#382526]"}`} />
+      <div className={`absolute left-1/2 top-[51%] h-[7px] w-[26px] -translate-x-1/2 rounded-[0_0_12px_12px] border-b-2 ${male ? "border-[#744448]" : "border-[#9c5f5a]"}`} />
+      <div className={`absolute bottom-[-5%] left-[15%] h-[34%] w-[70%] rounded-[45%_45%_0_0] ${male ? "bg-[#76546b]" : "bg-[#eb8e75]"}`} />
+      <div className={`absolute bottom-[8%] left-[37%] h-[8px] w-[26%] rounded-full ${male ? "bg-[#bc8da0]/60" : "bg-[#f5b09b]/60"}`} />
     </div>
   );
 }
@@ -63,16 +66,17 @@ function Wave() {
 function VoiceSelector({ voices, selectedVoiceId, onChange }: { voices: VoiceOption[]; selectedVoiceId: string; onChange: (voiceId: string) => void }) {
   const selectedVoice = voices.find((voice) => voice.id === selectedVoiceId) || voices[0];
   if (!selectedVoice) return null;
+  const characterName = selectedVoice.gender === "male" ? "死鬼" : "臭娘们";
   return (
     <div className="mt-5 rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-left">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div><p className="text-xs tracking-[0.12em] text-[#9f9795]">小满的声音</p><p className="mt-1 text-sm text-[#f4efeb]">{selectedVoice.name}</p></div>
+        <div><p className="text-xs tracking-[0.12em] text-[#9f9795]">角色声音 · {selectedVoice.gender === "male" ? "男版" : "女版"}</p><p className="mt-1 text-sm text-[#f4efeb]">{characterName} · {selectedVoice.name}</p></div>
         <a href={sitePath("/voice-lab")} className="text-xs text-[#f6a08b] underline decoration-[#f6a08b]/30 underline-offset-4">试听更多音色</a>
       </div>
       <select value={selectedVoiceId || selectedVoice.id} onChange={(event) => onChange(event.target.value)} className="mt-3 w-full rounded-xl border border-white/10 bg-[#141313] px-3 py-3 text-sm text-[#f4efeb] outline-none transition focus:border-[#e98972]">
         {voices.map((voice) => <option key={voice.id} value={voice.id}>{voice.gender === "male" ? "男声 · " : "女声 · "}{voice.name}</option>)}
       </select>
-      <p className="mt-2 text-[11px] leading-5 text-[#746c6a]">切换后，下一次小满回复会使用这个声音。</p>
+      <p className="mt-2 text-[11px] leading-5 text-[#746c6a]">切换后，头像、昵称和下一次回复会同步使用这个角色。</p>
     </div>
   );
 }
@@ -130,6 +134,9 @@ export default function Home() {
   const ttsRef = useRef(new DoubaoTTSProvider());
 
   const scenario = useMemo(() => SCENARIOS.find((item) => item.id === scenarioId) || SCENARIOS[0], [scenarioId]);
+  const selectedVoice = voiceOptions.find((voice) => voice.id === selectedVoiceId);
+  const characterGender: CharacterGender = selectedVoice?.gender === "male" ? "male" : "female";
+  const characterName = characterGender === "male" ? "死鬼" : "臭娘们";
   const visibleMessages = messages.slice(-8);
   const hasUserTurn = messages.some((message) => message.role === "user");
 
@@ -245,7 +252,7 @@ export default function Home() {
       const response = await fetch(apiUrl("/api/chat"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ history: baseHistory.slice(-20), userMessage: userText, sceneContext: scenario.context, scenarioId: scenario.id, debug: debugEnabled }),
+        body: JSON.stringify({ history: baseHistory.slice(-20), userMessage: userText, sceneContext: scenario.context, scenarioId: scenario.id, characterGender, debug: debugEnabled }),
       });
       const data = await response.json() as { text?: string; reply?: string; mode?: "mock" | "deepseek" | "fallback"; error?: string; debug?: DebugInfo; voice?: { emotion?: TTSRequest["emotion"]; intensity?: number } };
       const reply = data.text || data.reply;
@@ -354,15 +361,15 @@ export default function Home() {
       <main className="min-h-[100dvh] bg-[#141313] px-5 py-6 text-[#f4efeb] sm:px-8">
         <div className="mx-auto flex min-h-[calc(100dvh-3rem)] max-w-5xl flex-col">
           <header className="flex items-center justify-between border-b border-white/10 pb-5">
-            <div className="flex items-center gap-3"><Avatar small /><div><p className="text-sm font-medium">小满</p><p className="text-xs text-[#9f9795]">你的伴侣</p></div></div>
+            <div className="flex items-center gap-3"><Avatar small gender={characterGender} /><div><p className="text-sm font-medium">{characterName}</p><p className="text-xs text-[#9f9795]">你的伴侣</p></div></div>
             <span className="text-xs tracking-[0.18em] text-[#9f9795]">VOICE / 01</span>
           </header>
           <section className="grid flex-1 items-center gap-12 py-14 lg:grid-cols-[.85fr_1.15fr] lg:gap-24">
-            <div className="relative flex justify-center lg:justify-start"><div className="absolute top-10 h-64 w-64 rounded-full bg-[#e98972]/10 blur-3xl" /><div className="relative"><Avatar /></div></div>
+            <div className="relative flex justify-center lg:justify-start"><div className="absolute top-10 h-64 w-64 rounded-full bg-[#e98972]/10 blur-3xl" /><div className="relative"><Avatar gender={characterGender} /></div></div>
             <div className="max-w-xl">
               <p className="mb-5 text-sm tracking-[0.16em] text-[#e98972]">一场只用声音发生的关系</p>
               <h1 className="max-w-lg text-4xl font-medium leading-[1.08] tracking-[-0.045em] sm:text-6xl">有些话，面对面反而说不出来。</h1>
-              <p className="mt-7 max-w-md text-base leading-7 text-[#b7adab]">小满会听你说，也会把刚刚发生的事放在心上。选择一个今晚的开场。</p>
+              <p className="mt-7 max-w-md text-base leading-7 text-[#b7adab]">{characterName}会听你说，也会把刚刚发生的事放在心上。选择一个今晚的开场。</p>
               <div className="mt-9 grid gap-2 sm:grid-cols-2">
                 {SCENARIOS.map((item) => <button key={item.id} type="button" onClick={() => setScenarioId(item.id)} className={`rounded-2xl border px-4 py-3 text-left text-sm transition ${scenarioId === item.id ? "border-[#e98972] bg-[#e98972]/10 text-[#f4efeb]" : "border-white/10 text-[#a9a09e] hover:border-white/25"}`}><span className="block font-medium">{item.shortTitle}</span><span className="mt-1 block text-xs text-[#857d7b]">{item.title}</span></button>)}
               </div>
@@ -381,23 +388,23 @@ export default function Home() {
     <main className="min-h-[100dvh] bg-[#141313] text-[#f4efeb]">
       <div className="mx-auto flex min-h-[100dvh] max-w-3xl flex-col px-5 pb-6 pt-5 sm:px-8">
         <header className="flex items-center justify-between border-b border-white/10 pb-4">
-          <div className="flex items-center gap-3"><Avatar small /><div><p className="text-sm font-medium">小满</p><p className="text-xs text-[#9f9795]">你的伴侣</p></div></div>
+          <div className="flex items-center gap-3"><Avatar small gender={characterGender} /><div><p className="text-sm font-medium">{characterName}</p><p className="text-xs text-[#9f9795]">你的伴侣</p></div></div>
           <button type="button" onClick={resetConversation} className="text-xs text-[#9f9795] transition hover:text-[#f4efeb]">重新开始</button>
         </header>
         <section className="flex flex-1 flex-col items-center pt-11 sm:pt-14">
-          <div className="flex flex-col items-center"><div className={`relative rounded-full ${status === "listening" ? "breathing" : ""}`}><Avatar /></div><p className="mt-6 text-sm text-[#d1c7c4]">{STATUS_COPY[status]}</p>{status === "listening" && interimText && <p className="mt-3 max-w-xs text-center text-xs leading-5 text-[#a9a09e]">“{interimText}”</p>}<div className="mt-3 h-8">{status === "speaking" ? <Wave /> : status === "thinking" ? <div className="flex h-8 items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:120ms]" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:240ms]" /></div> : <span className="text-xs text-[#756d6b]">{scenario.shortTitle}</span>}</div></div>
+          <div className="flex flex-col items-center"><div className={`relative rounded-full ${status === "listening" ? "breathing" : ""}`}><Avatar gender={characterGender} /></div><p className="mt-6 text-sm text-[#d1c7c4]">{STATUS_COPY[status].replace("小满", characterName)}</p>{status === "listening" && interimText && <p className="mt-3 max-w-xs text-center text-xs leading-5 text-[#a9a09e]">“{interimText}”</p>}<div className="mt-3 h-8">{status === "speaking" ? <Wave /> : status === "thinking" ? <div className="flex h-8 items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:120ms]" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:240ms]" /></div> : <span className="text-xs text-[#756d6b]">{scenario.shortTitle}</span>}</div></div>
           <div className="mt-10 w-full max-w-xl space-y-4" aria-live="polite">
-            {visibleMessages.map((message, index) => <div key={`${message.role}-${index}-${message.content.slice(0, 8)}`} className={`flex items-start gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>{message.role === "assistant" && <Avatar small />}<div className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === "user" ? "rounded-br-md bg-[#e98972] text-[#241615]" : "rounded-bl-md bg-[#211e1d] text-[#ded4d1]"}`}><span className="mb-1 block text-[10px] tracking-[0.12em] opacity-50">{message.role === "user" ? "我" : "小满"}</span>{message.content}</div></div>)}
+            {visibleMessages.map((message, index) => <div key={`${message.role}-${index}-${message.content.slice(0, 8)}`} className={`flex items-start gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>{message.role === "assistant" && <Avatar small gender={characterGender} />}<div className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === "user" ? "rounded-br-md bg-[#e98972] text-[#241615]" : "rounded-bl-md bg-[#211e1d] text-[#ded4d1]"}`}><span className="mb-1 block text-[10px] tracking-[0.12em] opacity-50">{message.role === "user" ? "我" : characterName}</span>{message.content}</div></div>)}
           </div>
           {hasUserTurn && status !== "thinking" && <div className="mt-7 w-full max-w-xl"><button type="button" onClick={openReview} aria-expanded={reviewOpen} className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-[#1b1818] px-4 py-3 text-left transition hover:border-[#e98972]/40 hover:bg-[#211e1d] active:scale-[.99]"><span><span className="block text-sm text-[#f4efeb]">情绪复盘</span><span className="mt-1 block text-xs text-[#817876]">看看刚刚真正发生了什么</span></span><span className="text-lg text-[#e98972]">{reviewOpen ? "⌃" : "→"}</span></button>{reviewOpen && <EmotionReviewPanel review={review} turns={reviewTurns} question={reviewQuestion} loading={reviewLoading} error={reviewError} onQuestionChange={setReviewQuestion} onContinue={() => void requestReview(reviewQuestion)} onRetry={() => void requestReview()} onClose={() => setReviewOpen(false)} />}</div>}
         </section>
         <footer className="mt-8 flex flex-col items-center">
           {voiceInputSupported ? <>
             <button type="button" onClick={handleMic} aria-label={conversationActive ? "结束持续语音对话" : "开始持续语音对话"} className={`relative flex h-20 w-20 items-center justify-center rounded-full text-[#241615] shadow-2xl shadow-black/20 transition active:scale-[.96] ${conversationActive ? "breathing bg-[#f6a08b]" : "bg-[#e98972] hover:bg-[#f6a08b]"}`}><span className="mic-glyph" /></button>
-            <p className="mt-5 text-xs text-[#817876]">{conversationActive ? "持续对话中 · 小满说完会继续听" : "点击开始持续语音对话"}</p>
+            <p className="mt-5 text-xs text-[#817876]">{conversationActive ? `持续对话中 · ${characterName}说完会继续听` : "点击开始持续语音对话"}</p>
           </> : <form onSubmit={(event) => { event.preventDefault(); submitText(textDraft); }} className="w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-3">
             <div className="flex gap-2">
-              <input value={textDraft} onChange={(event) => setTextDraft(event.target.value)} placeholder="先输入一句，和小满聊聊……" className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#141313] px-3 py-3 text-sm text-[#f4efeb] outline-none placeholder:text-[#756d6b] focus:border-[#e98972]/60" aria-label="输入给小满的话" />
+              <input value={textDraft} onChange={(event) => setTextDraft(event.target.value)} placeholder={`先输入一句，和${characterName}聊聊……`} className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#141313] px-3 py-3 text-sm text-[#f4efeb] outline-none placeholder:text-[#756d6b] focus:border-[#e98972]/60" aria-label={`输入给${characterName}的话`} />
               <button type="submit" disabled={!textDraft.trim() || status === "thinking" || status === "speaking"} className="rounded-xl bg-[#e98972] px-4 py-2 text-sm font-medium text-[#241615] transition hover:bg-[#f6a08b] disabled:cursor-not-allowed disabled:opacity-40">发送</button>
             </div>
             <p className="mt-2 px-1 text-[11px] leading-5 text-[#817876]">麦克风：{microphoneState === "granted" ? "已授权" : microphoneState === "denied" ? "未授权" : "未检测到"}。当前浏览器不能把麦克风转成文字，文字对话仍然可用。</p>
