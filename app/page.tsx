@@ -25,6 +25,9 @@ type DebugInfo = {
 };
 
 type VoiceOption = { id: string; name: string; gender?: "female" | "male" };
+type ReviewEmotion = { label: string; level: number; evidence: string };
+type EmotionReview = { title: string; summary: string; emotions: ReviewEmotion[]; needs: string[]; suggestions: string[]; nextPrompt: string };
+type ReviewTurn = { role: "user" | "assistant"; content: string };
 
 const STATUS_COPY: Record<Status, string> = {
   idle: "准备好了",
@@ -73,6 +76,30 @@ function VoiceSelector({ voices, selectedVoiceId, onChange }: { voices: VoiceOpt
   );
 }
 
+function EmotionReviewPanel({ review, turns, question, loading, error, onQuestionChange, onContinue, onRetry, onClose }: { review: EmotionReview | null; turns: ReviewTurn[]; question: string; loading: boolean; error: string; onQuestionChange: (value: string) => void; onContinue: () => void; onRetry: () => void; onClose: () => void }) {
+  return (
+    <section className="mt-4 w-full rounded-[1.35rem] border border-[#e98972]/25 bg-[#1b1818] p-4 text-left shadow-2xl shadow-black/10 sm:p-5" aria-label="情绪复盘">
+      <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
+        <div><p className="text-[10px] tracking-[0.16em] text-[#e98972]">AI / 当前这一轮</p><h2 className="mt-2 text-lg font-medium text-[#f4efeb]">情绪复盘</h2></div>
+        <button type="button" onClick={onClose} className="rounded-full px-2 py-1 text-xl leading-none text-[#817876] transition hover:bg-white/5 hover:text-[#f4efeb]" aria-label="关闭情绪复盘">×</button>
+      </div>
+      {loading && !review && <div className="space-y-3 py-5" aria-live="polite"><div className="h-5 w-3/4 animate-pulse rounded bg-white/10" /><div className="h-12 animate-pulse rounded bg-white/5" /><div className="grid grid-cols-3 gap-2"><div className="h-16 animate-pulse rounded-xl bg-white/5" /><div className="h-16 animate-pulse rounded-xl bg-white/5" /><div className="h-16 animate-pulse rounded-xl bg-white/5" /></div><p className="text-xs text-[#9f9795]">小满正在把这一轮对话拆开看看……</p></div>}
+      {error && !review && <div className="py-5"><p className="text-sm leading-6 text-[#f6a08b]">{error}</p><button type="button" onClick={onRetry} className="mt-3 rounded-full border border-[#e98972]/40 px-4 py-2 text-xs text-[#f6a08b] transition hover:bg-[#e98972]/10">再试一次</button></div>}
+      {review && <>
+        <div className="grid grid-cols-2 gap-2 border-b border-white/10 py-4 sm:grid-cols-4">{["梳理事件经过", "识别情绪类型", "看见真实需求", "给出可行建议"].map((item) => <div key={item} className="flex items-center gap-2 rounded-lg bg-white/5 px-2 py-2 text-[11px] text-[#c7bdb9]"><span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#4caf68] text-[10px] text-[#141313]">✓</span>{item}</div>)}</div>
+        <div className="py-5"><h3 className="text-base font-medium leading-7 text-[#f4efeb]">{review.title}</h3><p className="mt-2 text-sm leading-6 text-[#b7adab]">{review.summary}</p></div>
+        <div><p className="text-xs tracking-[0.12em] text-[#817876]">我在这一轮里听见了</p><div className="mt-3 grid gap-2 sm:grid-cols-3">{review.emotions.map((emotion) => <div key={`${emotion.label}-${emotion.evidence}`} className="rounded-xl border border-white/10 bg-[#211e1d] p-3"><div className="flex items-center justify-between gap-2"><span className="text-sm text-[#f4efeb]">{emotion.label}</span><span className="text-[10px] text-[#e98972]">{emotion.level}%</span></div><div className="mt-2 h-1 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-[#e98972] transition-all" style={{ width: `${emotion.level}%` }} /></div><p className="mt-2 text-[11px] leading-5 text-[#948a87]">{emotion.evidence}</p></div>)}</div></div>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2"><div><p className="text-xs tracking-[0.12em] text-[#817876]">可能真正想要</p><ul className="mt-2 space-y-2">{review.needs.map((need) => <li key={need} className="flex gap-2 text-sm leading-6 text-[#d6cbc8]"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#e98972]" />{need}</li>)}</ul></div><div><p className="text-xs tracking-[0.12em] text-[#817876]">下一步可以试试</p><ul className="mt-2 space-y-2">{review.suggestions.map((suggestion) => <li key={suggestion} className="flex gap-2 text-sm leading-6 text-[#d6cbc8]"><span className="mt-1 text-[#e98972]">↳</span>{suggestion}</li>)}</ul></div></div>
+        <p className="mt-5 rounded-xl bg-[#e98972]/10 px-3 py-3 text-sm leading-6 text-[#f2c0b2]">{review.nextPrompt}</p>
+        {turns.length > 0 && <div className="mt-4 space-y-2 border-t border-white/10 pt-4">{turns.map((turn, index) => <div key={`${turn.role}-${index}`} className={`rounded-xl px-3 py-2 text-sm leading-6 ${turn.role === "user" ? "bg-[#e98972]/10 text-[#f2c0b2]" : "bg-white/5 text-[#c7bdb9]"}`}><span className="mr-2 text-[10px] tracking-[0.1em] text-[#817876]">{turn.role === "user" ? "你问" : "复盘"}</span>{turn.content}</div>)}</div>}
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row"><textarea value={question} onChange={(event) => onQuestionChange(event.target.value)} rows={2} placeholder="还想继续看看什么？例如：我到底在怕什么？" className="min-h-12 flex-1 resize-none rounded-xl border border-white/10 bg-[#141313] px-3 py-3 text-sm leading-6 text-[#f4efeb] outline-none placeholder:text-[#756d6b] focus:border-[#e98972]/60" /><button type="button" onClick={onContinue} disabled={loading || !question.trim()} className="rounded-xl bg-[#e98972] px-4 py-3 text-sm font-medium text-[#241615] transition hover:bg-[#f6a08b] disabled:cursor-not-allowed disabled:opacity-40">{loading ? "分析中" : "继续复盘"}</button></div>
+        {error && <p className="mt-3 rounded-lg bg-[#e98972]/10 px-3 py-2 text-xs leading-5 text-[#f6a08b]">{error}</p>}
+        <p className="mt-3 text-[10px] leading-5 text-[#756d6b]">只根据这次页面里的对话分析，不是心理诊断。你可以随时关闭。</p>
+      </>}
+    </section>
+  );
+}
+
 export default function Home() {
   const [started, setStarted] = useState(false);
   const [scenarioId, setScenarioId] = useState<ScenarioId>("late-home");
@@ -87,6 +114,12 @@ export default function Home() {
   const [selectedVoiceId, setSelectedVoiceId] = useState("");
   const [voiceOptions, setVoiceOptions] = useState<VoiceOption[]>([]);
   const [mode, setMode] = useState<"mock" | "deepseek" | "fallback" | "">("");
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [review, setReview] = useState<EmotionReview | null>(null);
+  const [reviewTurns, setReviewTurns] = useState<ReviewTurn[]>([]);
+  const [reviewQuestion, setReviewQuestion] = useState("");
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewError, setReviewError] = useState("");
   const historyRef = useRef<ChatMessage[]>([WELCOME]);
   const conversationActiveRef = useRef(false);
   const asrRef = useRef(new BrowserSpeechRecognitionProvider());
@@ -94,6 +127,7 @@ export default function Home() {
 
   const scenario = useMemo(() => SCENARIOS.find((item) => item.id === scenarioId) || SCENARIOS[0], [scenarioId]);
   const visibleMessages = messages.slice(-8);
+  const hasUserTurn = messages.some((message) => message.role === "user");
 
   useEffect(() => {
     setDebugEnabled(new URLSearchParams(window.location.search).get("debug") === "true");
@@ -145,7 +179,41 @@ export default function Home() {
     setMode("");
     setDebugInfo(null);
     setTtsDebug(null);
+    setReviewOpen(false);
+    setReview(null);
+    setReviewTurns([]);
+    setReviewQuestion("");
+    setReviewError("");
     updateMessages([WELCOME]);
+  };
+
+  const requestReview = async (question?: string) => {
+    setReviewLoading(true);
+    setReviewError("");
+    try {
+      const response = await fetch(apiUrl("/api/review"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ history: historyRef.current.slice(-12), scenarioContext: scenario.context, question: question?.trim() || undefined }),
+      });
+      const data = await response.json() as { review?: EmotionReview; answer?: string; error?: string };
+      if (!response.ok) throw new Error(data.error || "复盘暂时没有完成");
+      if (question?.trim() && data.answer) {
+        setReviewTurns((current) => [...current, { role: "user", content: question.trim() }, { role: "assistant", content: data.answer || "" }]);
+        setReviewQuestion("");
+      } else if (data.review) {
+        setReview(data.review);
+      }
+    } catch (error) {
+      setReviewError(error instanceof Error ? error.message : "复盘暂时没有完成，再试一次？");
+    } finally {
+      setReviewLoading(false);
+    }
+  };
+
+  const openReview = () => {
+    setReviewOpen(true);
+    if (!review && !reviewLoading) void requestReview();
   };
 
   const requestReply = async (userText: string, baseHistory: ChatMessage[]) => {
@@ -163,6 +231,11 @@ export default function Home() {
       if (data.debug) setDebugInfo(data.debug);
       const next = [...baseHistory, { role: "assistant", content: reply } satisfies ChatMessage];
       updateMessages(next);
+      setReviewOpen(false);
+      setReview(null);
+      setReviewTurns([]);
+      setReviewQuestion("");
+      setReviewError("");
       setStatus("speaking");
       ttsRef.current.speak({ text: reply, emotion: data.voice?.emotion, intensity: data.voice?.intensity, voiceId: selectedVoiceId || undefined }, {
         onEnd: () => resumeListening(),
@@ -276,6 +349,7 @@ export default function Home() {
           <div className="mt-10 w-full max-w-xl space-y-4" aria-live="polite">
             {visibleMessages.map((message, index) => <div key={`${message.role}-${index}-${message.content.slice(0, 8)}`} className={`flex items-start gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>{message.role === "assistant" && <Avatar small />}<div className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === "user" ? "rounded-br-md bg-[#e98972] text-[#241615]" : "rounded-bl-md bg-[#211e1d] text-[#ded4d1]"}`}><span className="mb-1 block text-[10px] tracking-[0.12em] opacity-50">{message.role === "user" ? "我" : "小满"}</span>{message.content}</div></div>)}
           </div>
+          {hasUserTurn && status !== "thinking" && <div className="mt-7 w-full max-w-xl"><button type="button" onClick={openReview} aria-expanded={reviewOpen} className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-[#1b1818] px-4 py-3 text-left transition hover:border-[#e98972]/40 hover:bg-[#211e1d] active:scale-[.99]"><span><span className="block text-sm text-[#f4efeb]">情绪复盘</span><span className="mt-1 block text-xs text-[#817876]">看看刚刚真正发生了什么</span></span><span className="text-lg text-[#e98972]">{reviewOpen ? "⌃" : "→"}</span></button>{reviewOpen && <EmotionReviewPanel review={review} turns={reviewTurns} question={reviewQuestion} loading={reviewLoading} error={reviewError} onQuestionChange={setReviewQuestion} onContinue={() => void requestReview(reviewQuestion)} onRetry={() => void requestReview()} onClose={() => setReviewOpen(false)} />}</div>}
         </section>
         <footer className="mt-8 flex flex-col items-center">
           <button type="button" onClick={handleMic} aria-label={conversationActive ? "结束持续语音对话" : "开始持续语音对话"} className={`relative flex h-20 w-20 items-center justify-center rounded-full text-[#241615] shadow-2xl shadow-black/20 transition active:scale-[.96] ${conversationActive ? "breathing bg-[#f6a08b]" : "bg-[#e98972] hover:bg-[#f6a08b]"}`}><span className="mic-glyph" /></button>
