@@ -1,0 +1,33 @@
+{
+  "name": "xiaoman-voice-companion",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "build:pages": "node scripts/build-pages.mjs",
+    "start": "next start",
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+    ,"seed:generate": "tsx scripts/generate-seed.ts"
+    ,"conflicts:validate": "tsx scripts/validate-conflicts.ts"
+    ,"conflicts:import": "tsx scripts/import-conflicts.ts"
+    ,"conflicts:normalize": "tsx scripts/normalize-conflicts.ts"
+    ,"conflicts:annotate": "tsx scripts/annotate-conflicts.ts"
+    ,"conflicts:augment": "tsx scripts/augment-conflicts.ts"
+  },
+  "dependencies": {
+    "next": "^15.5.9",
+    "react": "19.1.1",
+    "react-dom": "19.1.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.1.13",
+    "@types/node": "24.5.2",
+    "@types/react": "19.1.13",
+    "@types/react-dom": "19.1.9",
+    "tailwindcss": "4.1.13",
+    "typescript": "5.9.2",
+    "tsx": "4.19.2"
+  }
+}

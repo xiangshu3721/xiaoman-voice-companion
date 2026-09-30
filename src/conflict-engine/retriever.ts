@@ -1,0 +1,31 @@
+import episodes from "@/data/conflicts/episodes.json";
+import scenes from "@/data/conflicts/scenes.json";
+import type { ArchetypeId, BehaviorLabel, ConflictEpisode, ConflictScene, RetrievedEpisode } from "./types";
+
+const allEpisodes = episodes as ConflictEpisode[];
+const allScenes = scenes as ConflictScene[];
+
+export function resolveScene(input: { scenarioId?: string; sceneContext?: string }): ConflictScene {
+  const byBase = allScenes.find((scene) => scene.baseScenarioId === input.scenarioId);
+  if (byBase) return byBase;
+  const context = input.sceneContext || "";
+  return allScenes.find((scene) => context.includes(scene.trigger) || scene.keywords.some((keyword) => context.includes(keyword))) || allScenes[0];
+}
+
+function overlap(text: string, keywords: string[]) {
+  return keywords.reduce((score, keyword) => score + (text.includes(keyword) ? 1 : 0), 0);
+}
+
+export function retrieveSimilarEpisodes(input: { scene: ConflictScene; archetype: ArchetypeId; labels: BehaviorLabel[]; intensity: number; limit?: number }): RetrievedEpisode[] {
+  const scored = allEpisodes.map((episode) => {
+    let score = 0;
+    if (episode.scene.category === input.scene.category) score += 6;
+    if (episode.scene.sceneId === input.scene.id) score += 9;
+    if (episode.personA.primaryArchetype === input.archetype || episode.personA.secondaryArchetype === input.archetype) score += 4;
+    score += overlap(`${episode.scene.trigger}${episode.scene.background}`, input.scene.keywords) * 1.5;
+    score += input.labels.reduce((sum, label) => sum + (episode.turns.some((turn) => turn.strategies.includes(label as never)) ? 2 : 0), 0);
+    score -= Math.abs((episode.trajectory[episode.trajectory.length - 1] || 3) - input.intensity) * 0.5;
+    return { episode, score };
+  });
+  return scored.sort((a, b) => b.score - a.score).slice(0, input.limit || 3);
+}

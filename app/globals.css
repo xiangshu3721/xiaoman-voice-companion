@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #141313;
+  --ink-soft: #1d1a1a;
+  --muted: #9f9795;
+  --paper: #f4efeb;
+  --coral: #e98972;
+  --coral-bright: #f6a08b;
+  --line: rgba(244, 239, 235, 0.13);
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--ink); }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font: inherit; }
+
+button:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--coral-bright);
+  outline-offset: 4px;
+}
+
+.mic-glyph {
+  position: relative;
+  display: block;
+  width: 25px;
+  height: 35px;
+  margin: 0 auto;
+  border: 3px solid currentColor;
+  border-radius: 15px;
+}
+
+.mic-glyph::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -14px;
+  width: 34px;
+  height: 21px;
+  border: 3px solid currentColor;
+  border-top: 0;
+  border-radius: 0 0 18px 18px;
+  transform: translateX(-50%);
+}
+
+.mic-glyph::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -19px;
+  width: 3px;
+  height: 9px;
+  background: currentColor;
+  transform: translateX(-50%);
+}
+
+.breathing { animation: breathing 1.8s ease-in-out infinite; }
+
+@keyframes breathing {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(233, 137, 114, 0.1), 0 18px 50px rgba(0, 0, 0, 0.24); }
+  50% { box-shadow: 0 0 0 20px rgba(233, 137, 114, 0.09), 0 18px 50px rgba(0, 0, 0, 0.24); }
+}
+
+.wave span {
+  display: block;
+  width: 3px;
+  border-radius: 99px;
+  background: var(--coral);
+  animation: wave 1s ease-in-out infinite;
+}
+
+.wave span:nth-child(1), .wave span:nth-child(5) { height: 10px; animation-delay: -.4s; }
+.wave span:nth-child(2), .wave span:nth-child(4) { height: 20px; animation-delay: -.2s; }
+.wave span:nth-child(3) { height: 30px; }
+
+@keyframes wave {
+  0%, 100% { transform: scaleY(.55); opacity: .55; }
+  50% { transform: scaleY(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}

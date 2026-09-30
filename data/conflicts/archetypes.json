@@ -1,0 +1,82 @@
+[
+  {
+    "id": "Pursuer",
+    "name": "追问型",
+    "description": "必须把问题说清楚，对方越逃避越追，容易连续质问。",
+    "tendencies": [
+      "interrogation",
+      "challenge",
+      "historical_grievance"
+    ]
+  },
+  {
+    "id": "Critic",
+    "name": "攻击型",
+    "description": "容易从行为问题上升到人格问题，攻击直接，容易扣帽子。",
+    "tendencies": [
+      "blame",
+      "labeling",
+      "character_attack"
+    ]
+  },
+  {
+    "id": "Defender",
+    "name": "防御型",
+    "description": "习惯解释、找理由，常说自己不是故意的，也会反问对方。",
+    "tendencies": [
+      "defense",
+      "responsibility_shift",
+      "counterattack"
+    ]
+  },
+  {
+    "id": "Withdrawer",
+    "name": "回避型",
+    "description": "不想继续冲突，减少回应、转移话题、离开或沉默。",
+    "tendencies": [
+      "withdrawal",
+      "topic_shift",
+      "silent_treatment"
+    ]
+  },
+  {
+    "id": "Rationalizer",
+    "name": "说理型",
+    "description": "强调事实、逻辑和规则，容易忽视对方的感受。",
+    "tendencies": [
+      "defense",
+      "dismissal",
+      "topic_shift"
+    ]
+  },
+  {
+    "id": "Pleaser",
+    "name": "讨好型",
+    "description": "害怕关系破裂，容易快速道歉、妥协，但不一定真的理解问题。",
+    "tendencies": [
+      "perfunctory_apology",
+      "genuine_apology",
+      "repair_attempt"
+    ]
+  },
+  {
+    "id": "PassiveAggressive",
+    "name": "阴阳型",
+    "description": "很少直接攻击，大量使用反话、讽刺、冷笑和短句。",
+    "tendencies": [
+      "sarcasm",
+      "mockery",
+      "perfunctory_response"
+    ]
+  },
+  {
+    "id": "Explosive",
+    "name": "爆发型",
+    "description": "平时压抑，达到阈值后迅速升级，语言强度突然增加。",
+    "tendencies": [
+      "counterattack",
+      "character_attack",
+      "relationship_threat"
+    ]
+  }
+]

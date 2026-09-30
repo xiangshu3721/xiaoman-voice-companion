@@ -1,0 +1,26 @@
+{
+  "$schema": "https://static.cloudbase.net/cli/cloudbaserc.schema.json",
+  "version": "2.1",
+  "envId": "littlemo-d2gy2ecx0dd102163",
+  "functions": [
+    {
+      "name": "xiaoman-api",
+      "dir": ".",
+      "type": "HTTP",
+      "runtime": "Nodejs20.19",
+      "handler": "index.main",
+      "installDependency": true,
+      "timeout": 60,
+      "memorySize": 512,
+      "envVariables": {
+        "DEEPSEEK_API_KEY": "{{env.DEEPSEEK_API_KEY}}",
+        "VOLCENGINE_TTS_API_KEY": "{{env.VOLCENGINE_TTS_API_KEY}}",
+        "VOLCENGINE_TTS_RESOURCE_ID": "{{env.VOLCENGINE_TTS_RESOURCE_ID}}",
+        "VOLCENGINE_TTS_MODEL": "{{env.VOLCENGINE_TTS_MODEL}}",
+        "VOLCENGINE_TTS_VOICE": "{{env.VOLCENGINE_TTS_VOICE}}",
+        "VOLCENGINE_TTS_VOICE_NAME": "{{env.VOLCENGINE_TTS_VOICE_NAME}}",
+        "CORS_ORIGIN": "*"
+      }
+    }
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "strategyDefinitions": [
+    {
+      "id": "sarcasm",
+      "label": "讽刺/阴阳怪气"
+    },
+    {
+      "id": "mockery",
+      "label": "挖苦"
+    },
+    {
+      "id": "blame",
+      "label": "指责"
+    },
+    {
+      "id": "challenge",
+      "label": "质疑"
+    },
+    {
+      "id": "interrogation",
+      "label": "连续质问"
+    },
+    {
+      "id": "generalization",
+      "label": "绝对化表达"
+    },
+    {
+      "id": "magnification",
+      "label": "问题放大"
+    },
+    {
+      "id": "mind_reading",
+      "label": "推测对方动机"
+    },
+    {
+      "id": "labeling",
+      "label": "扣帽子"
+    },
+    {
+      "id": "belittling",
+      "label": "能力贬低"
+    },
+    {
+      "id": "character_attack",
+      "label": "人格否定"
+    },
+    {
+      "id": "comparison",
+      "label": "比较"
+    },
+    {
+      "id": "historical_grievance",
+      "label": "翻旧账"
+    },
+    {
+      "id": "responsibility_shift",
+      "label": "责任转移"
+    },
+    {
+      "id": "victimization",
+      "label": "受害者化"
+    },
+    {
+      "id": "defense",
+      "label": "防御"
+    },
+    {
+      "id": "counterattack",
+      "label": "反击"
+    },
+    {
+      "id": "dismissal",
+      "label": "否定/轻视"
+    },
+    {
+      "id": "perfunctory_response",
+      "label": "敷衍回应"
+    },
+    {
+      "id": "perfunctory_apology",
+      "label": "敷衍道歉"
+    },
+    {
+      "id": "relationship_threat",
+      "label": "关系威胁"
+    },
+    {
+      "id": "withdrawal",
+      "label": "退出交流"
+    },
+    {
+      "id": "silent_treatment",
+      "label": "冷处理"
+    },
+    {
+      "id": "topic_shift",
+      "label": "转移话题"
+    },
+    {
+      "id": "stonewalling",
+      "label": "拒绝继续沟通"
+    },
+    {
+      "id": "repair_attempt",
+      "label": "修复尝试"
+    },
+    {
+      "id": "softening",
+      "label": "语气软化"
+    },
+    {
+      "id": "validation",
+      "label": "承认部分感受/事实"
+    },
+    {
+      "id": "genuine_apology",
+      "label": "真实道歉"
+    },
+    {
+      "id": "humor_release",
+      "label": "用幽默缓和"
+    }
+  ],
+  "classifierVersion": "v0.1-regex-rules",
+  "notes": "Synthetic seed labels are rules-assisted and must be reviewed before real-data use."
+}

@@ -1,0 +1,228 @@
+{
+  "perfunctory_apology": {
+    "delta": {
+      "anger": [
+        5,
+        15
+      ],
+      "hurt": [
+        3,
+        10
+      ],
+      "resentment": [
+        5,
+        12
+      ]
+    },
+    "effect": "escalate"
+  },
+  "genuine_apology": {
+    "delta": {
+      "anger": [
+        -25,
+        -10
+      ],
+      "hurt": [
+        -15,
+        -5
+      ],
+      "trust": [
+        3,
+        10
+      ],
+      "connection": [
+        3,
+        10
+      ]
+    },
+    "effect": "repair"
+  },
+  "responsibility_acceptance": {
+    "delta": {
+      "anger": [
+        -15,
+        -5
+      ],
+      "hurt": [
+        -10,
+        -3
+      ],
+      "trust": [
+        4,
+        12
+      ]
+    },
+    "effect": "deescalate"
+  },
+  "validation": {
+    "delta": {
+      "anger": [
+        -15,
+        -5
+      ],
+      "connection": [
+        5,
+        15
+      ]
+    },
+    "effect": "deescalate"
+  },
+  "character_attack": {
+    "delta": {
+      "anger": [
+        15,
+        30
+      ],
+      "hurt": [
+        10,
+        25
+      ],
+      "contempt": [
+        5,
+        15
+      ]
+    },
+    "effect": "escalate"
+  },
+  "dismissal": {
+    "delta": {
+      "anger": [
+        8,
+        18
+      ],
+      "hurt": [
+        5,
+        15
+      ],
+      "resentment": [
+        5,
+        15
+      ]
+    },
+    "effect": "escalate"
+  },
+  "defense": {
+    "delta": {
+      "anger": [
+        2,
+        10
+      ],
+      "hurt": [
+        2,
+        8
+      ],
+      "resentment": [
+        2,
+        8
+      ]
+    },
+    "effect": "maintain"
+  },
+  "explanation": {
+    "delta": {
+      "anger": [
+        0,
+        6
+      ],
+      "anxiety": [
+        -5,
+        2
+      ]
+    },
+    "effect": "maintain"
+  },
+  "responsibility_shift": {
+    "delta": {
+      "anger": [
+        6,
+        16
+      ],
+      "resentment": [
+        5,
+        14
+      ]
+    },
+    "effect": "escalate"
+  },
+  "showing_vulnerability": {
+    "delta": {
+      "anger": [
+        -8,
+        -2
+      ],
+      "hurt": [
+        -8,
+        -2
+      ],
+      "connection": [
+        4,
+        12
+      ]
+    },
+    "effect": "deescalate"
+  },
+  "relationship_threat": {
+    "delta": {
+      "anger": [
+        10,
+        25
+      ],
+      "anxiety": [
+        8,
+        20
+      ],
+      "connection": [
+        -12,
+        -4
+      ]
+    },
+    "effect": "rupture"
+  },
+  "withdrawal": {
+    "delta": {
+      "anxiety": [
+        4,
+        12
+      ],
+      "connection": [
+        -10,
+        -3
+      ],
+      "resentment": [
+        2,
+        10
+      ]
+    },
+    "effect": "withdraw"
+  },
+  "silence": {
+    "delta": {
+      "anxiety": [
+        4,
+        12
+      ],
+      "connection": [
+        -8,
+        -2
+      ]
+    },
+    "effect": "withdraw"
+  },
+  "problem_solving": {
+    "delta": {
+      "anger": [
+        -8,
+        -2
+      ],
+      "disappointment": [
+        -8,
+        -2
+      ],
+      "connection": [
+        3,
+        10
+      ]
+    },
+    "effect": "repair"
+  }
+}
