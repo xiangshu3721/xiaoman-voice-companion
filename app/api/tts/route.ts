@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { TTSRequest } from "@/lib/providers";
-import { DOUBAO_TTS_DEFAULTS } from "@/lib/tts-config";
+import { DOUBAO_TTS_DEFAULTS, getConfiguredTTSVoices } from "@/lib/tts-config";
 import { corsHeaders } from "@/lib/cors";
 
 const TTS_ENDPOINT = "https://openspeech.bytedance.com/api/v3/tts/unidirectional";
@@ -52,7 +52,9 @@ export async function POST(request: Request) {
   if (!apiKey) return NextResponse.json({ error: "VOLCENGINE_TTS_API_KEY is not configured" }, { status: 503, headers: corsHeaders() });
 
   const resourceId = process.env.VOLCENGINE_TTS_RESOURCE_ID || DOUBAO_TTS_DEFAULTS.resourceId;
-  const voice = body.voiceId || process.env.VOLCENGINE_TTS_VOICE || DOUBAO_TTS_DEFAULTS.voiceId;
+  const configuredVoice = process.env.VOLCENGINE_TTS_VOICE || DOUBAO_TTS_DEFAULTS.voiceId;
+  const allowedVoices = new Set(getConfiguredTTSVoices().map((item) => item.id));
+  const voice = body.voiceId && allowedVoices.has(body.voiceId) ? body.voiceId : configuredVoice;
   const model = process.env.VOLCENGINE_TTS_MODEL || DOUBAO_TTS_DEFAULTS.model;
   const intensity = clamp(body.intensity ?? 0.5, 0, 1);
   const speed = clamp(body.speed ?? 1, 0.5, 2);
@@ -102,7 +104,8 @@ export async function POST(request: Request) {
     if (contentType.startsWith("audio/") || looksLikeMp3(payload)) {
       audio = payload;
     } else {
-      audio = parseAudioPayload(new TextDecoder().decode(payload));
+      const payloadText = new TextDecoder().decode(payload);
+      audio = parseAudioPayload(payloadText);
     }
   } catch (error) {
     console.error("Volcengine TTS response parsing failed", error);
