@@ -45,6 +45,9 @@ export default function VoiceLab() {
   const play = (emotion: NonNullable<TTSRequest["emotion"]>, voiceId = selectedVoice) => {
     setNotice("");
     setPlaying(`${voiceId}:${emotion}`);
+    // 每次试听都是明确的用户手势；移动浏览器需要在这里重新解锁
+    // Web Audio，否则切换音色后异步 fetch 完成时可能被静默拦截。
+    providerRef.current.unlockAudio();
     providerRef.current.speak({ text: SAMPLE_TEXT, emotion, intensity: emotion === "neutral" ? 0.25 : 0.7, voiceId }, {
       onEnd: () => setPlaying(""),
       onError: (message) => { setNotice(message); setPlaying(""); },
