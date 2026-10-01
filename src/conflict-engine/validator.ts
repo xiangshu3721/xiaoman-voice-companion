@@ -28,7 +28,7 @@ export function validateRepairResponse(reply: string): { valid: boolean; issues:
   const clean = reply.trim();
   const issues: string[] = [];
   if (!/(你.*(以后|下次|提前|发一句|说一声)|以后你|下次你)/.test(clean)) issues.push("repair_missing_partner_action");
-  if (!/(我.*(也|会|尽量|不|别)|我也|我会|我尽量)/.test(clean)) issues.push("repair_missing_character_action");
+  if (!/(我(?:也|会|尽量|以后|下次)|我.*(不再|不一上来|别再|少用|先把|尽量不))/.test(clean)) issues.push("repair_missing_character_action");
   if (/现在才明白|现在才问到|你至于|你怎么|你早说/.test(clean)) issues.push("repair_turns_into_blame");
   return { valid: issues.length === 0, issues };
 }
