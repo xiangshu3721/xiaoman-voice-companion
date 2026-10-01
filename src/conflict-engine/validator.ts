@@ -27,7 +27,8 @@ export function validateReflectionResponse(reply: string): { valid: boolean; iss
 export function validateRepairResponse(reply: string): { valid: boolean; issues: string[] } {
   const clean = reply.trim();
   const issues: string[] = [];
-  if (!/(以后|下次|可以|提前|发一句|我会|我也|尽量)/.test(clean)) issues.push("repair_missing_small_agreement");
+  if (!/(你.*(以后|下次|提前|发一句|说一声)|以后你|下次你)/.test(clean)) issues.push("repair_missing_partner_action");
+  if (!/(我.*(也|会|尽量|不|别)|我也|我会|我尽量)/.test(clean)) issues.push("repair_missing_character_action");
   if (/现在才明白|现在才问到|你至于|你怎么|你早说/.test(clean)) issues.push("repair_turns_into_blame");
   return { valid: issues.length === 0, issues };
 }
@@ -52,7 +53,7 @@ export function fallbackForRelationshipState(state: RelationshipState) {
     DEESCALATE: "……行，我不跟你继续吵了。刚才我确实有点上头。",
     SOOTHE: "嗯，这句是我说重了。生气归生气，我不该这样伤你。",
     REFLECT: "我现在想想……好像我们争的根本不只是晚回来，而是我一直没让你把话说完。",
-    REPAIR: "我在意的不是这一件事本身，是你没有提前告诉我。下次发一句就行。",
+    REPAIR: "我在意的不是这一件事本身，是你没有提前告诉我。下次你发一句就行，我也尽量不一上来就讽刺你。",
     CLOSE: "行了，先不说这个了。饿不饿？",
   };
   return replies[state];
