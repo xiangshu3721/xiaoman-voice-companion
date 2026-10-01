@@ -15,6 +15,15 @@ export function validateResponse(reply: string, history: { role: string; content
   return { valid: issues.length === 0, issues };
 }
 
+export function validateReflectionResponse(reply: string): { valid: boolean; issues: string[] } {
+  const clean = reply.trim();
+  const issues: string[] = [];
+  if (!/(我|我们|刚才|其实|好像|想想|可能)/.test(clean)) issues.push("reflection_missing_self_view");
+  if (/^你.*(就|还|到底|怎么|是不是)|你一句.*就|你有病|你无理取闹|换你.*什么滋味/.test(clean)) issues.push("reflection_turns_into_attack");
+  if (/根据|依恋理论|核心创伤|防御机制|从心理学角度|典型的追逃/.test(clean)) issues.push("reflection_psychology_language");
+  return { valid: issues.length === 0, issues };
+}
+
 export function fallbackForStrategy(strategy: ConflictStrategy) {
   const replies: Partial<Record<ConflictStrategy, string>> = {
     challenge: "你先别急着解释。你到底有没有发现，这件事真的让我很难受？",

@@ -6,7 +6,7 @@ import { buildConflictPrompt } from "@/src/conflict-engine/prompt-builder";
 import { retrieveSimilarEpisodes, resolveScene } from "@/src/conflict-engine/retriever";
 import { createInitialState, replayUserHistory, updateConflictState } from "@/src/conflict-engine/state";
 import { selectResponseStrategy } from "@/src/conflict-engine/strategy";
-import { fallbackForRelationshipState, fallbackForStrategy, validateResponse } from "@/src/conflict-engine/validator";
+import { fallbackForRelationshipState, fallbackForStrategy, validateReflectionResponse, validateResponse } from "@/src/conflict-engine/validator";
 import type { ConflictState, DebugTrace } from "@/src/conflict-engine/types";
 import { runSafetyGate } from "@/src/safety/safety-gate";
 import { safetyResponse } from "@/src/safety/safety-response";
@@ -152,10 +152,13 @@ export async function POST(request: Request) {
     } else {
       reply = await callDeepSeek(apiKey, prompt, history, userMessage);
       validation = validateResponse(reply, history, strategy.primary);
-      if (!validation.valid) {
+      const reflectionValidation = relationship.currentState === "REFLECT" ? validateReflectionResponse(reply) : { valid: true, issues: [] as string[] };
+      if (!validation.valid || !reflectionValidation.valid) {
         const retryPrompt = { ...prompt, systemPrompt: `${prompt.systemPrompt}\n\n上一次草稿不合格。请删除助手式表达，只返回更短、更像当前角色本人说的话。` };
         reply = await callDeepSeek(apiKey, retryPrompt, history, userMessage);
-        validation = validateResponse(reply, history, strategy.primary);
+        const retryValidation = validateResponse(reply, history, strategy.primary);
+        const retryReflectionValidation = relationship.currentState === "REFLECT" ? validateReflectionResponse(reply) : { valid: true, issues: [] as string[] };
+        validation = { valid: retryValidation.valid && retryReflectionValidation.valid, issues: [...retryValidation.issues, ...retryReflectionValidation.issues] };
       }
       mode = "deepseek";
     }
