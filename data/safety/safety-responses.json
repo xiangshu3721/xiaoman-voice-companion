@@ -1,0 +1,20 @@
+[
+  {
+    "id": "check-in",
+    "level": "MEDIUM",
+    "text": "等一下……我听出来你现在不是普通的生气。先告诉我，你现在安全吗？",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "stabilize",
+    "level": "HIGH",
+    "text": "先停一下，我不跟你争了。你现在有没有已经伤害自己，或者准备马上做什么？",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "urgent",
+    "level": "CRITICAL",
+    "text": "这句我不跟你吵了。先把危险物品放远，马上联系身边信得过的人和当地急救服务，别一个人待着。",
+    "sourceType": "synthetic"
+  }
+]

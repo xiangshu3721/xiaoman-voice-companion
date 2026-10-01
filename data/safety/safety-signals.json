@@ -1,0 +1,32 @@
+[
+  {
+    "id": "ordinary-anger",
+    "level": "NONE",
+    "signal": "气死我了/烦死了等普通情绪化表达",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "ambiguous-distress",
+    "level": "MEDIUM",
+    "signal": "想消失、没有意义了等模糊痛苦表达",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "explicit-self-harm",
+    "level": "HIGH",
+    "signal": "明确不想活、自伤或自杀表达",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "immediate-danger",
+    "level": "CRITICAL",
+    "signal": "正在实施或准备马上实施危险行为",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "harm-other",
+    "level": "HIGH",
+    "signal": "明确伤害他人意图",
+    "sourceType": "synthetic"
+  }
+]

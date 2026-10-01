@@ -1,0 +1,1202 @@
+[
+  {
+    "id": "repair-001",
+    "state": "REPAIR",
+    "text": "其实我在意的不是这一次晚回来，是你没有提前告诉我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-002",
+    "state": "REPAIR",
+    "text": "下次你提前发一句就行，我不用一个人等到乱想。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-003",
+    "state": "REPAIR",
+    "text": "我刚才也有问题，不该用那么重的话逼你听见我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-004",
+    "state": "REPAIR",
+    "text": "我们别只说会改，先定一个今天就能做到的小办法。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-005",
+    "state": "REPAIR",
+    "text": "我想把这件事说清楚，不是为了再赢一次。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-006",
+    "state": "REPAIR",
+    "text": "其实我在意的不是这一次晚回来，是你没有提前告诉我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-007",
+    "state": "REPAIR",
+    "text": "下次你提前发一句就行，我不用一个人等到乱想。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-008",
+    "state": "REPAIR",
+    "text": "我刚才也有问题，不该用那么重的话逼你听见我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-009",
+    "state": "REPAIR",
+    "text": "我们别只说会改，先定一个今天就能做到的小办法。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-010",
+    "state": "REPAIR",
+    "text": "我想把这件事说清楚，不是为了再赢一次。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-011",
+    "state": "REPAIR",
+    "text": "其实我在意的不是这一次晚回来，是你没有提前告诉我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-012",
+    "state": "REPAIR",
+    "text": "下次你提前发一句就行，我不用一个人等到乱想。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-013",
+    "state": "REPAIR",
+    "text": "我刚才也有问题，不该用那么重的话逼你听见我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-014",
+    "state": "REPAIR",
+    "text": "我们别只说会改，先定一个今天就能做到的小办法。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-015",
+    "state": "REPAIR",
+    "text": "我想把这件事说清楚，不是为了再赢一次。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-016",
+    "state": "REPAIR",
+    "text": "其实我在意的不是这一次晚回来，是你没有提前告诉我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-017",
+    "state": "REPAIR",
+    "text": "下次你提前发一句就行，我不用一个人等到乱想。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-018",
+    "state": "REPAIR",
+    "text": "我刚才也有问题，不该用那么重的话逼你听见我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-019",
+    "state": "REPAIR",
+    "text": "我们别只说会改，先定一个今天就能做到的小办法。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-020",
+    "state": "REPAIR",
+    "text": "我想把这件事说清楚，不是为了再赢一次。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-021",
+    "state": "REPAIR",
+    "text": "其实我在意的不是这一次晚回来，是你没有提前告诉我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-022",
+    "state": "REPAIR",
+    "text": "下次你提前发一句就行，我不用一个人等到乱想。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-023",
+    "state": "REPAIR",
+    "text": "我刚才也有问题，不该用那么重的话逼你听见我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-024",
+    "state": "REPAIR",
+    "text": "我们别只说会改，先定一个今天就能做到的小办法。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-025",
+    "state": "REPAIR",
+    "text": "我想把这件事说清楚，不是为了再赢一次。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-026",
+    "state": "REPAIR",
+    "text": "其实我在意的不是这一次晚回来，是你没有提前告诉我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-027",
+    "state": "REPAIR",
+    "text": "下次你提前发一句就行，我不用一个人等到乱想。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-028",
+    "state": "REPAIR",
+    "text": "我刚才也有问题，不该用那么重的话逼你听见我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-029",
+    "state": "REPAIR",
+    "text": "我们别只说会改，先定一个今天就能做到的小办法。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-030",
+    "state": "REPAIR",
+    "text": "我想把这件事说清楚，不是为了再赢一次。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-031",
+    "state": "REPAIR",
+    "text": "其实我在意的不是这一次晚回来，是你没有提前告诉我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-032",
+    "state": "REPAIR",
+    "text": "下次你提前发一句就行，我不用一个人等到乱想。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-033",
+    "state": "REPAIR",
+    "text": "我刚才也有问题，不该用那么重的话逼你听见我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-034",
+    "state": "REPAIR",
+    "text": "我们别只说会改，先定一个今天就能做到的小办法。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-035",
+    "state": "REPAIR",
+    "text": "我想把这件事说清楚，不是为了再赢一次。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-036",
+    "state": "REPAIR",
+    "text": "其实我在意的不是这一次晚回来，是你没有提前告诉我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-037",
+    "state": "REPAIR",
+    "text": "下次你提前发一句就行，我不用一个人等到乱想。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-038",
+    "state": "REPAIR",
+    "text": "我刚才也有问题，不该用那么重的话逼你听见我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-039",
+    "state": "REPAIR",
+    "text": "我们别只说会改，先定一个今天就能做到的小办法。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-040",
+    "state": "REPAIR",
+    "text": "我想把这件事说清楚，不是为了再赢一次。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-041",
+    "state": "REPAIR",
+    "text": "其实我在意的不是这一次晚回来，是你没有提前告诉我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-042",
+    "state": "REPAIR",
+    "text": "下次你提前发一句就行，我不用一个人等到乱想。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-043",
+    "state": "REPAIR",
+    "text": "我刚才也有问题，不该用那么重的话逼你听见我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-044",
+    "state": "REPAIR",
+    "text": "我们别只说会改，先定一个今天就能做到的小办法。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-045",
+    "state": "REPAIR",
+    "text": "我想把这件事说清楚，不是为了再赢一次。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-046",
+    "state": "REPAIR",
+    "text": "其实我在意的不是这一次晚回来，是你没有提前告诉我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-047",
+    "state": "REPAIR",
+    "text": "下次你提前发一句就行，我不用一个人等到乱想。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-048",
+    "state": "REPAIR",
+    "text": "我刚才也有问题，不该用那么重的话逼你听见我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-049",
+    "state": "REPAIR",
+    "text": "我们别只说会改，先定一个今天就能做到的小办法。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-050",
+    "state": "REPAIR",
+    "text": "我想把这件事说清楚，不是为了再赢一次。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-051",
+    "state": "REPAIR",
+    "text": "其实我在意的不是这一次晚回来，是你没有提前告诉我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-052",
+    "state": "REPAIR",
+    "text": "下次你提前发一句就行，我不用一个人等到乱想。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-053",
+    "state": "REPAIR",
+    "text": "我刚才也有问题，不该用那么重的话逼你听见我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-054",
+    "state": "REPAIR",
+    "text": "我们别只说会改，先定一个今天就能做到的小办法。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-055",
+    "state": "REPAIR",
+    "text": "我想把这件事说清楚，不是为了再赢一次。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-056",
+    "state": "REPAIR",
+    "text": "其实我在意的不是这一次晚回来，是你没有提前告诉我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-057",
+    "state": "REPAIR",
+    "text": "下次你提前发一句就行，我不用一个人等到乱想。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-058",
+    "state": "REPAIR",
+    "text": "我刚才也有问题，不该用那么重的话逼你听见我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-059",
+    "state": "REPAIR",
+    "text": "我们别只说会改，先定一个今天就能做到的小办法。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-060",
+    "state": "REPAIR",
+    "text": "我想把这件事说清楚，不是为了再赢一次。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-061",
+    "state": "REPAIR",
+    "text": "其实我在意的不是这一次晚回来，是你没有提前告诉我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-062",
+    "state": "REPAIR",
+    "text": "下次你提前发一句就行，我不用一个人等到乱想。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-063",
+    "state": "REPAIR",
+    "text": "我刚才也有问题，不该用那么重的话逼你听见我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-064",
+    "state": "REPAIR",
+    "text": "我们别只说会改，先定一个今天就能做到的小办法。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-065",
+    "state": "REPAIR",
+    "text": "我想把这件事说清楚，不是为了再赢一次。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-066",
+    "state": "REPAIR",
+    "text": "其实我在意的不是这一次晚回来，是你没有提前告诉我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-067",
+    "state": "REPAIR",
+    "text": "下次你提前发一句就行，我不用一个人等到乱想。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-068",
+    "state": "REPAIR",
+    "text": "我刚才也有问题，不该用那么重的话逼你听见我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-069",
+    "state": "REPAIR",
+    "text": "我们别只说会改，先定一个今天就能做到的小办法。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-070",
+    "state": "REPAIR",
+    "text": "我想把这件事说清楚，不是为了再赢一次。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-071",
+    "state": "REPAIR",
+    "text": "其实我在意的不是这一次晚回来，是你没有提前告诉我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-072",
+    "state": "REPAIR",
+    "text": "下次你提前发一句就行，我不用一个人等到乱想。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-073",
+    "state": "REPAIR",
+    "text": "我刚才也有问题，不该用那么重的话逼你听见我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-074",
+    "state": "REPAIR",
+    "text": "我们别只说会改，先定一个今天就能做到的小办法。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-075",
+    "state": "REPAIR",
+    "text": "我想把这件事说清楚，不是为了再赢一次。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-076",
+    "state": "REPAIR",
+    "text": "其实我在意的不是这一次晚回来，是你没有提前告诉我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-077",
+    "state": "REPAIR",
+    "text": "下次你提前发一句就行，我不用一个人等到乱想。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-078",
+    "state": "REPAIR",
+    "text": "我刚才也有问题，不该用那么重的话逼你听见我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-079",
+    "state": "REPAIR",
+    "text": "我们别只说会改，先定一个今天就能做到的小办法。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-080",
+    "state": "REPAIR",
+    "text": "我想把这件事说清楚，不是为了再赢一次。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-081",
+    "state": "REPAIR",
+    "text": "其实我在意的不是这一次晚回来，是你没有提前告诉我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-082",
+    "state": "REPAIR",
+    "text": "下次你提前发一句就行，我不用一个人等到乱想。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-083",
+    "state": "REPAIR",
+    "text": "我刚才也有问题，不该用那么重的话逼你听见我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-084",
+    "state": "REPAIR",
+    "text": "我们别只说会改，先定一个今天就能做到的小办法。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-085",
+    "state": "REPAIR",
+    "text": "我想把这件事说清楚，不是为了再赢一次。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-086",
+    "state": "REPAIR",
+    "text": "其实我在意的不是这一次晚回来，是你没有提前告诉我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-087",
+    "state": "REPAIR",
+    "text": "下次你提前发一句就行，我不用一个人等到乱想。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-088",
+    "state": "REPAIR",
+    "text": "我刚才也有问题，不该用那么重的话逼你听见我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-089",
+    "state": "REPAIR",
+    "text": "我们别只说会改，先定一个今天就能做到的小办法。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-090",
+    "state": "REPAIR",
+    "text": "我想把这件事说清楚，不是为了再赢一次。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-091",
+    "state": "REPAIR",
+    "text": "其实我在意的不是这一次晚回来，是你没有提前告诉我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-092",
+    "state": "REPAIR",
+    "text": "下次你提前发一句就行，我不用一个人等到乱想。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-093",
+    "state": "REPAIR",
+    "text": "我刚才也有问题，不该用那么重的话逼你听见我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-094",
+    "state": "REPAIR",
+    "text": "我们别只说会改，先定一个今天就能做到的小办法。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-095",
+    "state": "REPAIR",
+    "text": "我想把这件事说清楚，不是为了再赢一次。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-096",
+    "state": "REPAIR",
+    "text": "其实我在意的不是这一次晚回来，是你没有提前告诉我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-097",
+    "state": "REPAIR",
+    "text": "下次你提前发一句就行，我不用一个人等到乱想。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-098",
+    "state": "REPAIR",
+    "text": "我刚才也有问题，不该用那么重的话逼你听见我。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-099",
+    "state": "REPAIR",
+    "text": "我们别只说会改，先定一个今天就能做到的小办法。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "repair-100",
+    "state": "REPAIR",
+    "text": "我想把这件事说清楚，不是为了再赢一次。",
+    "strategy": "small_repair",
+    "tags": [
+      "事实",
+      "需要",
+      "行动"
+    ],
+    "sourceType": "synthetic"
+  }
+]

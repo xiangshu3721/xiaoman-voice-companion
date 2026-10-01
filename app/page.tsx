@@ -24,6 +24,9 @@ type DebugInfo = {
   selectedStrategy: { primary: string; secondary: string[]; rationale: string };
   retrievedEpisodeIds: string[];
   validator: { valid: boolean; issues: string[] };
+  relationship?: { currentState: string; previousState: string; stateConfidence: number; stateDuration: number; conflictLocked: boolean; transitionReason: string };
+  safety?: { active: boolean; riskLevel: string; signals: string[]; confidence: number };
+  userState?: { anger: number; hurt: number; sadness: number; anxiety: number; aggression: number; withdrawal: number; openness: number; distress: number; intent: string[]; trend: string; voiceSignals: string; visualSignals: string };
 };
 
 type VoiceOption = { id: string; name: string; gender?: "female" | "male" };
@@ -121,7 +124,7 @@ export default function Home() {
   const [ttsDebug, setTtsDebug] = useState<TTSMetrics | null>(null);
   const [selectedVoiceId, setSelectedVoiceId] = useState("");
   const [voiceOptions, setVoiceOptions] = useState<VoiceOption[]>([]);
-  const [mode, setMode] = useState<"mock" | "deepseek" | "fallback" | "">("");
+  const [mode, setMode] = useState<"mock" | "deepseek" | "fallback" | "safety" | "">("");
   const [reviewOpen, setReviewOpen] = useState(false);
   const [review, setReview] = useState<EmotionReview | null>(null);
   const [reviewTurns, setReviewTurns] = useState<ReviewTurn[]>([]);
@@ -254,7 +257,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ history: baseHistory.slice(-20), userMessage: userText, sceneContext: scenario.context, scenarioId: scenario.id, characterGender, debug: debugEnabled }),
       });
-      const data = await response.json() as { text?: string; reply?: string; mode?: "mock" | "deepseek" | "fallback"; error?: string; debug?: DebugInfo; voice?: { emotion?: TTSRequest["emotion"]; intensity?: number } };
+      const data = await response.json() as { text?: string; reply?: string; mode?: "mock" | "deepseek" | "fallback" | "safety"; error?: string; debug?: DebugInfo; voice?: { emotion?: TTSRequest["emotion"]; intensity?: number; speed?: number; volume?: number } };
       const reply = data.text || data.reply;
       if (!response.ok || !reply) throw new Error(data.error || "reply failed");
       setMode(data.mode || "");
@@ -267,7 +270,7 @@ export default function Home() {
       setReviewQuestion("");
       setReviewError("");
       setStatus("speaking");
-      ttsRef.current.speak({ text: reply, emotion: data.voice?.emotion, intensity: data.voice?.intensity, voiceId: selectedVoiceId || undefined }, {
+      ttsRef.current.speak({ text: reply, emotion: data.voice?.emotion, intensity: data.voice?.intensity, speed: data.voice?.speed, volume: data.voice?.volume, voiceId: selectedVoiceId || undefined }, {
         onEnd: () => resumeListening(),
         onError: (message) => {
           setNotice(message);
@@ -410,9 +413,9 @@ export default function Home() {
             <p className="mt-2 px-1 text-[11px] leading-5 text-[#817876]">麦克风：{microphoneState === "granted" ? "已授权" : microphoneState === "denied" ? "未授权" : "未检测到"}。当前浏览器不能把麦克风转成文字，文字对话仍然可用。</p>
           </form>}
           {notice && <div className="mt-4 flex items-center gap-3 rounded-full border border-[#e98972]/30 bg-[#e98972]/10 px-4 py-2 text-xs text-[#f6a08b]" role="alert">{notice}<button type="button" onClick={() => setNotice("")} className="text-[#f4efeb]">×</button></div>}
-          {mode && <p className="mt-3 text-[10px] text-[#5f5856]">{mode === "deepseek" ? "DeepSeek 已连接" : "当前为本地演示回复"}</p>}
+          {mode && <p className="mt-3 text-[10px] text-[#5f5856]">{mode === "deepseek" ? "DeepSeek 已连接" : mode === "safety" ? "Safety Override 已接管" : "当前为本地演示回复"}</p>}
           {debugEnabled && ttsDebug && <details open className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-xs text-[#b7adab]"><summary className="cursor-pointer text-[#e98972]">TTS Debug</summary><div className="mt-3 grid gap-2 sm:grid-cols-2"><p>Provider：{ttsDebug.provider === "volcengine" ? "Doubao / 火山引擎" : "Browser SpeechSynthesis fallback"}</p><p>Voice：{ttsDebug.voice}</p><p>Emotion：{ttsDebug.emotion || "neutral"}</p><p>Intensity：{ttsDebug.intensity ?? "-"}</p><p>Streaming：{ttsDebug.streaming ? "yes" : "no"}</p><p>首包延迟：{ttsDebug.firstByteLatencyMs == null ? "-" : `${ttsDebug.firstByteLatencyMs} ms`}</p><p>总耗时：{ttsDebug.totalLatencyMs == null ? "播放中" : `${ttsDebug.totalLatencyMs} ms`}</p>{ttsDebug.fallbackReason && <p className="sm:col-span-2 text-[#f6a08b]">Fallback：{ttsDebug.fallbackReason}</p>}</div></details>}
-          {debugEnabled && debugInfo && <details open className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-xs text-[#b7adab]"><summary className="cursor-pointer text-[#e98972]">Conflict Engine Debug</summary><div className="mt-3 grid gap-2 sm:grid-cols-2"><p>User Strategy：{debugInfo.userStrategy.join(" + ")}</p><p>Confidence：{debugInfo.confidence}</p><p>Intensity：{debugInfo.emotion.conflictIntensity}/5</p><p>Selected：{debugInfo.selectedStrategy.primary}{debugInfo.selectedStrategy.secondary.length ? ` + ${debugInfo.selectedStrategy.secondary.join(" + ")}` : ""}</p><p className="sm:col-span-2">Emotion：anger {debugInfo.emotion.anger} · hurt {debugInfo.emotion.hurt} · trust {debugInfo.emotion.trust} · connection {debugInfo.emotion.connection}</p><p className="sm:col-span-2">Retrieved：{debugInfo.retrievedEpisodeIds.join(", ")}</p><p className="sm:col-span-2">Validator：{debugInfo.validator.valid ? "通过" : debugInfo.validator.issues.join(", ")}</p></div></details>}
+          {debugEnabled && debugInfo && <details open className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-xs text-[#b7adab]"><summary className="cursor-pointer text-[#e98972]">Conflict Engine Debug</summary><div className="mt-3 grid gap-2 sm:grid-cols-2"><p>User Strategy：{debugInfo.userStrategy.join(" + ")}</p><p>Confidence：{debugInfo.confidence}</p><p>Intensity：{debugInfo.emotion.conflictIntensity}/5</p><p>Selected：{debugInfo.selectedStrategy.primary}{debugInfo.selectedStrategy.secondary.length ? ` + ${debugInfo.selectedStrategy.secondary.join(" + ")}` : ""}</p><p className="sm:col-span-2">Emotion：anger {debugInfo.emotion.anger} · hurt {debugInfo.emotion.hurt} · trust {debugInfo.emotion.trust} · connection {debugInfo.emotion.connection}</p><p className="sm:col-span-2">Retrieved：{debugInfo.retrievedEpisodeIds.join(", ")}</p><p className="sm:col-span-2">Validator：{debugInfo.validator.valid ? "通过" : debugInfo.validator.issues.join(", ")}</p>{debugInfo.relationship && <><p>Relationship State：{debugInfo.relationship.currentState}</p><p>Previous State：{debugInfo.relationship.previousState}</p><p>Transition Confidence：{debugInfo.relationship.stateConfidence}</p><p>State Duration：{debugInfo.relationship.stateDuration}</p><p>Conflict Locked：{debugInfo.relationship.conflictLocked ? "yes" : "no"}</p><p className="sm:col-span-2">Transition：{debugInfo.relationship.transitionReason}</p></>}{debugInfo.safety && <><p>Safety Active：{debugInfo.safety.active ? "yes" : "no"}</p><p>Risk Level：{debugInfo.safety.riskLevel}</p><p>Safety Confidence：{debugInfo.safety.confidence}</p><p className="sm:col-span-2">Safety Signals：{debugInfo.safety.signals.join(", ") || "none"}</p></>}{debugInfo.userState && <><p className="sm:col-span-2">User State：hurt {debugInfo.userState.hurt} · anger {debugInfo.userState.anger} · sadness {debugInfo.userState.sadness} · aggression {debugInfo.userState.aggression} · withdrawal {debugInfo.userState.withdrawal} · openness {debugInfo.userState.openness}</p><p className="sm:col-span-2">Intent：{debugInfo.userState.intent.join(" + ")} · Trend：{debugInfo.userState.trend}</p><p>Voice Emotion：{debugInfo.userState.voiceSignals}</p><p>Visual Emotion：{debugInfo.userState.visualSignals}</p></>}</div></details>}
         </footer>
       </div>
     </main>

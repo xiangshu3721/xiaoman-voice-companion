@@ -1,5 +1,7 @@
 import { XIAOMAN_SYSTEM_PROMPT, type ChatMessage } from "@/lib/providers";
 import type { Classification, ConflictScene, ConflictState, RetrievedEpisode, StrategySelection } from "./types";
+import type { RelationshipSnapshot } from "@/src/relationship/types";
+import { retrieveSoothing } from "@/src/relationship/soothing-retriever";
 
 function formatEpisode(item: RetrievedEpisode) {
   const turns = item.episode.turns.slice(0, 6).map((turn) => `${turn.speaker === "A" ? "小满" : "伴侣"}：${turn.text}`).join("\n");
@@ -14,7 +16,7 @@ function emotionalDirection(intensity: ConflictState["conflictIntensity"], strat
   return "情绪有波动：保持自然口语，让用户听出小满在意这件事，而不是平铺直叙。";
 }
 
-export function buildConflictPrompt(input: { scene: ConflictScene; state: ConflictState; classification: Classification; strategy: StrategySelection; retrieved: RetrievedEpisode[]; history: ChatMessage[]; userMessage: string; characterGender?: "female" | "male"; characterName?: string }) {
+export function buildConflictPrompt(input: { scene: ConflictScene; state: ConflictState; classification: Classification; strategy: StrategySelection; retrieved: RetrievedEpisode[]; history: ChatMessage[]; userMessage: string; characterGender?: "female" | "male"; characterName?: string; relationship?: RelationshipSnapshot }) {
   const characterName = input.characterName || "小满";
   const baseSystemPrompt = (input.characterGender === "male"
     ? XIAOMAN_SYSTEM_PROMPT.replaceAll("小满", characterName).replace("一名32岁的中国女性", "一名成年中国男性")
@@ -31,8 +33,16 @@ ${characterName}当前状态：愤怒${input.state.anger}，受伤${input.state.
 `;
   const examples = input.retrieved.map(formatEpisode).join("\n\n");
   const recent = input.history.slice(-10).map((message) => `${message.role === "user" ? "用户" : characterName}：${message.content}`).join("\n");
+  const relationship = input.relationship;
+  const stateInstruction = relationship ? `
+【关系状态机】当前状态：${relationship.currentState}；上一状态：${relationship.previousState}；状态置信度：${relationship.stateConfidence.toFixed(2)}；已持续：${relationship.stateDuration}轮。
+用户状态：愤怒${relationship.userState.anger}、受伤${relationship.userState.hurt}、悲伤${relationship.userState.sadness}、焦虑${relationship.userState.anxiety}、攻击${relationship.userState.aggression}、撤退${relationship.userState.withdrawal}、开放${relationship.userState.openness}、痛苦${relationship.userState.distress}。
+用户意图：${relationship.userState.intent.join(", ")}；趋势：${relationship.userState.trend}。
+关系状态要求：${relationship.currentState === "DEESCALATE" ? "停止继续刺激，承认刚才上头，短句降温。" : relationship.currentState === "SOOTHE" ? "先接住人，不急着讲道理或解决问题。" : relationship.currentState === "REPAIR" ? "说清事实、真实感受、底层需要，再给一个小行动。" : relationship.currentState === "CLOSE" ? "自然回到生活，不要出现产品或训练口吻。" : "可以保留冲突张力，但观察用户是否受伤或撤退。"}
+${relationship.conflictLocked ? "本次会话已经触发过高风险，禁止重新进入高强度冲突。" : ""}` : "";
+  const soothing = relationship && relationship.currentState !== "CONFLICT" ? retrieveSoothing({ state: relationship.currentState, text: input.userMessage, limit: 3 }).map((item) => item.text).join("\n") : "";
   return {
-    systemPrompt: `${baseSystemPrompt}\n\n${internal}\n\n【相似冲突片段，仅学习节奏和策略，不得复制】\n${examples}`,
+    systemPrompt: `${baseSystemPrompt}\n\n${internal}\n${stateInstruction}\n${soothing ? `\n【${relationship?.currentState}语气参考，仅学习方向，不得照抄】\n${soothing}` : ""}\n\n【相似冲突片段，仅学习节奏和策略，不得复制】\n${examples}`,
     contextPrompt: `【最近对话】\n${recent || "暂无"}\n\n【用户本轮原话】\n${input.userMessage}`,
   };
 }

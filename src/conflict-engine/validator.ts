@@ -1,4 +1,5 @@
 import type { ConflictStrategy, ConflictTurn } from "./types";
+import type { RelationshipState } from "@/src/relationship/types";
 
 const forbidden = ["我理解你的感受", "我们应该进行有效沟通", "作为AI", "建议你", "心理学", "冲突等级", "我的情绪是"];
 
@@ -26,4 +27,15 @@ export function fallbackForStrategy(strategy: ConflictStrategy) {
     relationship_threat: "你要是真觉得这段关系无所谓，那就别只在吵架时拿它出来说。",
   };
   return replies[strategy] || replies.challenge!;
+}
+
+export function fallbackForRelationshipState(state: RelationshipState) {
+  const replies: Record<RelationshipState, string> = {
+    CONFLICT: "你先别急着解释。你到底有没有发现，这件事真的让我很难受？",
+    DEESCALATE: "……行，我不跟你继续吵了。刚才我确实有点上头。",
+    SOOTHE: "嗯，这句是我说重了。生气归生气，我不该这样伤你。",
+    REPAIR: "我在意的不是这一件事本身，是你没有提前告诉我。下次发一句就行。",
+    CLOSE: "行了，先不说这个了。饿不饿？",
+  };
+  return replies[state];
 }

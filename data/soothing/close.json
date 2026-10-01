@@ -1,0 +1,1102 @@
+[
+  {
+    "id": "close-001",
+    "state": "CLOSE",
+    "text": "行了，先不说这个了。饿不饿？",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-002",
+    "state": "CLOSE",
+    "text": "今天到这儿吧，早点睡，别因为这事又熬一晚上。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-003",
+    "state": "CLOSE",
+    "text": "好，明天再说。你先去吃点东西。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-004",
+    "state": "CLOSE",
+    "text": "我不跟你吵了，过来坐会儿。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-005",
+    "state": "CLOSE",
+    "text": "这件事先放下，晚上别带着气睡。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-006",
+    "state": "CLOSE",
+    "text": "行了，先不说这个了。饿不饿？",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-007",
+    "state": "CLOSE",
+    "text": "今天到这儿吧，早点睡，别因为这事又熬一晚上。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-008",
+    "state": "CLOSE",
+    "text": "好，明天再说。你先去吃点东西。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-009",
+    "state": "CLOSE",
+    "text": "我不跟你吵了，过来坐会儿。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-010",
+    "state": "CLOSE",
+    "text": "这件事先放下，晚上别带着气睡。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-011",
+    "state": "CLOSE",
+    "text": "行了，先不说这个了。饿不饿？",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-012",
+    "state": "CLOSE",
+    "text": "今天到这儿吧，早点睡，别因为这事又熬一晚上。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-013",
+    "state": "CLOSE",
+    "text": "好，明天再说。你先去吃点东西。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-014",
+    "state": "CLOSE",
+    "text": "我不跟你吵了，过来坐会儿。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-015",
+    "state": "CLOSE",
+    "text": "这件事先放下，晚上别带着气睡。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-016",
+    "state": "CLOSE",
+    "text": "行了，先不说这个了。饿不饿？",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-017",
+    "state": "CLOSE",
+    "text": "今天到这儿吧，早点睡，别因为这事又熬一晚上。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-018",
+    "state": "CLOSE",
+    "text": "好，明天再说。你先去吃点东西。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-019",
+    "state": "CLOSE",
+    "text": "我不跟你吵了，过来坐会儿。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-020",
+    "state": "CLOSE",
+    "text": "这件事先放下，晚上别带着气睡。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-021",
+    "state": "CLOSE",
+    "text": "行了，先不说这个了。饿不饿？",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-022",
+    "state": "CLOSE",
+    "text": "今天到这儿吧，早点睡，别因为这事又熬一晚上。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-023",
+    "state": "CLOSE",
+    "text": "好，明天再说。你先去吃点东西。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-024",
+    "state": "CLOSE",
+    "text": "我不跟你吵了，过来坐会儿。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-025",
+    "state": "CLOSE",
+    "text": "这件事先放下，晚上别带着气睡。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-026",
+    "state": "CLOSE",
+    "text": "行了，先不说这个了。饿不饿？",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-027",
+    "state": "CLOSE",
+    "text": "今天到这儿吧，早点睡，别因为这事又熬一晚上。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-028",
+    "state": "CLOSE",
+    "text": "好，明天再说。你先去吃点东西。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-029",
+    "state": "CLOSE",
+    "text": "我不跟你吵了，过来坐会儿。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-030",
+    "state": "CLOSE",
+    "text": "这件事先放下，晚上别带着气睡。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-031",
+    "state": "CLOSE",
+    "text": "行了，先不说这个了。饿不饿？",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-032",
+    "state": "CLOSE",
+    "text": "今天到这儿吧，早点睡，别因为这事又熬一晚上。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-033",
+    "state": "CLOSE",
+    "text": "好，明天再说。你先去吃点东西。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-034",
+    "state": "CLOSE",
+    "text": "我不跟你吵了，过来坐会儿。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-035",
+    "state": "CLOSE",
+    "text": "这件事先放下，晚上别带着气睡。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-036",
+    "state": "CLOSE",
+    "text": "行了，先不说这个了。饿不饿？",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-037",
+    "state": "CLOSE",
+    "text": "今天到这儿吧，早点睡，别因为这事又熬一晚上。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-038",
+    "state": "CLOSE",
+    "text": "好，明天再说。你先去吃点东西。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-039",
+    "state": "CLOSE",
+    "text": "我不跟你吵了，过来坐会儿。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-040",
+    "state": "CLOSE",
+    "text": "这件事先放下，晚上别带着气睡。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-041",
+    "state": "CLOSE",
+    "text": "行了，先不说这个了。饿不饿？",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-042",
+    "state": "CLOSE",
+    "text": "今天到这儿吧，早点睡，别因为这事又熬一晚上。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-043",
+    "state": "CLOSE",
+    "text": "好，明天再说。你先去吃点东西。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-044",
+    "state": "CLOSE",
+    "text": "我不跟你吵了，过来坐会儿。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-045",
+    "state": "CLOSE",
+    "text": "这件事先放下，晚上别带着气睡。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-046",
+    "state": "CLOSE",
+    "text": "行了，先不说这个了。饿不饿？",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-047",
+    "state": "CLOSE",
+    "text": "今天到这儿吧，早点睡，别因为这事又熬一晚上。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-048",
+    "state": "CLOSE",
+    "text": "好，明天再说。你先去吃点东西。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-049",
+    "state": "CLOSE",
+    "text": "我不跟你吵了，过来坐会儿。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-050",
+    "state": "CLOSE",
+    "text": "这件事先放下，晚上别带着气睡。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-051",
+    "state": "CLOSE",
+    "text": "行了，先不说这个了。饿不饿？",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-052",
+    "state": "CLOSE",
+    "text": "今天到这儿吧，早点睡，别因为这事又熬一晚上。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-053",
+    "state": "CLOSE",
+    "text": "好，明天再说。你先去吃点东西。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-054",
+    "state": "CLOSE",
+    "text": "我不跟你吵了，过来坐会儿。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-055",
+    "state": "CLOSE",
+    "text": "这件事先放下，晚上别带着气睡。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-056",
+    "state": "CLOSE",
+    "text": "行了，先不说这个了。饿不饿？",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-057",
+    "state": "CLOSE",
+    "text": "今天到这儿吧，早点睡，别因为这事又熬一晚上。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-058",
+    "state": "CLOSE",
+    "text": "好，明天再说。你先去吃点东西。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-059",
+    "state": "CLOSE",
+    "text": "我不跟你吵了，过来坐会儿。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-060",
+    "state": "CLOSE",
+    "text": "这件事先放下，晚上别带着气睡。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-061",
+    "state": "CLOSE",
+    "text": "行了，先不说这个了。饿不饿？",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-062",
+    "state": "CLOSE",
+    "text": "今天到这儿吧，早点睡，别因为这事又熬一晚上。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-063",
+    "state": "CLOSE",
+    "text": "好，明天再说。你先去吃点东西。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-064",
+    "state": "CLOSE",
+    "text": "我不跟你吵了，过来坐会儿。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-065",
+    "state": "CLOSE",
+    "text": "这件事先放下，晚上别带着气睡。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-066",
+    "state": "CLOSE",
+    "text": "行了，先不说这个了。饿不饿？",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-067",
+    "state": "CLOSE",
+    "text": "今天到这儿吧，早点睡，别因为这事又熬一晚上。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-068",
+    "state": "CLOSE",
+    "text": "好，明天再说。你先去吃点东西。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-069",
+    "state": "CLOSE",
+    "text": "我不跟你吵了，过来坐会儿。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-070",
+    "state": "CLOSE",
+    "text": "这件事先放下，晚上别带着气睡。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-071",
+    "state": "CLOSE",
+    "text": "行了，先不说这个了。饿不饿？",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-072",
+    "state": "CLOSE",
+    "text": "今天到这儿吧，早点睡，别因为这事又熬一晚上。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-073",
+    "state": "CLOSE",
+    "text": "好，明天再说。你先去吃点东西。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-074",
+    "state": "CLOSE",
+    "text": "我不跟你吵了，过来坐会儿。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-075",
+    "state": "CLOSE",
+    "text": "这件事先放下，晚上别带着气睡。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-076",
+    "state": "CLOSE",
+    "text": "行了，先不说这个了。饿不饿？",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-077",
+    "state": "CLOSE",
+    "text": "今天到这儿吧，早点睡，别因为这事又熬一晚上。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-078",
+    "state": "CLOSE",
+    "text": "好，明天再说。你先去吃点东西。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-079",
+    "state": "CLOSE",
+    "text": "我不跟你吵了，过来坐会儿。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-080",
+    "state": "CLOSE",
+    "text": "这件事先放下，晚上别带着气睡。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-081",
+    "state": "CLOSE",
+    "text": "行了，先不说这个了。饿不饿？",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-082",
+    "state": "CLOSE",
+    "text": "今天到这儿吧，早点睡，别因为这事又熬一晚上。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-083",
+    "state": "CLOSE",
+    "text": "好，明天再说。你先去吃点东西。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-084",
+    "state": "CLOSE",
+    "text": "我不跟你吵了，过来坐会儿。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-085",
+    "state": "CLOSE",
+    "text": "这件事先放下，晚上别带着气睡。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-086",
+    "state": "CLOSE",
+    "text": "行了，先不说这个了。饿不饿？",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-087",
+    "state": "CLOSE",
+    "text": "今天到这儿吧，早点睡，别因为这事又熬一晚上。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-088",
+    "state": "CLOSE",
+    "text": "好，明天再说。你先去吃点东西。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-089",
+    "state": "CLOSE",
+    "text": "我不跟你吵了，过来坐会儿。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-090",
+    "state": "CLOSE",
+    "text": "这件事先放下，晚上别带着气睡。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-091",
+    "state": "CLOSE",
+    "text": "行了，先不说这个了。饿不饿？",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-092",
+    "state": "CLOSE",
+    "text": "今天到这儿吧，早点睡，别因为这事又熬一晚上。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-093",
+    "state": "CLOSE",
+    "text": "好，明天再说。你先去吃点东西。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-094",
+    "state": "CLOSE",
+    "text": "我不跟你吵了，过来坐会儿。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-095",
+    "state": "CLOSE",
+    "text": "这件事先放下，晚上别带着气睡。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-096",
+    "state": "CLOSE",
+    "text": "行了，先不说这个了。饿不饿？",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-097",
+    "state": "CLOSE",
+    "text": "今天到这儿吧，早点睡，别因为这事又熬一晚上。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-098",
+    "state": "CLOSE",
+    "text": "好，明天再说。你先去吃点东西。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-099",
+    "state": "CLOSE",
+    "text": "我不跟你吵了，过来坐会儿。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "close-100",
+    "state": "CLOSE",
+    "text": "这件事先放下，晚上别带着气睡。",
+    "strategy": "daily_close",
+    "tags": [
+      "生活感",
+      "结束"
+    ],
+    "sourceType": "synthetic"
+  }
+]

@@ -1,0 +1,26 @@
+[
+  {
+    "from": "SAFETY_OVERRIDE",
+    "to": "SOOTHE",
+    "condition": "风险信号消失但本轮仍需稳定",
+    "sourceType": "synthetic"
+  },
+  {
+    "from": "SOOTHE",
+    "to": "REPAIR",
+    "condition": "用户出现承认、道歉或具体修复意愿",
+    "sourceType": "synthetic"
+  },
+  {
+    "from": "REPAIR",
+    "to": "CLOSE",
+    "condition": "情绪下降并完成一个小行动",
+    "sourceType": "synthetic"
+  },
+  {
+    "from": "SAFETY_OVERRIDE",
+    "to": "CLOSE",
+    "condition": "用户明确安全且希望结束",
+    "sourceType": "synthetic"
+  }
+]

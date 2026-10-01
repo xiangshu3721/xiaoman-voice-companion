@@ -1,0 +1,1652 @@
+[
+  {
+    "id": "soothe-001",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-002",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-003",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-004",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-005",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-006",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-007",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-008",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-009",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-010",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-011",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-012",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-013",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-014",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-015",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-016",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-017",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-018",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-019",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-020",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-021",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-022",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-023",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-024",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-025",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-026",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-027",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-028",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-029",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-030",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-031",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-032",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-033",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-034",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-035",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-036",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-037",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-038",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-039",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-040",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-041",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-042",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-043",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-044",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-045",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-046",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-047",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-048",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-049",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-050",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-051",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-052",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-053",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-054",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-055",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-056",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-057",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-058",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-059",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-060",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-061",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-062",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-063",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-064",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-065",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-066",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-067",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-068",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-069",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-070",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-071",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-072",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-073",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-074",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-075",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-076",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-077",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-078",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-079",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-080",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-081",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-082",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-083",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-084",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-085",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-086",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-087",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-088",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-089",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-090",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-091",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-092",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-093",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-094",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-095",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-096",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-097",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-098",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-099",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-100",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-101",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-102",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-103",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-104",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-105",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-106",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-107",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-108",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-109",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-110",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-111",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-112",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-113",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-114",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-115",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-116",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-117",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-118",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-119",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-120",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-121",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-122",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-123",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-124",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-125",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-126",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-127",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-128",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-129",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-130",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-131",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-132",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-133",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-134",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-135",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-136",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-137",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-138",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-139",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-140",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-141",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-142",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-143",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-144",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-145",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-146",
+    "state": "SOOTHE",
+    "text": "嗯，这句是我不对。生气归生气，我不该这样说你。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-147",
+    "state": "SOOTHE",
+    "text": "你不用硬撑，刚才那话确实挺伤人的，我收回来。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-148",
+    "state": "SOOTHE",
+    "text": "我知道你今天也累了，先别急着解释，我陪你缓一会儿。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-149",
+    "state": "SOOTHE",
+    "text": "我还在生气，但我没有想把你推开。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "soothe-150",
+    "state": "SOOTHE",
+    "text": "好，我先接住你，不急着把这件事说完。",
+    "strategy": "acknowledge_hurt",
+    "tags": [
+      "接住委屈",
+      "陪伴"
+    ],
+    "sourceType": "synthetic"
+  }
+]

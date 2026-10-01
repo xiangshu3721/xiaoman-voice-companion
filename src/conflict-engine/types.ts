@@ -144,4 +144,27 @@ export type DebugTrace = {
   selectedStrategy: StrategySelection;
   retrievedEpisodeIds: string[];
   validator: { valid: boolean; issues: string[] };
+  relationship?: {
+    currentState: string;
+    previousState: string;
+    stateConfidence: number;
+    stateDuration: number;
+    conflictLocked: boolean;
+    transitionReason: string;
+  };
+  safety?: { active: boolean; riskLevel: string; signals: string[]; confidence: number };
+  userState?: {
+    anger: number;
+    hurt: number;
+    sadness: number;
+    anxiety: number;
+    aggression: number;
+    withdrawal: number;
+    openness: number;
+    distress: number;
+    intent: string[];
+    trend: string;
+    voiceSignals: "UNAVAILABLE";
+    visualSignals: "UNAVAILABLE";
+  };
 };
