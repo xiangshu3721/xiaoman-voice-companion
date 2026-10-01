@@ -9,7 +9,7 @@ export const TTS_VOICE_STORAGE_KEY = "xiaoman-tts-voice";
 
 export type TTSRequest = {
   text: string;
-  emotion?: "neutral" | "sarcastic" | "annoyed" | "angry" | "hurt" | "cold" | "disappointed" | "calm";
+  emotion?: "neutral" | "sarcastic" | "annoyed" | "angry" | "hurt" | "cold" | "disappointed" | "calm" | "reflect";
   intensity?: number;
   speed?: number;
   volume?: number;
@@ -260,6 +260,7 @@ function browserEmotionProfile(emotion: NonNullable<TTSRequest["emotion"]>, inte
     cold: { rate: 0.9, pitch: 0.9, volume: 0.9 },
     disappointed: { rate: 0.86, pitch: 0.92, volume: 0.92 },
     calm: { rate: 0.96, pitch: 1.02, volume: 1 },
+    reflect: { rate: 0.88, pitch: 0.98, volume: 0.92 },
   }[emotion];
   return {
     rate: Math.max(0.5, Math.min(2, speed ?? profiles.rate + (profiles.rate - 0.96) * intensity * 0.25)),

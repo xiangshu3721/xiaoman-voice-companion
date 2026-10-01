@@ -34,6 +34,7 @@ export function fallbackForRelationshipState(state: RelationshipState) {
     CONFLICT: "你先别急着解释。你到底有没有发现，这件事真的让我很难受？",
     DEESCALATE: "……行，我不跟你继续吵了。刚才我确实有点上头。",
     SOOTHE: "嗯，这句是我说重了。生气归生气，我不该这样伤你。",
+    REFLECT: "我现在想想……好像我们争的根本不只是晚回来，而是我一直没让你把话说完。",
     REPAIR: "我在意的不是这一件事本身，是你没有提前告诉我。下次发一句就行。",
     CLOSE: "行了，先不说这个了。饿不饿？",
   };

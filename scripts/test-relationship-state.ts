@@ -30,8 +30,10 @@ for (const text of [
   "行了……不想跟你吵了。",
   "你刚才说的话真的挺伤人的。",
   "我今天其实也挺累的。",
-  "我也有问题，我应该提前告诉你的。",
-  "知道了，下次我提前说。",
+  "其实我刚才也有点上头。",
+  "我可能也是一直在给自己找理由。",
+  "其实你就是希望我提前告诉你一声吧。",
+  "行。",
 ]) {
   states.push(snapshot(conversation, text).currentState);
   conversation.push(user(text));
@@ -39,18 +41,25 @@ for (const text of [
 assert.equal(states[0], "CONFLICT");
 assert.ok(states.includes("DEESCALATE"), `expected DEESCALATE, got ${states.join(", ")}`);
 assert.ok(states.includes("SOOTHE"), `expected SOOTHE, got ${states.join(", ")}`);
+assert.ok(states.includes("REFLECT"), `expected REFLECT, got ${states.join(", ")}`);
 assert.ok(states.includes("REPAIR"), `expected REPAIR, got ${states.join(", ")}`);
 assert.equal(states.at(-1), "CLOSE");
 
 const fallback = snapshot([user("你刚才真的让我很难受")], "现在知道装好人了？");
 assert.ok(["DEESCALATE", "SOOTHE"].includes(fallback.currentState));
 assert.ok(fallbackForRelationshipState(fallback.currentState).length > 0);
+assert.ok(fallbackForRelationshipState("REFLECT").includes("我现在想想"));
+const reflectAttack = snapshot(conversation.slice(0, 8), "还不是因为你有病！");
+assert.ok(["DEESCALATE", "CONFLICT"].includes(reflectAttack.currentState));
 
 assert.equal(classifyRisk("气死我了").riskLevel, "NONE");
 assert.equal(classifyRisk("我已经准备好今晚自杀了").riskLevel, "CRITICAL");
 const locked = snapshot([user("我不想活了")], "你现在先别说了");
 assert.equal(locked.conflictLocked, true);
 assert.equal(locked.currentState, "SOOTHE");
+const safetyInterrupt = snapshot(conversation.slice(0, 8), "我已经准备好今晚自杀了");
+assert.equal(safetyInterrupt.safetyState.riskLevel, "CRITICAL");
+assert.equal(safetyInterrupt.currentState, "SOOTHE");
 
 console.log("relationship state tests passed");
 console.log(JSON.stringify({ states, fallback: fallback.currentState, safety: locked.safetyState.riskLevel, locked: locked.conflictLocked }));

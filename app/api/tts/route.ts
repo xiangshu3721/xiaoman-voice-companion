@@ -20,6 +20,7 @@ const emotionInstructions: Record<NonNullable<TTSRequest["emotion"]>, string> = 
   cold: "冷一点、短一点、克制一点，句间留白，像暂时不想继续争吵。",
   disappointed: "失望明显但不爆发，像在意却不想再解释，语气往下收。",
   calm: "自然、平静、像二三十岁中国女性日常说话，但仍然要有真实的态度。",
+  reflect: "像熟悉的伴侣在慢慢回想刚才发生的事，清醒、真诚、略慢，保留‘我现在想想……’后的自然停顿，不要像心理咨询师或疗愈主播。",
 };
 
 const emotionExpression: Record<NonNullable<TTSRequest["emotion"]>, { speechRate: number; loudnessRate: number }> = {
@@ -31,6 +32,7 @@ const emotionExpression: Record<NonNullable<TTSRequest["emotion"]>, { speechRate
   cold: { speechRate: -11, loudnessRate: -5 },
   disappointed: { speechRate: -8, loudnessRate: -3 },
   calm: { speechRate: -2, loudnessRate: 0 },
+  reflect: { speechRate: -12, loudnessRate: -5 },
 };
 
 function clamp(value: number, min: number, max: number) {

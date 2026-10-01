@@ -73,6 +73,7 @@ function debugForRelationship(relationship: ReturnType<typeof buildRelationshipS
       conflictLocked: relationship.conflictLocked,
       transitionReason: relationship.transitionReason,
     },
+    reflection: relationship.reflection,
     safety: relationship.safetyState,
     userState: {
       ...relationship.userState,

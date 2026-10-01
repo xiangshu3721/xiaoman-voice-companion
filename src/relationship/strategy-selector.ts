@@ -7,6 +7,7 @@ export function selectRelationshipStrategy(input: { snapshot: RelationshipSnapsh
   const state = input.snapshot.currentState;
   if (state === "DEESCALATE") return { primary: "softening", secondary: ["validation"], rationale: "降温：停止刺激并承认刚才上头" };
   if (state === "SOOTHE") return { primary: "validation", secondary: ["softening"], rationale: "安抚：先接住受伤，不急着解决" };
+  if (state === "REFLECT") return { primary: "validation", secondary: ["genuine_apology"], rationale: "反思：角色自己回看触发、反应和双方的影响" };
   if (state === "REPAIR") return { primary: "repair_attempt", secondary: ["genuine_apology", "validation"], rationale: "修复：事实、感受、需要和一个小行动" };
   if (state === "CLOSE") return { primary: "softening", secondary: ["humor_release"], rationale: "结束：回到生活，不制造产品感" };
   return selectResponseStrategy({ state: input.snapshot.conflictState, labels: input.labels, archetype });

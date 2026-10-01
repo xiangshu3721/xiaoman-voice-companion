@@ -152,6 +152,16 @@ export type DebugTrace = {
     conflictLocked: boolean;
     transitionReason: string;
   };
+  reflection?: {
+    insightDepth: 0 | 1 | 2 | 3;
+    mutualUnderstanding: number;
+    surfaceConflict?: string;
+    triggerIdentified?: string;
+    underlyingNeed?: string;
+    userContribution?: string;
+    characterContribution?: string;
+    interactionPattern?: string;
+  };
   safety?: { active: boolean; riskLevel: string; signals: string[]; confidence: number };
   userState?: {
     anger: number;

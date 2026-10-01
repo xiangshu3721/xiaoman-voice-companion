@@ -1,0 +1,92 @@
+[
+  {
+    "id": "pattern-001",
+    "text": "追问 → 防御 → 更强追问 → 敷衍 → 爆发",
+    "tags": [
+      "互动模式",
+      "关系循环"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "pattern-002",
+    "text": "表达不安 → 解释理由 → 把解释听成敷衍 → 继续争执",
+    "tags": [
+      "互动模式",
+      "关系循环"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "pattern-003",
+    "text": "一个人沉默 → 另一个人更焦虑 → 追问升级 → 两个人都想逃",
+    "tags": [
+      "互动模式",
+      "关系循环"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "pattern-004",
+    "text": "说重话 → 对方防御 → 自己更受伤 → 继续翻旧账",
+    "tags": [
+      "互动模式",
+      "关系循环"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "pattern-005",
+    "text": "想被在乎 → 用讽刺试探 → 对方听见指责 → 关系更远",
+    "tags": [
+      "互动模式",
+      "关系循环"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "pattern-006",
+    "text": "先道歉结束 → 真正需要没说 → 同一件事再次爆发",
+    "tags": [
+      "互动模式",
+      "关系循环"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "pattern-007",
+    "text": "只争表面事实 → 忽略被忽视的感受 → 谁也不觉得被理解",
+    "tags": [
+      "互动模式",
+      "关系循环"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "pattern-008",
+    "text": "一方想立刻解决 → 一方需要先缓缓 → 节奏不一致而升级",
+    "tags": [
+      "互动模式",
+      "关系循环"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "pattern-009",
+    "text": "解释太多 → 情绪被跳过 → 受伤的人开始攻击",
+    "tags": [
+      "互动模式",
+      "关系循环"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "pattern-010",
+    "text": "冷处理 → 猜测变多 → 重新见面时一次性爆发",
+    "tags": [
+      "互动模式",
+      "关系循环"
+    ],
+    "sourceType": "synthetic"
+  }
+]

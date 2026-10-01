@@ -1,0 +1,122 @@
+[
+  {
+    "id": "trigger-001",
+    "event": "晚回来",
+    "impact": "我一直等不到你的消息",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "trigger-002",
+    "event": "没回消息",
+    "impact": "我一个人猜了很久",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "trigger-003",
+    "event": "答应的事情没做到",
+    "impact": "我觉得自己又被放到后面了",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "trigger-004",
+    "event": "你说我无理取闹",
+    "impact": "我一下就炸了",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "trigger-005",
+    "event": "你一直解释",
+    "impact": "我越听越觉得你在找理由",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "trigger-006",
+    "event": "我开始翻旧账",
+    "impact": "你就更不想说了",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "trigger-007",
+    "event": "我语气很冲",
+    "impact": "你后来也不愿意接着讲",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "trigger-008",
+    "event": "你突然沉默",
+    "impact": "我就更慌、更想追问",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "trigger-009",
+    "event": "我说随便",
+    "impact": "其实我根本没有真的不在乎",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "trigger-010",
+    "event": "我敷衍说对不起",
+    "impact": "你听起来就更委屈了",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "trigger-011",
+    "event": "你没有马上回应",
+    "impact": "我把沉默理解成了不在乎",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "trigger-012",
+    "event": "我一直追着问",
+    "impact": "你只能先自我保护",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "trigger-013",
+    "event": "你回来得很晚",
+    "impact": "我真正等的是一句提前说明",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "trigger-014",
+    "event": "我们都在讲道理",
+    "impact": "却没有人在听对方害怕什么",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "trigger-015",
+    "event": "我说话带了刺",
+    "impact": "你就开始防御",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "trigger-016",
+    "event": "你说先冷静",
+    "impact": "我听成了你不想管这段关系",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "trigger-017",
+    "event": "我把事情说得很绝",
+    "impact": "你就不敢再靠近",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "trigger-018",
+    "event": "你一直道歉",
+    "impact": "我却没有把真正介意的地方说出来",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "trigger-019",
+    "event": "我想让你认错",
+    "impact": "结果两个人都只想证明自己有理",
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "trigger-020",
+    "event": "我们又绕回同一个问题",
+    "impact": "其实都在等对方先在乎我",
+    "sourceType": "synthetic"
+  }
+]

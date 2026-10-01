@@ -1,0 +1,92 @@
+[
+  {
+    "id": "need-001",
+    "text": "被重视、被提前告知",
+    "tags": [
+      "底层需要",
+      "关系期待"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "need-002",
+    "text": "被听见，而不是只被纠正",
+    "tags": [
+      "底层需要",
+      "关系期待"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "need-003",
+    "text": "确定自己在关系里不是可有可无",
+    "tags": [
+      "底层需要",
+      "关系期待"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "need-004",
+    "text": "被理解自己的等待和不安",
+    "tags": [
+      "底层需要",
+      "关系期待"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "need-005",
+    "text": "拥有可以放心表达的空间",
+    "tags": [
+      "底层需要",
+      "关系期待"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "need-006",
+    "text": "对方愿意把真实安排告诉自己",
+    "tags": [
+      "底层需要",
+      "关系期待"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "need-007",
+    "text": "争执时仍然觉得关系是安全的",
+    "tags": [
+      "底层需要",
+      "关系期待"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "need-008",
+    "text": "不用通过生气才能得到回应",
+    "tags": [
+      "底层需要",
+      "关系期待"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "need-009",
+    "text": "在受伤时先被接住",
+    "tags": [
+      "底层需要",
+      "关系期待"
+    ],
+    "sourceType": "synthetic"
+  },
+  {
+    "id": "need-010",
+    "text": "两个人都愿意承担自己的那一部分",
+    "tags": [
+      "底层需要",
+      "关系期待"
+    ],
+    "sourceType": "synthetic"
+  }
+]

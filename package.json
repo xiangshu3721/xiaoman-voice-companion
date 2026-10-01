@@ -16,6 +16,7 @@
     ,"conflicts:annotate": "tsx scripts/annotate-conflicts.ts"
     ,"conflicts:augment": "tsx scripts/augment-conflicts.ts"
     ,"test:relationship": "tsx scripts/test-relationship-state.ts"
+    ,"reflection:generate": "tsx scripts/generate-reflection-seed.ts"
   },
   "dependencies": {
     "next": "^15.5.9",
