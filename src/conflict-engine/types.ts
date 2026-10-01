@@ -55,7 +55,12 @@ export type ConflictStrategy =
   | "space"
   | "perspective_taking"
   | "ownership"
-  | "small_agreement";
+  | "small_agreement"
+  | "reluctant_acceptance"
+  | "soft_acknowledgement"
+  | "residual_hurt"
+  | "partial_acceptance"
+  | "light_teasing";
 
 export type BehaviorLabel = ConflictStrategy | "explanation" | "denial" | "acknowledgement" | "responsibility_acceptance" | "showing_vulnerability" | "pleasing" | "joking" | "problem_solving" | "silence";
 
@@ -190,6 +195,18 @@ export type DebugTrace = {
     interactionPattern?: string;
   };
   safety?: { active: boolean; riskLevel: string; signals: string[]; confidence: number };
+  repair?: {
+    detected: boolean;
+    type: string;
+    strength: number;
+    sincerity: number;
+    momentum: number;
+    attackMomentum: number;
+    userSoftening: number;
+    rejectionCount: number;
+    conflictBudget: number;
+    conflictPhase: string;
+  };
   userState?: {
     anger: number;
     hurt: number;

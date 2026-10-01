@@ -1,5 +1,6 @@
 import type { ConflictStrategy, ConflictTurn } from "./types";
 import type { RelationshipState } from "@/src/relationship/types";
+import type { RelationshipSnapshot } from "@/src/relationship/types";
 
 const forbidden = ["我理解你的感受", "我们应该进行有效沟通", "作为AI", "建议你", "心理学", "冲突等级", "我的情绪是"];
 
@@ -33,6 +34,15 @@ export function validateRepairResponse(reply: string): { valid: boolean; issues:
   return { valid: issues.length === 0, issues };
 }
 
+export function validateRepairBidResponse(reply: string, relationship: Pick<RelationshipSnapshot, "repairMomentum" | "attackMomentum" | "conflictPhase">): { valid: boolean; issues: string[] } {
+  const clean = reply.trim();
+  const issues: string[] = [];
+  const aggressive = /(傻逼|废物|有病|神经|滚|去死|你怎么又|你每次都|你到底|爱我就完了|满意了|翻旧账|分手|离婚)/;
+  if (relationship.repairMomentum >= 60 && relationship.attackMomentum < 35 && aggressive.test(clean)) issues.push("repair_bid_ignored");
+  if (relationship.repairMomentum >= 80 && relationship.conflictPhase !== "ESCALATING" && aggressive.test(clean)) issues.push("repair_momentum_requires_softening");
+  return { valid: issues.length === 0, issues };
+}
+
 export function fallbackForStrategy(strategy: ConflictStrategy) {
   const replies: Partial<Record<ConflictStrategy, string>> = {
     challenge: "你先别急着解释。你到底有没有发现，这件事真的让我很难受？",
@@ -40,6 +50,19 @@ export function fallbackForStrategy(strategy: ConflictStrategy) {
     validation: "你早一点把话说明白，我也不至于一个人猜到现在。",
     softening: "我听见了……但你别以为你说一句对不起，这件事就能当没发生。",
     repair_attempt: "那你准备怎么做？别只说一句会改，我要看你真的做什么。",
+    acknowledge_hurt: "我知道你在道歉，我刚才确实挺难受，先让我缓一下。",
+    relationship_reassurance: "我还在生气，但我没想把你推开。",
+    companionship: "行，先过来坐会儿。",
+    care: "先喝点水，别继续硬撑了。",
+    space: "你先缓会儿，我不追着问。",
+    perspective_taking: "我现在想想，刚才我也一直在逼你马上认错。",
+    ownership: "这句算我的，我刚才确实说重了。",
+    small_agreement: "那就先定一个小的：下次提前发一句。",
+    reluctant_acceptance: "……行，我听到了，但我还没完全消气。",
+    soft_acknowledgement: "好，我知道你是在认真道歉。",
+    residual_hurt: "我知道你不是故意的，但刚才那一下还是挺伤。",
+    partial_acceptance: "我先接受你这句，事情还得等我缓过来再说。",
+    light_teasing: "现在知道来哄我了？行吧。",
     counterattack: "你现在还要把问题推回我身上，是吧？每次都这样。",
     withdrawal: "算了……我现在真的不想再说了，再说下去也只会变成我在求你。",
     relationship_threat: "你要是真觉得这段关系无所谓，那就别只在吵架时拿它出来说。",

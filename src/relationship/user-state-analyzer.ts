@@ -26,12 +26,16 @@ const intentMap: Partial<Record<BehaviorLabel, UserIntent>> = {
 
 function textIntent(text: string): UserIntent[] {
   const intents: UserIntent[] = [];
+  if (/(对不起|抱歉|我错了|是我不对|刚才是我不好|刚刚有点情绪|跟你道歉|这次算我的)/.test(text)) intents.push("GENUINE_APOLOGY", "OWNERSHIP", "REPAIR_ATTEMPT");
+  if (/(我爱你|还是爱你的|我在乎你|别生气了嘛|宝宝别生气|老婆别生气|老公别生气)/.test(text)) intents.push("AFFECTION", "RELATIONSHIP_CONFIRMATION");
+  if (/(原谅我吧|别生我气了|别气了好不好|这次原谅我|给我一次机会)/.test(text)) intents.push("FORGIVENESS");
+  if (/(咱别吵了|不吵了好不好|和好吧|抱一下|过来抱抱|我其实也挺难受|我刚才就是害怕|不想我们变成这样)/.test(text)) intents.push("VULNERABILITY", "REPAIR_ATTEMPT");
   if (/[？?]|^(为什么|怎么|凭什么|然后呢|什么意思)/.test(text.trim())) intents.push("QUESTION");
   if (/(凭什么|你到底|你能不能|你还要|你是不是非要)/.test(text)) intents.push("CHALLENGE");
   if (/(哭|哭了|想哭|眼泪|崩溃)/.test(text)) intents.push("CRYING");
-  if (/(我也有问题|我应该|我承认|确实是我|我会改|以后提前|下次.*提前)/.test(text)) intents.push("REPAIR_ATTEMPT");
+  if (/(我也有问题|我应该|我承认|确实是我|我会改|以后提前|下次.*提前)/.test(text)) intents.push("REPAIR_ATTEMPT", "OWNERSHIP");
   if (/(谢谢你|抱歉|对不起|原谅我|我知道了)/.test(text)) intents.push("FORGIVENESS");
-  if (/(好了|没事了|睡觉吧|吃饭吧|行了|明天再说|拜拜|晚安|^行[。！!]*$)/.test(text)) intents.push("GOODBYE");
+  if (/(好了(?!吧)|没事了|睡觉吧|吃饭吧|行了(?!吧)|明天再说|拜拜|晚安|^行[。！!]*$)/.test(text)) intents.push("GOODBYE");
   if (/(不想跟你吵|不想再说|不想继续|不想聊了)/.test(text)) intents.push("SHUTDOWN");
   if (/(算了|随便|不说了|没意思|我累了)/.test(text)) intents.push("WITHDRAW");
   if (/(我很难受|我好委屈|我真的受伤|你这样让我|我只是想被|我其实很怕)/.test(text)) intents.push("HURT_DISCLOSURE");

@@ -27,6 +27,7 @@ type DebugInfo = {
   relationship?: { currentState: string; previousState: string; stateConfidence: number; stateDuration: number; conflictLocked: boolean; transitionReason: string };
   reflection?: { insightDepth: 0 | 1 | 2 | 3; mutualUnderstanding: number; surfaceConflict?: string; triggerIdentified?: string; underlyingNeed?: string; userContribution?: string; characterContribution?: string; interactionPattern?: string };
   safety?: { active: boolean; riskLevel: string; signals: string[]; confidence: number };
+  repair?: { detected: boolean; type: string; strength: number; sincerity: number; momentum: number; attackMomentum: number; userSoftening: number; rejectionCount: number; conflictBudget: number; conflictPhase: string };
   userState?: { anger: number; hurt: number; sadness: number; anxiety: number; aggression: number; withdrawal: number; openness: number; distress: number; intent: string[]; trend: string; voiceSignals: string; visualSignals: string };
 };
 
@@ -65,6 +66,12 @@ function Avatar({ small = false, gender = "female" }: { small?: boolean; gender?
 
 function Wave() {
   return <div className="wave flex h-8 items-center justify-center gap-1" aria-hidden="true"><span /><span /><span /><span /><span /></div>;
+}
+
+function RepairDebug({ debugInfo }: { debugInfo: DebugInfo | null }) {
+  if (!debugInfo?.repair) return null;
+  const repair = debugInfo.repair;
+  return <details open className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-xs text-[#b7adab]"><summary className="cursor-pointer text-[#e98972]">Repair Bid Debug</summary><div className="mt-3 grid gap-2 sm:grid-cols-2"><p>Repair Bid：{repair.detected ? "yes" : "no"}</p><p>Repair Type：{repair.type}</p><p>Repair Strength：{repair.strength.toFixed(2)}</p><p>Sincerity：{repair.sincerity.toFixed(2)}</p><p>Repair Momentum：{repair.momentum}</p><p>Attack Momentum：{repair.attackMomentum}</p><p>User Softening：{repair.userSoftening}</p><p>Repair Rejections：{repair.rejectionCount}</p><p>Conflict Budget：{repair.conflictBudget}</p><p>Conflict Phase：{repair.conflictPhase}</p></div></details>;
 }
 
 function VoiceSelector({ voices, selectedVoiceId, onChange }: { voices: VoiceOption[]; selectedVoiceId: string; onChange: (voiceId: string) => void }) {
@@ -402,6 +409,7 @@ export default function Home() {
           </div>
           {hasUserTurn && status !== "thinking" && <div className="mt-7 w-full max-w-xl"><button type="button" onClick={openReview} aria-expanded={reviewOpen} className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-[#1b1818] px-4 py-3 text-left transition hover:border-[#e98972]/40 hover:bg-[#211e1d] active:scale-[.99]"><span><span className="block text-sm text-[#f4efeb]">情绪复盘</span><span className="mt-1 block text-xs text-[#817876]">看看刚刚真正发生了什么</span></span><span className="text-lg text-[#e98972]">{reviewOpen ? "⌃" : "→"}</span></button>{reviewOpen && <EmotionReviewPanel review={review} turns={reviewTurns} question={reviewQuestion} loading={reviewLoading} error={reviewError} onQuestionChange={setReviewQuestion} onContinue={() => void requestReview(reviewQuestion)} onRetry={() => void requestReview()} onClose={() => setReviewOpen(false)} />}</div>}
         </section>
+        {debugEnabled && <RepairDebug debugInfo={debugInfo} />}
         <footer className="mt-8 flex flex-col items-center">
           {voiceInputSupported ? <>
             <button type="button" onClick={handleMic} aria-label={conversationActive ? "结束持续语音对话" : "开始持续语音对话"} className={`relative flex h-20 w-20 items-center justify-center rounded-full text-[#241615] shadow-2xl shadow-black/20 transition active:scale-[.96] ${conversationActive ? "breathing bg-[#f6a08b]" : "bg-[#e98972] hover:bg-[#f6a08b]"}`}><span className="mic-glyph" /></button>

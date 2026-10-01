@@ -6,7 +6,7 @@ import { buildConflictPrompt } from "@/src/conflict-engine/prompt-builder";
 import { retrieveSimilarEpisodes, resolveScene } from "@/src/conflict-engine/retriever";
 import { createInitialState, replayUserHistory, updateConflictState } from "@/src/conflict-engine/state";
 import { selectResponseStrategy } from "@/src/conflict-engine/strategy";
-import { fallbackForRelationshipState, fallbackForStrategy, validateReflectionResponse, validateRepairResponse, validateResponse } from "@/src/conflict-engine/validator";
+import { fallbackForRelationshipState, fallbackForStrategy, validateReflectionResponse, validateRepairResponse, validateRepairBidResponse, validateResponse } from "@/src/conflict-engine/validator";
 import type { ConflictState, DebugTrace } from "@/src/conflict-engine/types";
 import { runSafetyGate } from "@/src/safety/safety-gate";
 import { safetyResponse } from "@/src/safety/safety-response";
@@ -75,6 +75,18 @@ function debugForRelationship(relationship: ReturnType<typeof buildRelationshipS
     },
     reflection: relationship.reflection,
     safety: relationship.safetyState,
+    repair: {
+      detected: relationship.repairBid.detected,
+      type: relationship.repairBid.types.join(" + ") || "NONE",
+      strength: relationship.repairBid.strength,
+      sincerity: relationship.repairBid.sincerityConfidence,
+      momentum: relationship.repairMomentum,
+      attackMomentum: relationship.attackMomentum,
+      userSoftening: relationship.userSoftening,
+      rejectionCount: relationship.repairRejectionCount,
+      conflictBudget: relationship.conflictBudget,
+      conflictPhase: relationship.conflictPhase,
+    },
     userState: {
       ...relationship.userState,
       intent: relationship.userState.intent,
@@ -82,6 +94,14 @@ function debugForRelationship(relationship: ReturnType<typeof buildRelationshipS
       visualSignals: "UNAVAILABLE",
     },
   };
+}
+
+function validateGeneratedReply(reply: string, relationship: ReturnType<typeof buildRelationshipSnapshot>, history: ChatMessage[], strategy: ReturnType<typeof selectResponseStrategy>) {
+  const base = validateResponse(reply, history, strategy.primary);
+  const reflection = relationship.currentState === "REFLECT" ? validateReflectionResponse(reply) : { valid: true, issues: [] as string[] };
+  const repair = relationship.currentState === "REPAIR" ? validateRepairResponse(reply) : { valid: true, issues: [] as string[] };
+  const bid = validateRepairBidResponse(reply, relationship);
+  return { valid: base.valid && reflection.valid && repair.valid && bid.valid, issues: [...base.issues, ...reflection.issues, ...repair.issues, ...bid.issues] };
 }
 
 async function callDeepSeek(apiKey: string, prompt: ReturnType<typeof buildConflictPrompt>, history: ChatMessage[], userMessage: string) {
@@ -151,16 +171,11 @@ export async function POST(request: Request) {
       reply = relationship.currentState === "CONFLICT" ? mockReply(strategy, userMessage, history) : fallbackForRelationshipState(relationship.currentState);
     } else {
       reply = await callDeepSeek(apiKey, prompt, history, userMessage);
-      validation = validateResponse(reply, history, strategy.primary);
-      const reflectionValidation = relationship.currentState === "REFLECT" ? validateReflectionResponse(reply) : { valid: true, issues: [] as string[] };
-      const repairValidation = relationship.currentState === "REPAIR" ? validateRepairResponse(reply) : { valid: true, issues: [] as string[] };
-      if (!validation.valid || !reflectionValidation.valid || !repairValidation.valid) {
+      validation = validateGeneratedReply(reply, relationship, history, strategy);
+      if (!validation.valid) {
         const retryPrompt = { ...prompt, systemPrompt: `${prompt.systemPrompt}\n\n上一次草稿不合格。请删除助手式表达，只返回更短、更像当前角色本人说的话。` };
         reply = await callDeepSeek(apiKey, retryPrompt, history, userMessage);
-        const retryValidation = validateResponse(reply, history, strategy.primary);
-        const retryReflectionValidation = relationship.currentState === "REFLECT" ? validateReflectionResponse(reply) : { valid: true, issues: [] as string[] };
-        const retryRepairValidation = relationship.currentState === "REPAIR" ? validateRepairResponse(reply) : { valid: true, issues: [] as string[] };
-        validation = { valid: retryValidation.valid && retryReflectionValidation.valid && retryRepairValidation.valid, issues: [...retryValidation.issues, ...retryReflectionValidation.issues, ...retryRepairValidation.issues] };
+        validation = validateGeneratedReply(reply, relationship, history, strategy);
       }
       mode = "deepseek";
     }
@@ -171,9 +186,8 @@ export async function POST(request: Request) {
     validation = validateResponse(reply, history, strategy.primary);
   }
 
-  const finalReflectionValidation = relationship.currentState === "REFLECT" ? validateReflectionResponse(reply) : { valid: true, issues: [] as string[] };
-  const finalRepairValidation = relationship.currentState === "REPAIR" ? validateRepairResponse(reply) : { valid: true, issues: [] as string[] };
-  if (!reply || !validateResponse(reply, history, strategy.primary).valid || !finalReflectionValidation.valid || !finalRepairValidation.valid) {
+  const finalValidation = validateGeneratedReply(reply, relationship, history, strategy);
+  if (!reply || !finalValidation.valid) {
     reply = relationship.currentState === "CONFLICT" ? fallbackForStrategy(strategy.primary) : fallbackForRelationshipState(relationship.currentState);
     mode = mode === "deepseek" ? "fallback" : mode;
     validation = { valid: true, issues: [] };

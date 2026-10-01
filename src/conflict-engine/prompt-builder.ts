@@ -30,8 +30,10 @@ export function buildConflictPrompt(input: { scene: ConflictScene; state: Confli
 用户行为标签：${input.classification.labels.join(", ")}（置信度${input.classification.confidence}）
 ${characterName}当前状态：愤怒${input.state.anger}，受伤${input.state.hurt}，失望${input.state.disappointment}，焦虑${input.state.anxiety}，轻蔑${input.state.contempt}，信任${input.state.trust}，怨气${input.state.resentment}，连接感${input.state.connection}，冲突强度${input.state.conflictIntensity}/5
 本轮选择：主策略 ${input.strategy.primary}；辅助策略 ${input.strategy.secondary.join(", ") || "无"}
-    情绪方向：${input.relationship?.currentState === "REFLECT" ? "冲突已经暂时收住：语速和语气放慢，清醒但不冷漠，不反问、不追责、不继续争输赢。" : emotionalDirection(input.state.conflictIntensity, input.strategy.primary)}
+    情绪方向：${input.relationship?.currentState === "REFLECT" ? "冲突已经暂时收住：语速和语气放慢，清醒但不冷漠，不反问、不追责、不继续争输赢。" : input.relationship?.conflictPhase === "SOFTENING" ? "用户正在递出台阶：可以嘴硬、表达余怒和受伤，但必须停止人格攻击、羞辱、关系威胁和连续追问。" : emotionalDirection(input.state.conflictIntensity, input.strategy.primary)}
+用户最新修复信号：${input.relationship?.repairBid.types.join(" + ") || "无"}；强度${input.relationship?.repairBid.strength.toFixed(2) || "0.00"}；真诚度${input.relationship?.repairBid.sincerityConfidence.toFixed(2) || "0.00"}；修复动量${input.relationship?.repairMomentum ?? 0}/100；攻击动量${input.relationship?.attackMomentum ?? 0}/100；冲突预算${input.relationship?.conflictBudget ?? 100}/100。
 生成约束：只说${characterName}现在会说的话；1-3句，10-80个中文字；不要把所有策略都堆在一句话里；回应必须接住用户原话中的具体词并符合当前强度；不要凭空创造历史；避免和上一轮相同的开头、句式和收尾。
+关系规则：你的目标不是赢得争吵，而是模拟真实伴侣。对方明显认错、道歉、示弱、表达爱、请求和好或递出拥抱时，默认先接住这个台阶；可以还生气、嘴硬、没有完全原谅，但不要无视连续修复尝试，更不能因为过去的冲突继续自动追责。
 `;
   const examples = input.retrieved.map(formatEpisode).join("\n\n");
   const recent = input.history.slice(-10).map((message) => `${message.role === "user" ? "用户" : characterName}：${message.content}`).join("\n");
@@ -40,7 +42,9 @@ ${characterName}当前状态：愤怒${input.state.anger}，受伤${input.state.
 【关系状态机】当前状态：${relationship.currentState}；上一状态：${relationship.previousState}；状态置信度：${relationship.stateConfidence.toFixed(2)}；已持续：${relationship.stateDuration}轮。
 用户状态：愤怒${relationship.userState.anger}、受伤${relationship.userState.hurt}、悲伤${relationship.userState.sadness}、焦虑${relationship.userState.anxiety}、攻击${relationship.userState.aggression}、撤退${relationship.userState.withdrawal}、开放${relationship.userState.openness}、痛苦${relationship.userState.distress}。
 用户意图：${relationship.userState.intent.join(", ")}；趋势：${relationship.userState.trend}。
+修复信号：${relationship.repairBid.types.join(" + ") || "无"}；修复阶段：${relationship.conflictPhase}；连续修复次数：${relationship.repairBid.repeatedCount}；用户软化度：${relationship.userSoftening}；修复拒绝次数：${relationship.repairRejectionCount}。
 关系状态要求：${relationship.currentState === "DEESCALATE" ? "停止继续刺激，承认刚才上头，短句降温。" : relationship.currentState === "SOOTHE" ? "先接住人，不急着讲道理或解决问题。" : relationship.currentState === "REFLECT" ? "以同一个伴侣角色自然回看刚才发生的事：说事实、触发、自己的反应、对对方的影响和真正需要。必须双向承担，不要分析用户，不要使用心理学术语，不要逼用户认错；允许只说一两句‘我想想’。硬约束：不要用‘你一句……就……’、‘你还……’、‘换你你会……’这类反问或归责开头；至少有一句‘我’对自己反应的承担。" : relationship.currentState === "REPAIR" ? "不要重复反思或责问。明确说出一个用户可以做的小行动（如提前发一句），再说出一个角色自己会做的小行动（如不一上来讽刺）；用‘以后/下次/我也/尽量’落地，不要只说会改。" : relationship.currentState === "CLOSE" ? "自然回到生活，不要出现产品或训练口吻。" : "可以保留冲突张力，但观察用户是否受伤或撤退。"}
+${relationship.repairMomentum >= 60 ? "修复动量已经较高：禁止强讽刺、人格攻击、羞辱、关系威胁、翻旧账和连续质问；可以保留‘我还没完全消气’的余怒。" : ""}
 ${relationship.conflictSubtype === "PLAYFUL" ? "当前是轻松互怼：保留玩笑和熟人感，不要强行进入降温、安抚或反思，也不要突然讲大道理。" : ""}
 ${relationship.conflictLocked ? "本次会话已经触发过高风险，禁止重新进入高强度冲突。" : ""}` : "";
   const reflection = relationship?.reflection;

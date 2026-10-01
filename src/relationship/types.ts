@@ -1,5 +1,6 @@
 import type { BehaviorLabel, ConflictState } from "@/src/conflict-engine/types";
 import type { SafetyState } from "@/src/safety/types";
+import type { RepairBid } from "./repair-bid-detector";
 
 export type RelationshipState = "CONFLICT" | "DEESCALATE" | "SOOTHE" | "REFLECT" | "REPAIR" | "CLOSE";
 
@@ -9,7 +10,7 @@ export type UserIntent =
   | "SADNESS_DISCLOSURE" | "VULNERABILITY" | "CRYING" | "GENUINE_APOLOGY"
   | "PERFUNCTORY_APOLOGY" | "ACKNOWLEDGEMENT" | "VALIDATION" | "REPAIR_ATTEMPT"
   | "AFFECTION" | "HUMOR" | "FORGIVENESS" | "NORMALIZATION" | "GOODBYE"
-  | "QUESTION" | "CHALLENGE"
+  | "QUESTION" | "CHALLENGE" | "RELATIONSHIP_CONFIRMATION"
   | "SELF_REFLECTION" | "RELATIONSHIP_REFLECTION" | "CURIOSITY" | "OWNERSHIP"
   | "PATTERN_RECOGNITION" | "ROOT_CAUSE_EXPLORATION" | "PERSPECTIVE_TAKING"
   | "SELF_HARM_SIGNAL" | "SUICIDAL_SIGNAL" | "HARM_OTHER_SIGNAL" | "SEVERE_DISTRESS"
@@ -82,6 +83,13 @@ export interface RelationshipSnapshot {
   transitionReason: string;
   stateHistory: RelationshipState[];
   conflictSubtype?: "SERIOUS" | "PLAYFUL";
+  repairBid: RepairBid;
+  repairMomentum: number;
+  attackMomentum: number;
+  userSoftening: number;
+  repairRejectionCount: number;
+  conflictBudget: number;
+  conflictPhase: "ESCALATING" | "ACTIVE" | "SOFTENING";
 }
 
 export type SoothingState = Exclude<RelationshipState, "CONFLICT" | "REFLECT">;
