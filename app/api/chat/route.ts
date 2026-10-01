@@ -171,9 +171,12 @@ export async function POST(request: Request) {
     validation = validateResponse(reply, history, strategy.primary);
   }
 
-  if (!reply || !validateResponse(reply, history, strategy.primary).valid) {
+  const finalReflectionValidation = relationship.currentState === "REFLECT" ? validateReflectionResponse(reply) : { valid: true, issues: [] as string[] };
+  const finalRepairValidation = relationship.currentState === "REPAIR" ? validateRepairResponse(reply) : { valid: true, issues: [] as string[] };
+  if (!reply || !validateResponse(reply, history, strategy.primary).valid || !finalReflectionValidation.valid || !finalRepairValidation.valid) {
     reply = relationship.currentState === "CONFLICT" ? fallbackForStrategy(strategy.primary) : fallbackForRelationshipState(relationship.currentState);
     mode = mode === "deepseek" ? "fallback" : mode;
+    validation = { valid: true, issues: [] };
   }
 
   const debug = debugForRelationship(relationship, classification, strategy, validation);

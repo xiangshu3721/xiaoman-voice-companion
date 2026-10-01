@@ -28,7 +28,7 @@ export function validateRepairResponse(reply: string): { valid: boolean; issues:
   const clean = reply.trim();
   const issues: string[] = [];
   if (!/(以后|下次|可以|提前|发一句|我会|我也|尽量)/.test(clean)) issues.push("repair_missing_small_agreement");
-  if (/现在才明白|你至于|你怎么|你早说/.test(clean)) issues.push("repair_turns_into_blame");
+  if (/现在才明白|现在才问到|你至于|你怎么|你早说/.test(clean)) issues.push("repair_turns_into_blame");
   return { valid: issues.length === 0, issues };
 }
 
