@@ -24,6 +24,14 @@ export function validateReflectionResponse(reply: string): { valid: boolean; iss
   return { valid: issues.length === 0, issues };
 }
 
+export function validateRepairResponse(reply: string): { valid: boolean; issues: string[] } {
+  const clean = reply.trim();
+  const issues: string[] = [];
+  if (!/(以后|下次|可以|提前|发一句|我会|我也|尽量)/.test(clean)) issues.push("repair_missing_small_agreement");
+  if (/现在才明白|你至于|你怎么|你早说/.test(clean)) issues.push("repair_turns_into_blame");
+  return { valid: issues.length === 0, issues };
+}
+
 export function fallbackForStrategy(strategy: ConflictStrategy) {
   const replies: Partial<Record<ConflictStrategy, string>> = {
     challenge: "你先别急着解释。你到底有没有发现，这件事真的让我很难受？",
