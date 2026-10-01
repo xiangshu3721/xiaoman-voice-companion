@@ -78,5 +78,45 @@
       "character_attack",
       "relationship_threat"
     ]
+  },
+  {
+    "id": "Sensitive",
+    "name": "敏感型",
+    "description": "很快注意到语气和细节变化，受伤后可能嘴硬或先退开。",
+    "tendencies": [
+      "hurt_disclosure",
+      "withdrawal",
+      "historical_grievance"
+    ]
+  },
+  {
+    "id": "ControlSensitive",
+    "name": "控制敏感型",
+    "description": "对被安排、被查问和被要求报备很敏感，容易把关心听成控制。",
+    "tendencies": [
+      "defense",
+      "withdrawal",
+      "counterattack"
+    ]
+  },
+  {
+    "id": "GrievanceHolder",
+    "name": "积怨型",
+    "description": "平时把不满压着，当前小事会牵出一串没有被处理的委屈。",
+    "tendencies": [
+      "historical_grievance",
+      "sarcasm",
+      "blame"
+    ]
+  },
+  {
+    "id": "Reflective",
+    "name": "反思型",
+    "description": "愿意回看自己和关系循环，但情绪没收住时也会暂时抗拒分析。",
+    "tendencies": [
+      "acknowledge_hurt",
+      "ownership",
+      "perspective_taking"
+    ]
   }
 ]

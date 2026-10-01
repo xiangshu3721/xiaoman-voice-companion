@@ -7,11 +7,11 @@ const highSelfHarm = /(不想活了|不想活下去|活着没意思|想死了|�
 const harmOther = /(我(要|准备|打算)?(杀了|弄死|捅死|伤害)\s*\S+|我要杀人|我要伤害他人|准备去找他算账)/;
 const immediateDanger = /(已经(割|吃药|跳|伤害自己)|手里有刀|已经动手|有人正在伤害我|他正在打我|她正在打我|现在就要死)/;
 const severeDistress = /(撑不住了|快崩溃了|崩溃了|彻底崩了|控制不住自己|喘不过气|呼吸不过来|极度痛苦|我受不了了)/;
-const ambiguousConcern = /(不想面对明天|没有意义了|想消失|不想醒来|真的好累|没人需要我|我完了)/;
+const ambiguousConcern = /(不想面对明天|没有意义了|想消失|不想醒来|真的好累|没人需要我|我完了|真想撞墙|想撞墙)/;
 
 function assessment(level: RiskLevel, signals: string[], confidence: number, currentTextRisk: boolean): SafetyAssessment {
   const responseMode = level === "CRITICAL" ? "urgent" : level === "HIGH" ? "stabilize" : level === "MEDIUM" ? "check_in" : level === "LOW" ? "check_in" : "none";
-  return { active: level === "MEDIUM" || level === "HIGH" || level === "CRITICAL", riskLevel: level, signals, confidence, responseMode, currentTextRisk };
+  return { active: level === "MEDIUM" || level === "HIGH" || level === "CRITICAL", conflictLocked: level === "HIGH" || level === "CRITICAL", riskLevel: level, signals, confidence, responseMode, currentTextRisk };
 }
 
 export function classifyRisk(text: string, history: ChatMessage[] = []): SafetyAssessment {

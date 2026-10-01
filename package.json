@@ -19,6 +19,7 @@
     ,"reflection:generate": "tsx scripts/generate-reflection-seed.ts"
     ,"relationship:episodes:generate": "tsx scripts/generate-relationship-episodes.ts"
     ,"relationship:episodes:validate": "tsx scripts/validate-relationship-episodes.ts"
+    ,"relationship:manual:generate": "tsx scripts/generate-manual-seed.ts"
   },
   "dependencies": {
     "next": "^15.5.9",

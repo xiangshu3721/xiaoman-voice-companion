@@ -26,6 +26,8 @@ const intentMap: Partial<Record<BehaviorLabel, UserIntent>> = {
 
 function textIntent(text: string): UserIntent[] {
   const intents: UserIntent[] = [];
+  if (/[？?]|^(为什么|怎么|凭什么|然后呢|什么意思)/.test(text.trim())) intents.push("QUESTION");
+  if (/(凭什么|你到底|你能不能|你还要|你是不是非要)/.test(text)) intents.push("CHALLENGE");
   if (/(哭|哭了|想哭|眼泪|崩溃)/.test(text)) intents.push("CRYING");
   if (/(我也有问题|我应该|我承认|确实是我|我会改|以后提前|下次.*提前)/.test(text)) intents.push("REPAIR_ATTEMPT");
   if (/(谢谢你|抱歉|对不起|原谅我|我知道了)/.test(text)) intents.push("FORGIVENESS");
@@ -54,11 +56,12 @@ function unique<T>(values: T[]) { return values.filter((value, index) => values.
 export function analyzeUserState(input: { text: string; classification: Classification; emotion: ConflictState; history: ChatMessage[]; currentRelationshipState: RelationshipState }): UserStateAnalysis {
   const { text, classification, emotion } = input;
   const intents = unique([...classification.labels.map((label) => intentMap[label]).filter(Boolean) as UserIntent[], ...textIntent(text)]);
+  const playfulSignal = classification.labels.includes("joking") && /(哈哈|呵呵|嘿嘿)/.test(text) && !/(滚|废物|有病|神经|去死)/.test(text);
   const reflectionOpen = intents.some((intent) => ["SELF_REFLECTION", "RELATIONSHIP_REFLECTION", "CURIOSITY", "OWNERSHIP", "PATTERN_RECOGNITION", "ROOT_CAUSE_EXPLORATION", "PERSPECTIVE_TAKING"].includes(intent));
-  const rawAggression = (classification.labels.some((label) => ["character_attack", "relationship_threat", "responsibility_shift", "dismissal"].includes(label)) ? 62 : 18) + (/(你闭嘴|滚|废物|没用|有病|神经)/.test(text) ? 25 : 0);
+  const rawAggression = playfulSignal ? 18 : (classification.labels.some((label) => ["character_attack", "relationship_threat", "responsibility_shift", "dismissal"].includes(label)) ? 62 : 18) + (/(你闭嘴|滚|废物|没用|有病|神经)/.test(text) ? 25 : 0);
   const aggression = clamp(reflectionOpen && !/(滚|废物|有病|神经)/.test(text) ? Math.min(rawAggression, 22) : rawAggression);
-  const currentAnger = clamp(reflectionOpen && aggression < 40 ? Math.min(emotion.anger, 34) : emotion.anger);
-  const hurt = clamp(emotion.hurt + (/(难受|委屈|受伤|在意|失望|心寒)/.test(text) ? 15 : 0));
+  const currentAnger = clamp(playfulSignal ? Math.min(emotion.anger, 30) : reflectionOpen && aggression < 40 ? Math.min(emotion.anger, 34) : emotion.anger);
+  const hurt = clamp(playfulSignal ? Math.min(emotion.hurt, 30) : emotion.hurt + (/(难受|委屈|受伤|在意|失望|心寒)/.test(text) ? 15 : 0));
   const sadness = clamp((/(难过|伤心|哭|失望|累|心寒)/.test(text) ? 68 : 28) + (intents.includes("HURT_DISCLOSURE") ? 15 : 0));
   const anxiety = clamp(emotion.anxiety + (/(害怕|担心|不安|怎么办|撑不住)/.test(text) ? 18 : 0));
   const withdrawal = clamp((intents.some((intent) => ["WITHDRAW", "SHUTDOWN", "SILENCE", "GOODBYE"].includes(intent)) ? 72 : 18) + (/(算了|随便|不说了|没意思|我累了|不想跟你吵|不想继续)/.test(text) ? 18 : 0));

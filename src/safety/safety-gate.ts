@@ -15,6 +15,7 @@ export function runSafetyGate(input: { text: string; history: ChatMessage[]; pre
 export function safetyStateFromAssessment(assessment: SafetyAssessment): SafetyState {
   return {
     active: assessment.active,
+    conflictLocked: assessment.conflictLocked,
     riskLevel: assessment.riskLevel,
     signals: assessment.signals,
     confidence: assessment.confidence,

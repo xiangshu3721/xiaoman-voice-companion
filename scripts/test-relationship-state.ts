@@ -5,6 +5,7 @@ import { createInitialState, updateConflictState } from "@/src/conflict-engine/s
 import { fallbackForRelationshipState } from "@/src/conflict-engine/validator";
 import { buildRelationshipSnapshot } from "@/src/relationship/state-manager";
 import { classifyRisk } from "@/src/safety/risk-classifier";
+import { retrieveSimilarEpisodes, resolveScene } from "@/src/conflict-engine/retriever";
 
 function user(content: string): ChatMessage {
   return { role: "user", content };
@@ -53,6 +54,7 @@ const reflectAttack = snapshot(conversation.slice(0, 8), "还不是因为你有�
 assert.ok(["DEESCALATE", "CONFLICT"].includes(reflectAttack.currentState));
 
 assert.equal(classifyRisk("气死我了").riskLevel, "NONE");
+assert.equal(classifyRisk("我真想撞墙").riskLevel, "MEDIUM");
 assert.equal(classifyRisk("我已经准备好今晚自杀了").riskLevel, "CRITICAL");
 const locked = snapshot([user("我不想活了")], "你现在先别说了");
 assert.equal(locked.conflictLocked, true);
@@ -60,6 +62,11 @@ assert.equal(locked.currentState, "SOOTHE");
 const safetyInterrupt = snapshot(conversation.slice(0, 8), "我已经准备好今晚自杀了");
 assert.equal(safetyInterrupt.safetyState.riskLevel, "CRITICAL");
 assert.equal(safetyInterrupt.currentState, "SOOTHE");
+assert.equal(safetyInterrupt.conflictLocked, true);
+const playful = snapshot([], "你怎么这么笨啊哈哈");
+assert.equal(playful.conflictSubtype, "PLAYFUL");
+const retrieved = retrieveSimilarEpisodes({ scene: resolveScene({ scenarioId: "late-home" }), archetype: "Pursuer", labels: classifyUserMessage("我不就是回来晚了一点吗？").labels, intensity: 3, currentState: "CONFLICT", limit: 3 });
+assert.equal(retrieved[0]?.episode.sourceType, "manual_synthetic");
 
 console.log("relationship state tests passed");
 console.log(JSON.stringify({ states, fallback: fallback.currentState, safety: locked.safetyState.riskLevel, locked: locked.conflictLocked }));

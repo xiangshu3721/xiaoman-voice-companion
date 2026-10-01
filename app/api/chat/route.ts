@@ -118,7 +118,7 @@ export async function POST(request: Request) {
   const history = removeDuplicatedCurrentTurn(fullHistory, userMessage);
   const classification = classifyUserMessage(userMessage);
   const earlySafety = runSafetyGate({ text: userMessage, history });
-  if (earlySafety.active) {
+  if (earlySafety.riskLevel === "HIGH" || earlySafety.riskLevel === "CRITICAL") {
     const safeState = createInitialState();
     const relationship = buildRelationshipSnapshot({ history, userMessage, classification, conflictState: safeState });
     const safeStrategy = { primary: "softening" as const, secondary: ["validation" as const], rationale: "Safety Override：停止刺激性策略" };
@@ -137,7 +137,7 @@ export async function POST(request: Request) {
   relationship.conflictState = effectiveState;
   const strategy = selectRelationshipStrategy({ snapshot: relationship, labels: classification.labels, archetype: "Pursuer" });
   const voice = relationship.currentState === "CONFLICT" ? voiceCue(strategy, effectiveState) : ttsForRelationship(relationship);
-  const retrieved = retrieveSimilarEpisodes({ scene, archetype: "Pursuer", labels: classification.labels, intensity: state.conflictIntensity, limit: 3 });
+  const retrieved = retrieveSimilarEpisodes({ scene, archetype: "Pursuer", labels: classification.labels, intensity: state.conflictIntensity, currentState: relationship.currentState, intent: relationship.userState.intent, interactionPattern: relationship.reflection.interactionPattern, limit: 3 });
   const characterGender = body.characterGender === "male" ? "male" : "female";
   const characterName = characterGender === "male" ? "死鬼" : "臭娘们";
   const prompt = buildConflictPrompt({ scene, state: effectiveState, classification, strategy, retrieved, history, userMessage, characterGender, characterName, relationship });

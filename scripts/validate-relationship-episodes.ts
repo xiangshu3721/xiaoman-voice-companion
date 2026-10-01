@@ -5,6 +5,8 @@ type Episode = Record<string, unknown> & { turns?: unknown[]; qualityScore?: num
 const root = join(process.cwd(), "data", "conflicts");
 const expanded = JSON.parse(readFileSync(join(root, "episodes-v11.json"), "utf8")) as Episode[];
 const base = JSON.parse(readFileSync(join(root, "episodes.json"), "utf8")) as Episode[];
+const manualRoot = join(process.cwd(), "data", "manual-seed");
+const manual = JSON.parse(readFileSync(join(manualRoot, "manual-episodes.json"), "utf8")) as Episode[];
 const errors: string[] = [];
 const states = new Set(["CONFLICT", "DEESCALATE", "SOOTHE", "REFLECT", "REPAIR", "CLOSE"]);
 const required = ["scene", "relationshipBackground", "personAArchetype", "personBArchetype", "currentState", "previousState", "turns", "userIntent", "aiStrategy", "emotionBefore", "emotionAfter", "stateTransition", "transitionReason", "surfaceConflict", "underlyingNeed", "interactionPattern"];
@@ -13,8 +15,9 @@ const colloquial = /(行|哦|然后呢|你又来了|算了|随便|不是|我没�
 if (expanded.length < 400) errors.push(`expanded episodes=${expanded.length}, expected at least 400`);
 const turnCount = expanded.reduce((sum, episode) => sum + (episode.turns?.length || 0), 0);
 if (turnCount < 2500) errors.push(`expanded turns=${turnCount}, expected at least 2500`);
-if (base.length + expanded.length < 500) errors.push(`library episodes=${base.length + expanded.length}, expected at least 500`);
-if (base.reduce((sum, episode) => sum + (episode.turns?.length || 0), 0) + turnCount < 2500) errors.push("library turns below 2500");
+if (base.length + expanded.length + manual.length < 600) errors.push(`library episodes=${base.length + expanded.length + manual.length}, expected at least 600`);
+const libraryTurns = base.reduce((sum, episode) => sum + (episode.turns?.length || 0), 0) + turnCount + manual.reduce((sum, episode) => sum + (episode.turns?.length || 0), 0);
+if (libraryTurns < 4000) errors.push(`library turns=${libraryTurns}, expected at least 4000`);
 
 const stateCoverage = new Set<string>();
 const modeCoverage = new Set<string>();
@@ -38,5 +41,11 @@ for (const state of states) if (!stateCoverage.has(state)) errors.push(`missing 
 for (const mode of ["normal", "stay", "rollback", "soothe_fail", "reflect_fail", "repair_fail", "explosion"]) if (!modeCoverage.has(mode)) errors.push(`missing case coverage: ${mode}`);
 if (colloquialTurns < Math.floor(turnCount * 0.3)) errors.push(`colloquial turns=${colloquialTurns}, expected at least 30%`);
 
-console.log(JSON.stringify({ baseEpisodes: base.length, expandedEpisodes: expanded.length, totalEpisodes: base.length + expanded.length, expandedTurns: turnCount, states: [...stateCoverage], cases: [...modeCoverage], colloquialTurns, errors }, null, 2));
+for (const episode of manual) {
+  if (episode.sourceType !== "manual_synthetic") errors.push(`${String(episode.id)}: manual sourceType is not manual_synthetic`);
+  if (typeof episode.qualityScore !== "number" || episode.qualityScore < 0.75) errors.push(`${String(episode.id)}: manual qualityScore below 0.75`);
+  if (!episode.turns?.length) errors.push(`${String(episode.id)}: manual episode has no turns`);
+}
+
+console.log(JSON.stringify({ baseEpisodes: base.length, expandedEpisodes: expanded.length, manualEpisodes: manual.length, totalEpisodes: base.length + expanded.length + manual.length, expandedTurns: turnCount, libraryTurns, states: [...stateCoverage], cases: [...modeCoverage], colloquialTurns, errors }, null, 2));
 if (errors.length) process.exit(1);

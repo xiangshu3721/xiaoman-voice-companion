@@ -2,7 +2,7 @@ import type { ArchetypeId, BehaviorLabel, ConflictState, ConflictStrategy, Strat
 
 const secondaryFor: Partial<Record<BehaviorLabel, ConflictStrategy[]>> = {
   defense: ["challenge", "sarcasm"],
-  explanation: ["challenge", "mind_reading"],
+  explanation: ["perspective_taking", "relationship_reassurance"],
   responsibility_shift: ["counterattack", "historical_grievance"],
   dismissal: ["challenge", "magnification"],
   character_attack: ["counterattack", "relationship_threat"],
@@ -11,13 +11,15 @@ const secondaryFor: Partial<Record<BehaviorLabel, ConflictStrategy[]>> = {
   responsibility_acceptance: ["softening", "repair_attempt"],
   showing_vulnerability: ["validation", "softening"],
   problem_solving: ["repair_attempt", "softening"],
+  acknowledgement: ["acknowledge_hurt", "validation"],
   relationship_threat: ["withdrawal", "counterattack"],
   silence: ["withdrawal", "interrogation"],
 };
 
 function primaryFor(label: BehaviorLabel, state: ConflictState, archetype: ArchetypeId): ConflictStrategy {
   if (label === "genuine_apology" || label === "responsibility_acceptance") return state.hurt > 65 ? "validation" : "softening";
-  if (label === "problem_solving") return "repair_attempt";
+  if (label === "problem_solving") return state.hurt > 45 ? "small_agreement" : "repair_attempt";
+  if (label === "acknowledgement") return state.hurt > 55 ? "acknowledge_hurt" : "validation";
   if (label === "showing_vulnerability") return "softening";
   if (label === "perfunctory_apology") return archetype === "PassiveAggressive" ? "sarcasm" : "challenge";
   if (label === "character_attack") return state.conflictIntensity >= 4 ? "counterattack" : "challenge";

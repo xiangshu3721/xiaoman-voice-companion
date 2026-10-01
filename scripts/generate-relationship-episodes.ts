@@ -25,7 +25,7 @@ const archetypePairs = [
 ] as const;
 
 const modeCounts: Array<[Mode, number]> = [
-  ["normal", 150], ["stay", 70], ["rollback", 70], ["soothe_fail", 45], ["reflect_fail", 35], ["repair_fail", 30], ["explosion", 30],
+  ["normal", 180], ["stay", 80], ["rollback", 80], ["soothe_fail", 50], ["reflect_fail", 50], ["repair_fail", 40], ["explosion", 40],
 ];
 
 function sequence(mode: Mode, index: number): State[] {

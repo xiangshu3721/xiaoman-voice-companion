@@ -1,4 +1,4 @@
-export type SourceType = "human" | "public" | "synthetic" | "synthetic_seed" | "expert";
+export type SourceType = "human" | "public" | "synthetic" | "synthetic_seed" | "manual_synthetic" | "human_verified" | "expert";
 
 export type RelationshipType = "dating" | "cohabiting" | "married";
 
@@ -10,7 +10,11 @@ export type ArchetypeId =
   | "Rationalizer"
   | "Pleaser"
   | "PassiveAggressive"
-  | "Explosive";
+  | "Explosive"
+  | "Sensitive"
+  | "ControlSensitive"
+  | "GrievanceHolder"
+  | "Reflective";
 
 export type ConflictStrategy =
   | "sarcasm"
@@ -42,7 +46,16 @@ export type ConflictStrategy =
   | "softening"
   | "validation"
   | "genuine_apology"
-  | "humor_release";
+  | "humor_release"
+  | "acknowledge_hurt"
+  | "own_harm"
+  | "relationship_reassurance"
+  | "companionship"
+  | "care"
+  | "space"
+  | "perspective_taking"
+  | "ownership"
+  | "small_agreement";
 
 export type BehaviorLabel = ConflictStrategy | "explanation" | "denial" | "acknowledgement" | "responsibility_acceptance" | "showing_vulnerability" | "pleasing" | "joking" | "problem_solving" | "silence";
 

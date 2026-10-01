@@ -9,6 +9,7 @@ export type UserIntent =
   | "SADNESS_DISCLOSURE" | "VULNERABILITY" | "CRYING" | "GENUINE_APOLOGY"
   | "PERFUNCTORY_APOLOGY" | "ACKNOWLEDGEMENT" | "VALIDATION" | "REPAIR_ATTEMPT"
   | "AFFECTION" | "HUMOR" | "FORGIVENESS" | "NORMALIZATION" | "GOODBYE"
+  | "QUESTION" | "CHALLENGE"
   | "SELF_REFLECTION" | "RELATIONSHIP_REFLECTION" | "CURIOSITY" | "OWNERSHIP"
   | "PATTERN_RECOGNITION" | "ROOT_CAUSE_EXPLORATION" | "PERSPECTIVE_TAKING"
   | "SELF_HARM_SIGNAL" | "SUICIDAL_SIGNAL" | "HARM_OTHER_SIGNAL" | "SEVERE_DISTRESS"
@@ -80,6 +81,7 @@ export interface RelationshipSnapshot {
   reflection: ReflectionState;
   transitionReason: string;
   stateHistory: RelationshipState[];
+  conflictSubtype?: "SERIOUS" | "PLAYFUL";
 }
 
 export type SoothingState = Exclude<RelationshipState, "CONFLICT" | "REFLECT">;

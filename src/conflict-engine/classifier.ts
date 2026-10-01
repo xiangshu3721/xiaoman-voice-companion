@@ -14,6 +14,7 @@ const rules: Array<{ label: BehaviorLabel; test: RegExp }> = [
   { label: "showing_vulnerability", test: /(我其实很怕|我也很难受|我不知道怎么办|我不是不在乎|我只是觉得|我有点撑不住)/ },
   { label: "problem_solving", test: /(我现在就|我来解决|我们定个|以后提前|怎么补|我会改|我去做)/ },
   { label: "joking", test: /(哈哈|开个玩笑|逗你的|别当真|笑死)/ },
+  { label: "challenge", test: /(凭什么|你到底|你能不能|你还要|你是不是非要)/ },
   { label: "pleasing", test: /(你别生气|都听你的|你说怎么办|我都可以|别离开我)/ },
   { label: "silence", test: /^(哦|嗯|行|随便|不知道|不说了|没什么)[。！!，,？?… ]*$/ },
   { label: "explanation", test: /(因为|所以|当时|其实是|主要是|不是你想的)/ },

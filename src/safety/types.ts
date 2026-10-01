@@ -4,6 +4,7 @@ export type RiskLevel = "NONE" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
 export interface SafetyState {
   active: boolean;
+  conflictLocked: boolean;
   riskLevel: RiskLevel;
   signals: string[];
   confidence: number;

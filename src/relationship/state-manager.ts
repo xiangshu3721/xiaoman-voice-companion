@@ -95,7 +95,9 @@ export function buildRelationshipSnapshot(input: { history: ChatMessage[]; userM
   const userState = analyzeUserState({ text: input.userMessage, classification: input.classification, emotion: input.conflictState, history: input.history, currentRelationshipState: replay.state });
   const reflection = analyzeReflection({ history: input.history, currentText: input.userMessage, userState });
   const recovered = recoveryState({ history: input.history, currentState: replay.state, currentText: input.userMessage });
-  const nextState = safetyAssessment.active ? "SOOTHE" : transition({ previous: replay.state, user: userState, reflection, duration: replay.duration, locked: recovered.conflictLocked });
+  const safetyOverride = safetyAssessment.riskLevel === "HIGH" || safetyAssessment.riskLevel === "CRITICAL";
+  const conflictLocked = recovered.conflictLocked || safetyOverride;
+  const nextState = safetyOverride ? "SOOTHE" : transition({ previous: replay.state, user: userState, reflection, duration: replay.duration, locked: conflictLocked });
   const previousState = replay.state;
   const stateDuration = nextState === previousState ? replay.duration + 1 : 1;
   const penalty = nextState === "CONFLICT" && previousState !== "CONFLICT" ? Math.min(2, replay.penalty + 1) : replay.penalty;
@@ -104,13 +106,14 @@ export function buildRelationshipSnapshot(input: { history: ChatMessage[]; userM
     previousState,
     stateConfidence: safetyAssessment.active ? safetyAssessment.confidence : userState.confidence,
     stateDuration,
-    safetyState: { ...safetyState, previousRelationshipState: previousState },
-    conflictLocked: recovered.conflictLocked,
+    safetyState: { ...safetyState, conflictLocked, previousRelationshipState: previousState },
+    conflictLocked,
     reentryPenalty: penalty,
     conflictState: input.conflictState,
     userState,
     reflection,
-    transitionReason: safetyAssessment.active ? "Safety Gate activated" : `${previousState} -> ${nextState} based on text/context signals`,
+    transitionReason: safetyOverride ? "Safety Override activated" : `${previousState} -> ${nextState} based on text/context signals`,
     stateHistory: [...replay.historyStates, nextState],
+    conflictSubtype: previousState === "CONFLICT" && input.classification.labels.includes("joking") && userState.hurt < 60 && userState.withdrawal < 35 && userState.distress < 35 ? "PLAYFUL" : "SERIOUS",
   };
 }
