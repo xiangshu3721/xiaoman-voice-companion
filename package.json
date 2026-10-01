@@ -17,6 +17,8 @@
     ,"conflicts:augment": "tsx scripts/augment-conflicts.ts"
     ,"test:relationship": "tsx scripts/test-relationship-state.ts"
     ,"reflection:generate": "tsx scripts/generate-reflection-seed.ts"
+    ,"relationship:episodes:generate": "tsx scripts/generate-relationship-episodes.ts"
+    ,"relationship:episodes:validate": "tsx scripts/validate-relationship-episodes.ts"
   },
   "dependencies": {
     "next": "^15.5.9",

@@ -1,4 +1,4 @@
-export type SourceType = "human" | "public" | "synthetic" | "expert";
+export type SourceType = "human" | "public" | "synthetic" | "synthetic_seed" | "expert";
 
 export type RelationshipType = "dating" | "cohabiting" | "married";
 
@@ -118,6 +118,20 @@ export type ConflictEpisode = {
   ending: "resolved" | "temporary_repair" | "withdrawal" | "cold_war" | "escalated" | "unfinished";
   latentConflict?: string;
   needsHumanReview?: boolean;
+  relationshipBackground?: string;
+  personAArchetype?: string;
+  personBArchetype?: string;
+  currentState?: "CONFLICT" | "DEESCALATE" | "SOOTHE" | "REFLECT" | "REPAIR" | "CLOSE";
+  previousState?: "CONFLICT" | "DEESCALATE" | "SOOTHE" | "REFLECT" | "REPAIR" | "CLOSE";
+  userIntent?: string[];
+  aiStrategy?: string;
+  emotionBefore?: Partial<EmotionState>;
+  emotionAfter?: Partial<EmotionState>;
+  stateTransition?: string;
+  transitionReason?: string;
+  surfaceConflict?: string;
+  underlyingNeed?: string;
+  interactionPattern?: string;
 };
 
 export type Classification = {

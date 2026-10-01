@@ -1,8 +1,11 @@
 import episodes from "@/data/conflicts/episodes.json";
+import expandedEpisodes from "@/data/conflicts/episodes-v11.json";
 import scenes from "@/data/conflicts/scenes.json";
 import type { ArchetypeId, BehaviorLabel, ConflictEpisode, ConflictScene, RetrievedEpisode } from "./types";
 
-const allEpisodes = episodes as ConflictEpisode[];
+const allEpisodes = [...episodes, ...expandedEpisodes]
+  .map((episode) => episode as ConflictEpisode)
+  .filter((episode) => episode.qualityScore >= 0.75);
 const allScenes = scenes as ConflictScene[];
 
 export function resolveScene(input: { scenarioId?: string; sceneContext?: string }): ConflictScene {
