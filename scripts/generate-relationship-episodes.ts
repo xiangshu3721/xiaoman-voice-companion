@@ -5,18 +5,18 @@ type State = "CONFLICT" | "DEESCALATE" | "SOOTHE" | "REFLECT" | "REPAIR" | "CLOS
 type Mode = "normal" | "stay" | "rollback" | "soothe_fail" | "reflect_fail" | "repair_fail" | "explosion";
 
 const scenes = [
-  { id: "SC_101", category: "时间", trigger: "晚回来三个小时", background: "只发了一条‘晚点回来’，另一方一直在等", surface: "晚回家和没提前说", need: "被放在心上、不要一个人等着猜", pattern: "追问 → 防御 → 更强追问 → 敷衍" },
-  { id: "SC_102", category: "消息", trigger: "几个小时没回消息", background: "消息显示已读，晚上才回了一句‘刚忙完’", surface: "长时间不回复", need: "确认自己不是被晾着", pattern: "焦虑 → 解释 → 觉得敷衍 → 冷下来" },
-  { id: "SC_103", category: "家务", trigger: "答应的家务又忘了", background: "说好下班后收衣服，结果衣服在阳台放了一晚上", surface: "答应的事情没做到", need: "自己的辛苦被看见", pattern: "提醒 → 防御 → 翻旧账 → 敷衍道歉" },
-  { id: "SC_104", category: "金钱", trigger: "一笔消费没有提前商量", background: "买了一个不便宜的东西，回家才提到", surface: "花钱前没有商量", need: "重要决定里有被尊重的感觉", pattern: "质问 → 讲道理 → 说随便 → 再爆发" },
-  { id: "SC_105", category: "社交", trigger: "聚会后才说有异性在场", background: "饭局临时多了几个人，回来后才轻描淡写地说", surface: "没有提前把情况说清楚", need: "关系里不用靠猜", pattern: "试探 → 回避 → 追问 → 说没什么" },
-  { id: "SC_106", category: "承诺", trigger: "答应周末陪伴却临时改口", background: "提前约好的周末被工作替代，解释得很晚", surface: "安排被临时推掉", need: "感觉自己的时间也值得被认真对待", pattern: "失望 → 解释 → 觉得不被理解 → 退出" },
-  { id: "SC_107", category: "沟通", trigger: "说话时一直看手机", background: "一方认真讲事情，另一方嗯嗯啊啊地刷手机", surface: "说话没有被认真听", need: "被真正听见", pattern: "提醒 → 否认 → 更大声 → 沉默" },
-  { id: "SC_108", category: "家庭", trigger: "在家人面前替对方答应事情", background: "没有商量就对家人说周末会过去帮忙", surface: "边界和安排没有商量", need: "两个人先站在一起", pattern: "质疑 → 解释 → 觉得被孤立 → 冷处理" },
-  { id: "SC_109", category: "生活", trigger: "回家后直接躺下不说话", background: "一方累得不想讲话，另一方把沉默听成冷淡", surface: "回家后的沉默", need: "确认沉默不是不在乎", pattern: "试探 → 退缩 → 继续追问 → 各自沉默" },
-  { id: "SC_110", category: "旧账", trigger: "争论时又把以前的事翻出来", background: "本来只是在说今天的安排，话题很快扯到几个月前", surface: "当前小事变成旧账总账", need: "现在这次先被认真处理", pattern: "翻旧账 → 否认 → 更强指责 → 爆发" },
-  { id: "SC_111", category: "照顾", trigger: "生病时没有及时问候", background: "说了不舒服，直到晚上才收到一句‘还好吗’", surface: "需要时没有被及时回应", need: "难受的时候有人在旁边", pattern: "表达受伤 → 解释忙 → 觉得不在乎 → 退开" },
-  { id: "SC_112", category: "称呼", trigger: "吵架时用了很重的称呼", background: "情绪上来时脱口而出一句很伤人的话", surface: "一句重话留下的刺", need: "生气也不要被否定和羞辱", pattern: "攻击 → 反击 → 道歉 → 不接受" },
+  { id: "SC_001", category: "时间", trigger: "晚回来三个小时", background: "只发了一条‘晚点回来’，另一方一直在等", surface: "晚回家和没提前说", need: "被放在心上、不要一个人等着猜", pattern: "追问 → 防御 → 更强追问 → 敷衍" },
+  { id: "SC_002", category: "沟通", trigger: "几个小时没回消息", background: "消息显示已读，晚上才回了一句‘刚忙完’", surface: "长时间不回复", need: "确认自己不是被晾着", pattern: "焦虑 → 解释 → 觉得敷衍 → 冷下来" },
+  { id: "SC_003", category: "承诺", trigger: "答应的家务又忘了", background: "说好下班后收衣服，结果衣服在阳台放了一晚上", surface: "答应的事情没做到", need: "自己的辛苦被看见", pattern: "提醒 → 防御 → 翻旧账 → 敷衍道歉" },
+  { id: "SC_004", category: "金钱", trigger: "一笔消费没有提前商量", background: "买了一个不便宜的东西，回家才提到", surface: "花钱前没有商量", need: "重要决定里有被尊重的感觉", pattern: "质问 → 讲道理 → 说随便 → 再爆发" },
+  { id: "SC_005", category: "社交", trigger: "聚会后才说有异性在场", background: "饭局临时多了几个人，回来后才轻描淡写地说", surface: "没有提前把情况说清楚", need: "关系里不用靠猜", pattern: "试探 → 回避 → 追问 → 说没什么" },
+  { id: "SC_006", category: "承诺", trigger: "答应周末陪伴却临时改口", background: "提前约好的周末被工作替代，解释得很晚", surface: "安排被临时推掉", need: "感觉自己的时间也值得被认真对待", pattern: "失望 → 解释 → 觉得不被理解 → 退出" },
+  { id: "SC_007", category: "沟通", trigger: "说话时一直看手机", background: "一方认真讲事情，另一方嗯嗯啊啊地刷手机", surface: "说话没有被认真听", need: "被真正听见", pattern: "提醒 → 否认 → 更大声 → 沉默" },
+  { id: "SC_008", category: "家庭", trigger: "在家人面前替对方答应事情", background: "没有商量就对家人说周末会过去帮忙", surface: "边界和安排没有商量", need: "两个人先站在一起", pattern: "质疑 → 解释 → 觉得被孤立 → 冷处理" },
+  { id: "SC_009", category: "生活", trigger: "回家后直接躺下不说话", background: "一方累得不想讲话，另一方把沉默听成冷淡", surface: "回家后的沉默", need: "确认沉默不是不在乎", pattern: "试探 → 退缩 → 继续追问 → 各自沉默" },
+  { id: "SC_010", category: "旧账", trigger: "争论时又把以前的事翻出来", background: "本来只是在说今天的安排，话题很快扯到几个月前", surface: "当前小事变成旧账总账", need: "现在这次先被认真处理", pattern: "翻旧账 → 否认 → 更强指责 → 爆发" },
+  { id: "SC_011", category: "照顾", trigger: "生病时没有及时问候", background: "说了不舒服，直到晚上才收到一句‘还好吗’", surface: "需要时没有被及时回应", need: "难受的时候有人在旁边", pattern: "表达受伤 → 解释忙 → 觉得不在乎 → 退开" },
+  { id: "SC_012", category: "称呼", trigger: "吵架时用了很重的称呼", background: "情绪上来时脱口而出一句很伤人的话", surface: "一句重话留下的刺", need: "生气也不要被否定和羞辱", pattern: "攻击 → 反击 → 道歉 → 不接受" },
 ] as const;
 
 const archetypePairs = [
