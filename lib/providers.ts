@@ -18,6 +18,7 @@ export type TTSRequest = {
   speechRate?: number;
   loudnessRate?: number;
   fallbackUsed?: boolean;
+  streaming?: boolean;
   intensity?: number;
   speed?: number;
   volume?: number;
@@ -384,8 +385,8 @@ export class DoubaoTTSProvider implements TTSProvider {
     callbacks.onMetrics?.({ provider: "volcengine", voice: request.voiceId || "volcengine-default", emotion: request.emotion, intensity: request.intensity, streaming: false, ...ttsDebugFields(request) });
     fetch(`${apiUrl("/api/tts")}${isMobileBrowser() ? "?stream=false" : ""}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
+      headers: { "Content-Type": "application/json", "X-TTS-Stream": isMobileBrowser() ? "false" : "true" },
+      body: JSON.stringify({ ...request, streaming: !isMobileBrowser() }),
       signal: controller.signal,
     }).then(async (response) => {
       if (generation !== this.requestGeneration) return;
