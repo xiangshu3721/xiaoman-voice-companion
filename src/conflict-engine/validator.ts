@@ -1,6 +1,7 @@
 import type { ConflictStrategy, ConflictTurn } from "./types";
 import type { RelationshipState } from "@/src/relationship/types";
 import type { RelationshipSnapshot } from "@/src/relationship/types";
+import { semanticCoreForText } from "@/src/relationship/topic-lifecycle";
 
 const forbidden = ["我理解你的感受", "我们应该进行有效沟通", "作为AI", "建议你", "心理学", "冲突等级", "我的情绪是"];
 
@@ -40,6 +41,18 @@ export function validateRepairBidResponse(reply: string, relationship: Pick<Rela
   const aggressive = /(傻逼|废物|有病|神经|滚|去死|你怎么又|你每次都|你到底|爱我就完了|满意了|翻旧账|分手|离婚)/;
   if (relationship.repairMomentum >= 60 && relationship.attackMomentum < 35 && aggressive.test(clean)) issues.push("repair_bid_ignored");
   if (relationship.repairMomentum >= 80 && relationship.conflictPhase !== "ESCALATING" && aggressive.test(clean)) issues.push("repair_momentum_requires_softening");
+  return { valid: issues.length === 0, issues };
+}
+
+export function validateTopicLifecycleResponse(reply: string, relationship: Pick<RelationshipSnapshot, "topicMemory" | "topicClosure" | "topicExhaustionScore" | "stuckTopic">): { valid: boolean; issues: string[] } {
+  const clean = reply.trim();
+  const issues: string[] = [];
+  const sameCore = semanticCoreForText(clean) === relationship.topicMemory.semanticCore;
+  const repeatsAgreedTask = /(?:先把.*(做|完成|处理)|做完再说|看你.*(做|完成)|别光说|九点.*(做|完成)|先去做)/.test(clean);
+  if (relationship.topicClosure.shouldBlockReopen && !relationship.topicMemory.newEvidence && (sameCore && relationship.topicMemory.repetitionCount >= 2 || repeatsAgreedTask)) {
+    issues.push("agreed_topic_reopened_without_evidence");
+  }
+  if (relationship.topicExhaustionScore >= 60 && relationship.stuckTopic && sameCore) issues.push("semantic_topic_repetition");
   return { valid: issues.length === 0, issues };
 }
 

@@ -16,6 +16,8 @@
     ,"conflicts:annotate": "tsx scripts/annotate-conflicts.ts"
     ,"conflicts:augment": "tsx scripts/augment-conflicts.ts"
     ,"test:relationship": "tsx scripts/test-relationship-state.ts"
+    ,"test:topic-lifecycle": "tsx scripts/test-topic-lifecycle.ts"
+    ,"test:memory-grounding": "tsx scripts/test-memory-grounding.ts"
     ,"reflection:generate": "tsx scripts/generate-reflection-seed.ts"
     ,"relationship:episodes:generate": "tsx scripts/generate-relationship-episodes.ts"
     ,"relationship:episodes:validate": "tsx scripts/validate-relationship-episodes.ts"

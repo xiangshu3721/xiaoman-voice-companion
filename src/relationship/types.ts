@@ -1,8 +1,42 @@
 import type { BehaviorLabel, ConflictState } from "@/src/conflict-engine/types";
 import type { SafetyState } from "@/src/safety/types";
 import type { RepairBid } from "./repair-bid-detector";
+import type { DailyLifeReentryStrategy } from "./daily-life-reentry";
+import type { SessionBoundary } from "@/src/memory/grounding";
 
 export type RelationshipState = "CONFLICT" | "DEESCALATE" | "SOOTHE" | "REFLECT" | "REPAIR" | "CLOSE";
+
+export type TopicStatus = "OPEN" | "NEGOTIATING" | "AGREED" | "DEFERRED" | "RESOLVED" | "CLOSED";
+
+export interface TopicState {
+  topicId: string;
+  topic: string;
+  status: TopicStatus;
+  agreement?: string;
+  actionOwner?: "USER" | "AI" | "BOTH";
+  actionDeadline?: string;
+  emotionalResidue: number;
+  repetitionCount: number;
+  lastMentionTurn: number;
+  reopenReason?: string;
+  topicExhaustionScore: number;
+  semanticCore?: string;
+  newEvidence: boolean;
+  reopenAllowed: boolean;
+  stuckTopic: boolean;
+}
+
+export interface TopicClosureGate {
+  answerFound: boolean;
+  agreementExists: boolean;
+  actionOwnerExists: boolean;
+  deadlineExists: boolean;
+  userAcknowledgedPart: boolean;
+  repairBidDetected: boolean;
+  newEvidence: boolean;
+  shouldBlockReopen: boolean;
+  reason: string;
+}
 
 export type UserIntent =
   | "ATTACK" | "COUNTERATTACK" | "DEFEND" | "EXPLAIN" | "BLAME" | "DISMISS" | "MOCK"
@@ -70,6 +104,7 @@ export interface ReflectionState {
 }
 
 export interface RelationshipSnapshot {
+  sessionBoundary: SessionBoundary;
   currentState: RelationshipState;
   previousState: RelationshipState;
   stateConfidence: number;
@@ -90,6 +125,15 @@ export interface RelationshipSnapshot {
   repairRejectionCount: number;
   conflictBudget: number;
   conflictPhase: "ESCALATING" | "ACTIVE" | "SOFTENING";
+  topicMemory: TopicState;
+  topicClosure: TopicClosureGate;
+  topicExhaustionScore: number;
+  semanticRepetitionCount: number;
+  stuckTopic: boolean;
+  lettingGoReadiness: number;
+  topicShiftProbability: number;
+  dailyLifeReentryStrategy?: DailyLifeReentryStrategy;
+  dailyLifeReentryText?: string;
 }
 
 export type SoothingState = Exclude<RelationshipState, "CONFLICT" | "REFLECT">;

@@ -4,9 +4,14 @@ import type { ArchetypeId, BehaviorLabel, ConflictState, EmotionState } from "./
 import { classifyUserMessage } from "./classifier";
 
 const initialEmotion: EmotionState = { anger: 48, hurt: 54, disappointment: 50, anxiety: 42, contempt: 18, trust: 58, resentment: 38, connection: 62 };
+const neutralEmotion: EmotionState = { anger: 0, hurt: 0, disappointment: 0, anxiety: 0, contempt: 0, trust: 0, resentment: 0, connection: 0 };
 
 export function createInitialState(): ConflictState {
   return { ...initialEmotion, conflictIntensity: 2, turnCount: 0, trajectory: [2] };
+}
+
+export function createNeutralBaselineState(): ConflictState {
+  return { ...neutralEmotion, conflictIntensity: 1, turnCount: 0, trajectory: [1] };
 }
 
 const clamp = (value: number) => Math.max(0, Math.min(100, Math.round(value)));

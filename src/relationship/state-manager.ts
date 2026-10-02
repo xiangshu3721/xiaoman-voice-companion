@@ -1,13 +1,15 @@
 import type { ChatMessage } from "@/lib/providers";
 import { classifyUserMessage } from "@/src/conflict-engine/classifier";
-import { createInitialState, replayUserHistory, updateConflictState } from "@/src/conflict-engine/state";
-import type { Classification, ConflictState } from "@/src/conflict-engine/types";
+import { createInitialState, createNeutralBaselineState, updateConflictState } from "@/src/conflict-engine/state";
+import type { Classification, ConflictScene, ConflictState } from "@/src/conflict-engine/types";
 import { runSafetyGate, safetyStateFromAssessment } from "@/src/safety/safety-gate";
 import { hasHighRiskHistory, recoveryState } from "@/src/safety/recovery-gate";
 import type { RelationshipSnapshot, RelationshipState } from "./types";
 import { analyzeReflection } from "./reflection-analyzer";
 import { analyzeUserState } from "./user-state-analyzer";
 import { detectRepairBid, isGenuineRepairBid, type RepairBid } from "./repair-bid-detector";
+import { buildTopicLifecycle } from "./topic-lifecycle";
+import { createSessionBoundary, isCasualOpening, type SessionBoundary } from "@/src/memory/grounding";
 
 type RelationshipDynamics = {
   repairMomentum: number;
@@ -55,6 +57,16 @@ function canEnterReflection(user: ReturnType<typeof analyzeUserState>, reflectio
   return explicit && (emotionalRoom || (user.anger < 55 && user.aggression < 40 && user.distress < 65));
 }
 
+function stateFromNeutralBaseline(user: ReturnType<typeof analyzeUserState>, classification: Classification, text: string): RelationshipState {
+  if (strongDeescalate(user)) return "DEESCALATE";
+  if (isCasualOpening(text)) return "CLOSE";
+  if (classification.labels.includes("perfunctory_apology")) return "CONFLICT";
+  if (classification.labels.some((label) => ["genuine_apology", "responsibility_acceptance", "acknowledgement"].includes(label))) return "DEESCALATE";
+  if (/(?:我不好|说话太冲|刚才有点上头|伤到你|这句算我的|爱你|抱一下|别生气|不吵了)/.test(text)) return "DEESCALATE";
+  if (classification.labels.some((label) => ["character_attack", "relationship_threat", "dismissal", "challenge", "interrogation", "counterattack", "sarcasm", "defense"].includes(label))) return "CONFLICT";
+  return "CONFLICT";
+}
+
 function transition(input: { previous: RelationshipState; user: ReturnType<typeof analyzeUserState>; reflection: ReturnType<typeof analyzeReflection>; duration: number; locked: boolean; repairBid: RepairBid; dynamics: RelationshipDynamics }) {
   const { previous, user, reflection, locked, repairBid, dynamics } = input;
   if (locked) return user.intent.includes("GOODBYE") ? "CLOSE" as const : "SOOTHE" as const;
@@ -97,13 +109,13 @@ function transition(input: { previous: RelationshipState; user: ReturnType<typeo
 }
 
 function replayState(history: ChatMessage[]) {
-  let state: RelationshipState = "CONFLICT";
+  let state: RelationshipState = "CLOSE";
   let duration = 0;
   let penalty = 0;
   let conflictState = createInitialState();
   const historyStates: RelationshipState[] = [];
   let locked = false;
-  let metrics: RelationshipDynamics = { repairMomentum: 0, attackMomentum: 70, userSoftening: 0, repairRejectionCount: 0, conflictBudget: 100, conflictPhase: "ESCALATING" };
+  let metrics: RelationshipDynamics = { repairMomentum: 0, attackMomentum: 0, userSoftening: 0, repairRejectionCount: 0, conflictBudget: 100, conflictPhase: "ACTIVE" };
   for (const message of history.filter((item) => item.role === "user")) {
     const priorHistory = history.slice(0, history.indexOf(message));
     const classification = classifyUserMessage(message.content);
@@ -114,8 +126,10 @@ function replayState(history: ChatMessage[]) {
     const reflection = analyzeReflection({ history: priorHistory, currentText: message.content, userState: user });
     const repairBid = detectRepairBid({ text: message.content, history: priorHistory });
     const dynamics = evolveDynamics(metrics, repairBid, user, classification);
-    const transitionDynamics = { ...dynamics, repairRejectionCount: repairBid.detected && state === "CONFLICT" ? metrics.repairRejectionCount + 1 : 0 };
-    const next = transition({ previous: state, user, reflection, duration, locked, repairBid, dynamics: transitionDynamics });
+    const transitionDynamics: RelationshipDynamics = { ...dynamics, repairRejectionCount: repairBid.detected && state === "CONFLICT" ? metrics.repairRejectionCount + 1 : 0 };
+    const next: RelationshipState = duration === 0 && state === "CLOSE"
+      ? stateFromNeutralBaseline(user, classification, message.content)
+      : transition({ previous: state, user, reflection, duration, locked, repairBid, dynamics: transitionDynamics });
     if (next === "CONFLICT" && state !== "CONFLICT") penalty = Math.min(2, penalty + 1);
     duration = next === state ? duration + 1 : 1;
     state = next;
@@ -126,8 +140,9 @@ function replayState(history: ChatMessage[]) {
   return { state, duration, penalty, conflictState, historyStates, locked, metrics };
 }
 
-export function buildRelationshipSnapshot(input: { history: ChatMessage[]; userMessage: string; classification: Classification; conflictState: ConflictState }): RelationshipSnapshot {
+export function buildRelationshipSnapshot(input: { history: ChatMessage[]; userMessage: string; classification: Classification; conflictState: ConflictState; scene?: ConflictScene; sessionBoundary?: SessionBoundary }): RelationshipSnapshot {
   const replay = replayState(input.history);
+  const sessionBoundary = input.sessionBoundary || createSessionBoundary({ history: input.history });
   const safetyAssessment = runSafetyGate({ text: input.userMessage, history: input.history, previousRelationshipState: replay.state });
   const safetyState = safetyStateFromAssessment(safetyAssessment);
   const locked = replay.locked || hasHighRiskHistory(input.history);
@@ -139,7 +154,11 @@ export function buildRelationshipSnapshot(input: { history: ChatMessage[]; userM
   const repairBid = detectRepairBid({ text: input.userMessage, history: input.history });
   const dynamics = evolveDynamics(replay.metrics, repairBid, userState, input.classification);
   const transitionDynamics = { ...dynamics, repairRejectionCount: repairBid.detected && replay.state === "CONFLICT" ? replay.metrics.repairRejectionCount + 1 : 0 };
-  const nextState = safetyOverride ? "SOOTHE" : transition({ previous: replay.state, user: userState, reflection, duration: replay.duration, locked: conflictLocked, repairBid, dynamics: transitionDynamics });
+  const nextState = safetyOverride
+    ? "SOOTHE"
+    : sessionBoundary.relationshipState === "NEUTRAL_BASELINE" && !sessionBoundary.continuePreviousScene
+      ? stateFromNeutralBaseline(userState, input.classification, input.userMessage)
+      : transition({ previous: replay.state, user: userState, reflection, duration: replay.duration, locked: conflictLocked, repairBid, dynamics: transitionDynamics });
   const finalDynamics: RelationshipDynamics = {
     ...transitionDynamics,
     repairRejectionCount: repairBid.detected && nextState === "CONFLICT" ? replay.metrics.repairRejectionCount + 1 : 0,
@@ -147,7 +166,18 @@ export function buildRelationshipSnapshot(input: { history: ChatMessage[]; userM
   const previousState = replay.state;
   const stateDuration = nextState === previousState ? replay.duration + 1 : 1;
   const penalty = nextState === "CONFLICT" && previousState !== "CONFLICT" ? Math.min(2, replay.penalty + 1) : replay.penalty;
+  const scene = input.scene || {
+    id: "general-topic",
+    category: "general",
+    title: "当前这件事",
+    trigger: "当前对话中的议题",
+    background: "",
+    unresolvedIssue: "当前这件事",
+    keywords: [],
+  } satisfies ConflictScene;
+  const topicLifecycle = buildTopicLifecycle({ history: input.history, userMessage: input.userMessage, scene, relationshipState: nextState, userState, classification: input.classification, repairBid, repairMomentum: finalDynamics.repairMomentum, attackMomentum: finalDynamics.attackMomentum, userSoftening: finalDynamics.userSoftening });
   return {
+    sessionBoundary,
     currentState: nextState,
     previousState,
     stateConfidence: safetyAssessment.active ? safetyAssessment.confidence : userState.confidence,
@@ -160,8 +190,9 @@ export function buildRelationshipSnapshot(input: { history: ChatMessage[]; userM
     reflection,
     transitionReason: safetyOverride ? "Safety Override activated" : `${previousState} -> ${nextState} based on text/context signals`,
     stateHistory: [...replay.historyStates, nextState],
-    conflictSubtype: previousState === "CONFLICT" && input.classification.labels.includes("joking") && userState.hurt < 60 && userState.withdrawal < 35 && userState.distress < 35 ? "PLAYFUL" : "SERIOUS",
+    conflictSubtype: (previousState === "CONFLICT" || (sessionBoundary.relationshipState === "NEUTRAL_BASELINE" && nextState === "CONFLICT")) && input.classification.labels.includes("joking") && userState.hurt < 60 && userState.withdrawal < 35 && userState.distress < 35 ? "PLAYFUL" : "SERIOUS",
     repairBid,
     ...finalDynamics,
+    ...topicLifecycle,
   };
 }

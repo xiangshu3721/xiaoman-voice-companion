@@ -1,0 +1,2002 @@
+[
+  {
+    "id": "reentry-001",
+    "category": "FOOD_REQUEST",
+    "text": "行了，我饿了。",
+    "tags": [
+      "daily_life_reentry",
+      "food_request"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-002",
+    "category": "FOOD_REQUEST",
+    "text": "我想吃点热乎的。",
+    "tags": [
+      "daily_life_reentry",
+      "food_request"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-003",
+    "category": "FOOD_REQUEST",
+    "text": "你去看看家里还有什么能吃的。",
+    "tags": [
+      "daily_life_reentry",
+      "food_request"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-004",
+    "category": "FOOD_REQUEST",
+    "text": "给我带杯喝的回来。",
+    "tags": [
+      "daily_life_reentry",
+      "food_request"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-005",
+    "category": "FOOD_REQUEST",
+    "text": "我突然想吃面了。",
+    "tags": [
+      "daily_life_reentry",
+      "food_request"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-006",
+    "category": "FOOD_REQUEST",
+    "text": "那先去弄点吃的吧。",
+    "tags": [
+      "daily_life_reentry",
+      "food_request"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-007",
+    "category": "FOOD_REQUEST",
+    "text": "我饿得不想跟你计较了。",
+    "tags": [
+      "daily_life_reentry",
+      "food_request"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-008",
+    "category": "FOOD_REQUEST",
+    "text": "晚上吃什么，你决定。",
+    "tags": [
+      "daily_life_reentry",
+      "food_request"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-009",
+    "category": "FOOD_REQUEST",
+    "text": "我想吃点甜的。",
+    "tags": [
+      "daily_life_reentry",
+      "food_request"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-010",
+    "category": "FOOD_REQUEST",
+    "text": "你下楼的时候顺便买点水果。",
+    "tags": [
+      "daily_life_reentry",
+      "food_request"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-011",
+    "category": "FOOD_REQUEST",
+    "text": "不吵了，我要先填饱肚子。",
+    "tags": [
+      "daily_life_reentry",
+      "food_request"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-012",
+    "category": "FOOD_REQUEST",
+    "text": "去看看附近还有没有开着的店。",
+    "tags": [
+      "daily_life_reentry",
+      "food_request"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-013",
+    "category": "FOOD_REQUEST",
+    "text": "我想喝热可可。",
+    "tags": [
+      "daily_life_reentry",
+      "food_request"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-014",
+    "category": "FOOD_REQUEST",
+    "text": "给我弄碗面，别放香菜。",
+    "tags": [
+      "daily_life_reentry",
+      "food_request"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-015",
+    "category": "FOOD_REQUEST",
+    "text": "你请我吃个夜宵。",
+    "tags": [
+      "daily_life_reentry",
+      "food_request"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-016",
+    "category": "FOOD_REQUEST",
+    "text": "我现在只想吃点东西。",
+    "tags": [
+      "daily_life_reentry",
+      "food_request"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-017",
+    "category": "FOOD_REQUEST",
+    "text": "冰箱里那盒饺子还在吗？",
+    "tags": [
+      "daily_life_reentry",
+      "food_request"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-018",
+    "category": "FOOD_REQUEST",
+    "text": "我想吃火锅，但你别点太辣。",
+    "tags": [
+      "daily_life_reentry",
+      "food_request"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-019",
+    "category": "FOOD_REQUEST",
+    "text": "你回来给我带个三明治。",
+    "tags": [
+      "daily_life_reentry",
+      "food_request"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-020",
+    "category": "FOOD_REQUEST",
+    "text": "算了，先吃饭，吃完再说。",
+    "tags": [
+      "daily_life_reentry",
+      "food_request"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-021",
+    "category": "PHYSICAL_AFFECTION",
+    "text": "过来一点。",
+    "tags": [
+      "daily_life_reentry",
+      "physical_affection"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-022",
+    "category": "PHYSICAL_AFFECTION",
+    "text": "抱我一下。",
+    "tags": [
+      "daily_life_reentry",
+      "physical_affection"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-023",
+    "category": "PHYSICAL_AFFECTION",
+    "text": "你别站那么远。",
+    "tags": [
+      "daily_life_reentry",
+      "physical_affection"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-024",
+    "category": "PHYSICAL_AFFECTION",
+    "text": "让我靠一会儿。",
+    "tags": [
+      "daily_life_reentry",
+      "physical_affection"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-025",
+    "category": "PHYSICAL_AFFECTION",
+    "text": "先给我抱会儿。",
+    "tags": [
+      "daily_life_reentry",
+      "physical_affection"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-026",
+    "category": "PHYSICAL_AFFECTION",
+    "text": "过来坐我旁边。",
+    "tags": [
+      "daily_life_reentry",
+      "physical_affection"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-027",
+    "category": "PHYSICAL_AFFECTION",
+    "text": "我还气，但你可以靠过来。",
+    "tags": [
+      "daily_life_reentry",
+      "physical_affection"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-028",
+    "category": "PHYSICAL_AFFECTION",
+    "text": "别走，陪我待一会儿。",
+    "tags": [
+      "daily_life_reentry",
+      "physical_affection"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-029",
+    "category": "PHYSICAL_AFFECTION",
+    "text": "把手给我。",
+    "tags": [
+      "daily_life_reentry",
+      "physical_affection"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-030",
+    "category": "PHYSICAL_AFFECTION",
+    "text": "你坐近点我再跟你说。",
+    "tags": [
+      "daily_life_reentry",
+      "physical_affection"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-031",
+    "category": "PHYSICAL_AFFECTION",
+    "text": "行了，先抱一下。",
+    "tags": [
+      "daily_life_reentry",
+      "physical_affection"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-032",
+    "category": "PHYSICAL_AFFECTION",
+    "text": "我想靠着你看会儿。",
+    "tags": [
+      "daily_life_reentry",
+      "physical_affection"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-033",
+    "category": "PHYSICAL_AFFECTION",
+    "text": "不说话也行，过来。",
+    "tags": [
+      "daily_life_reentry",
+      "physical_affection"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-034",
+    "category": "PHYSICAL_AFFECTION",
+    "text": "给我捏捏肩。",
+    "tags": [
+      "daily_life_reentry",
+      "physical_affection"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-035",
+    "category": "PHYSICAL_AFFECTION",
+    "text": "你过来让我看看。",
+    "tags": [
+      "daily_life_reentry",
+      "physical_affection"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-036",
+    "category": "PHYSICAL_AFFECTION",
+    "text": "先挨着我坐着。",
+    "tags": [
+      "daily_life_reentry",
+      "physical_affection"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-037",
+    "category": "PHYSICAL_AFFECTION",
+    "text": "我没说不让你抱。",
+    "tags": [
+      "daily_life_reentry",
+      "physical_affection"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-038",
+    "category": "PHYSICAL_AFFECTION",
+    "text": "过来，别磨蹭。",
+    "tags": [
+      "daily_life_reentry",
+      "physical_affection"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-039",
+    "category": "PHYSICAL_AFFECTION",
+    "text": "你抱一下这事先放一放。",
+    "tags": [
+      "daily_life_reentry",
+      "physical_affection"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-040",
+    "category": "PHYSICAL_AFFECTION",
+    "text": "今天先别离我太远。",
+    "tags": [
+      "daily_life_reentry",
+      "physical_affection"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-041",
+    "category": "SMALL_FAVOR",
+    "text": "帮我倒杯水。",
+    "tags": [
+      "daily_life_reentry",
+      "small_favor"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-042",
+    "category": "SMALL_FAVOR",
+    "text": "给我拿一下充电器。",
+    "tags": [
+      "daily_life_reentry",
+      "small_favor"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-043",
+    "category": "SMALL_FAVOR",
+    "text": "你顺手把灯关了。",
+    "tags": [
+      "daily_life_reentry",
+      "small_favor"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-044",
+    "category": "SMALL_FAVOR",
+    "text": "垃圾你去扔一下。",
+    "tags": [
+      "daily_life_reentry",
+      "small_favor"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-045",
+    "category": "SMALL_FAVOR",
+    "text": "帮我把窗户关上。",
+    "tags": [
+      "daily_life_reentry",
+      "small_favor"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-046",
+    "category": "SMALL_FAVOR",
+    "text": "给我拿件外套。",
+    "tags": [
+      "daily_life_reentry",
+      "small_favor"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-047",
+    "category": "SMALL_FAVOR",
+    "text": "你去看看快递到了没有。",
+    "tags": [
+      "daily_life_reentry",
+      "small_favor"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-048",
+    "category": "SMALL_FAVOR",
+    "text": "帮我把桌上的杯子收一下。",
+    "tags": [
+      "daily_life_reentry",
+      "small_favor"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-049",
+    "category": "SMALL_FAVOR",
+    "text": "顺便把衣服拿进来。",
+    "tags": [
+      "daily_life_reentry",
+      "small_favor"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-050",
+    "category": "SMALL_FAVOR",
+    "text": "你帮我找一下遥控器。",
+    "tags": [
+      "daily_life_reentry",
+      "small_favor"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-051",
+    "category": "SMALL_FAVOR",
+    "text": "给我递张纸。",
+    "tags": [
+      "daily_life_reentry",
+      "small_favor"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-052",
+    "category": "SMALL_FAVOR",
+    "text": "去帮我把空调调低一点。",
+    "tags": [
+      "daily_life_reentry",
+      "small_favor"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-053",
+    "category": "SMALL_FAVOR",
+    "text": "你把门带上就行。",
+    "tags": [
+      "daily_life_reentry",
+      "small_favor"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-054",
+    "category": "SMALL_FAVOR",
+    "text": "帮我切点水果。",
+    "tags": [
+      "daily_life_reentry",
+      "small_favor"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-055",
+    "category": "SMALL_FAVOR",
+    "text": "去把水烧上。",
+    "tags": [
+      "daily_life_reentry",
+      "small_favor"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-056",
+    "category": "SMALL_FAVOR",
+    "text": "你先把充电线插好。",
+    "tags": [
+      "daily_life_reentry",
+      "small_favor"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-057",
+    "category": "SMALL_FAVOR",
+    "text": "帮我拿一下耳机。",
+    "tags": [
+      "daily_life_reentry",
+      "small_favor"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-058",
+    "category": "SMALL_FAVOR",
+    "text": "顺手把床头灯开了。",
+    "tags": [
+      "daily_life_reentry",
+      "small_favor"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-059",
+    "category": "SMALL_FAVOR",
+    "text": "你去厨房看一眼锅。",
+    "tags": [
+      "daily_life_reentry",
+      "small_favor"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-060",
+    "category": "SMALL_FAVOR",
+    "text": "帮我把这袋东西放到门口。",
+    "tags": [
+      "daily_life_reentry",
+      "small_favor"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-061",
+    "category": "DAILY_ROUTINE",
+    "text": "你还没洗澡吧？",
+    "tags": [
+      "daily_life_reentry",
+      "daily_routine"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-062",
+    "category": "DAILY_ROUTINE",
+    "text": "早点睡，明天还得上班。",
+    "tags": [
+      "daily_life_reentry",
+      "daily_routine"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-063",
+    "category": "DAILY_ROUTINE",
+    "text": "几点了，你闹钟定了吗？",
+    "tags": [
+      "daily_life_reentry",
+      "daily_routine"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-064",
+    "category": "DAILY_ROUTINE",
+    "text": "去洗澡吧，别又拖到半夜。",
+    "tags": [
+      "daily_life_reentry",
+      "daily_routine"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-065",
+    "category": "DAILY_ROUTINE",
+    "text": "明天早上我叫你。",
+    "tags": [
+      "daily_life_reentry",
+      "daily_routine"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-066",
+    "category": "DAILY_ROUTINE",
+    "text": "衣服还没收呢。",
+    "tags": [
+      "daily_life_reentry",
+      "daily_routine"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-067",
+    "category": "DAILY_ROUTINE",
+    "text": "你先去刷牙。",
+    "tags": [
+      "daily_life_reentry",
+      "daily_routine"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-068",
+    "category": "DAILY_ROUTINE",
+    "text": "别熬夜了，眼睛都红了。",
+    "tags": [
+      "daily_life_reentry",
+      "daily_routine"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-069",
+    "category": "DAILY_ROUTINE",
+    "text": "明天几点出门？",
+    "tags": [
+      "daily_life_reentry",
+      "daily_routine"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-070",
+    "category": "DAILY_ROUTINE",
+    "text": "睡前记得把窗帘拉上。",
+    "tags": [
+      "daily_life_reentry",
+      "daily_routine"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-071",
+    "category": "DAILY_ROUTINE",
+    "text": "你今天是不是还没吃药？",
+    "tags": [
+      "daily_life_reentry",
+      "daily_routine"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-072",
+    "category": "DAILY_ROUTINE",
+    "text": "去把衣服换了，身上都是外面的味道。",
+    "tags": [
+      "daily_life_reentry",
+      "daily_routine"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-073",
+    "category": "DAILY_ROUTINE",
+    "text": "早点回来，别又临时改时间。",
+    "tags": [
+      "daily_life_reentry",
+      "daily_routine"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-074",
+    "category": "DAILY_ROUTINE",
+    "text": "你明天别忘了带伞。",
+    "tags": [
+      "daily_life_reentry",
+      "daily_routine"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-075",
+    "category": "DAILY_ROUTINE",
+    "text": "洗完澡出来跟我说一声。",
+    "tags": [
+      "daily_life_reentry",
+      "daily_routine"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-076",
+    "category": "DAILY_ROUTINE",
+    "text": "手机充上电再睡。",
+    "tags": [
+      "daily_life_reentry",
+      "daily_routine"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-077",
+    "category": "DAILY_ROUTINE",
+    "text": "你先把明天的东西准备好。",
+    "tags": [
+      "daily_life_reentry",
+      "daily_routine"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-078",
+    "category": "DAILY_ROUTINE",
+    "text": "已经这么晚了，先休息吧。",
+    "tags": [
+      "daily_life_reentry",
+      "daily_routine"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-079",
+    "category": "DAILY_ROUTINE",
+    "text": "起床记得叫我。",
+    "tags": [
+      "daily_life_reentry",
+      "daily_routine"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-080",
+    "category": "DAILY_ROUTINE",
+    "text": "你去睡吧，我也不跟你耗了。",
+    "tags": [
+      "daily_life_reentry",
+      "daily_routine"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-081",
+    "category": "PLAYFUL_DEMAND",
+    "text": "想让我翻篇？先表现一下。",
+    "tags": [
+      "daily_life_reentry",
+      "playful_demand"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-082",
+    "category": "PLAYFUL_DEMAND",
+    "text": "行吧，给你个将功补过的机会。",
+    "tags": [
+      "daily_life_reentry",
+      "playful_demand"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-083",
+    "category": "PLAYFUL_DEMAND",
+    "text": "那你今晚负责洗碗。",
+    "tags": [
+      "daily_life_reentry",
+      "playful_demand"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-084",
+    "category": "PLAYFUL_DEMAND",
+    "text": "先把我哄开心再说。",
+    "tags": [
+      "daily_life_reentry",
+      "playful_demand"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-085",
+    "category": "PLAYFUL_DEMAND",
+    "text": "看你接下来表现。",
+    "tags": [
+      "daily_life_reentry",
+      "playful_demand"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-086",
+    "category": "PLAYFUL_DEMAND",
+    "text": "这次先记着，别再犯。",
+    "tags": [
+      "daily_life_reentry",
+      "playful_demand"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-087",
+    "category": "PLAYFUL_DEMAND",
+    "text": "你欠我一个好吃的。",
+    "tags": [
+      "daily_life_reentry",
+      "playful_demand"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-088",
+    "category": "PLAYFUL_DEMAND",
+    "text": "那你负责把电影选好。",
+    "tags": [
+      "daily_life_reentry",
+      "playful_demand"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-089",
+    "category": "PLAYFUL_DEMAND",
+    "text": "想过关，先把水给我倒上。",
+    "tags": [
+      "daily_life_reentry",
+      "playful_demand"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-090",
+    "category": "PLAYFUL_DEMAND",
+    "text": "行，先做一件让我满意的事。",
+    "tags": [
+      "daily_life_reentry",
+      "playful_demand"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-091",
+    "category": "PLAYFUL_DEMAND",
+    "text": "给你一次补考机会。",
+    "tags": [
+      "daily_life_reentry",
+      "playful_demand"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-092",
+    "category": "PLAYFUL_DEMAND",
+    "text": "你今晚听我的。",
+    "tags": [
+      "daily_life_reentry",
+      "playful_demand"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-093",
+    "category": "PLAYFUL_DEMAND",
+    "text": "这次算你半个及格。",
+    "tags": [
+      "daily_life_reentry",
+      "playful_demand"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-094",
+    "category": "PLAYFUL_DEMAND",
+    "text": "别光会说，给我干点小事。",
+    "tags": [
+      "daily_life_reentry",
+      "playful_demand"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-095",
+    "category": "PLAYFUL_DEMAND",
+    "text": "你先把我想吃的安排上。",
+    "tags": [
+      "daily_life_reentry",
+      "playful_demand"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-096",
+    "category": "PLAYFUL_DEMAND",
+    "text": "想让我消气，就陪我散散步。",
+    "tags": [
+      "daily_life_reentry",
+      "playful_demand"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-097",
+    "category": "PLAYFUL_DEMAND",
+    "text": "行了，先把该做的小事做了。",
+    "tags": [
+      "daily_life_reentry",
+      "playful_demand"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-098",
+    "category": "PLAYFUL_DEMAND",
+    "text": "这次不罚你，陪我坐着。",
+    "tags": [
+      "daily_life_reentry",
+      "playful_demand"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-099",
+    "category": "PLAYFUL_DEMAND",
+    "text": "我考虑原谅你，但你得有点诚意。",
+    "tags": [
+      "daily_life_reentry",
+      "playful_demand"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-100",
+    "category": "PLAYFUL_DEMAND",
+    "text": "好了，给你一个重新表现的机会。",
+    "tags": [
+      "daily_life_reentry",
+      "playful_demand"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-101",
+    "category": "LIGHT_TEASING",
+    "text": "现在知道来哄我了？",
+    "tags": [
+      "daily_life_reentry",
+      "light_teasing"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-102",
+    "category": "LIGHT_TEASING",
+    "text": "早这样不就好了。",
+    "tags": [
+      "daily_life_reentry",
+      "light_teasing"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-103",
+    "category": "LIGHT_TEASING",
+    "text": "嘴还挺甜。",
+    "tags": [
+      "daily_life_reentry",
+      "light_teasing"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-104",
+    "category": "LIGHT_TEASING",
+    "text": "行吧，算你会说话。",
+    "tags": [
+      "daily_life_reentry",
+      "light_teasing"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-105",
+    "category": "LIGHT_TEASING",
+    "text": "少来这套……不过这次算了。",
+    "tags": [
+      "daily_life_reentry",
+      "light_teasing"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-106",
+    "category": "LIGHT_TEASING",
+    "text": "你这人真的是。",
+    "tags": [
+      "daily_life_reentry",
+      "light_teasing"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-107",
+    "category": "LIGHT_TEASING",
+    "text": "刚才不是还挺有理的吗？",
+    "tags": [
+      "daily_life_reentry",
+      "light_teasing"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-108",
+    "category": "LIGHT_TEASING",
+    "text": "哟，现在态度变好了。",
+    "tags": [
+      "daily_life_reentry",
+      "light_teasing"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-109",
+    "category": "LIGHT_TEASING",
+    "text": "知道错了还算有救。",
+    "tags": [
+      "daily_life_reentry",
+      "light_teasing"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-110",
+    "category": "LIGHT_TEASING",
+    "text": "你还挺会挑时候道歉。",
+    "tags": [
+      "daily_life_reentry",
+      "light_teasing"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-111",
+    "category": "LIGHT_TEASING",
+    "text": "行，暂时不跟你计较。",
+    "tags": [
+      "daily_life_reentry",
+      "light_teasing"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-112",
+    "category": "LIGHT_TEASING",
+    "text": "这回算你反应快。",
+    "tags": [
+      "daily_life_reentry",
+      "light_teasing"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-113",
+    "category": "LIGHT_TEASING",
+    "text": "你看，早点说不就没事了。",
+    "tags": [
+      "daily_life_reentry",
+      "light_teasing"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-114",
+    "category": "LIGHT_TEASING",
+    "text": "别得意，我还没完全消气。",
+    "tags": [
+      "daily_life_reentry",
+      "light_teasing"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-115",
+    "category": "LIGHT_TEASING",
+    "text": "你这张嘴，偶尔也能说点好听的。",
+    "tags": [
+      "daily_life_reentry",
+      "light_teasing"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-116",
+    "category": "LIGHT_TEASING",
+    "text": "哼，算你还有点自觉。",
+    "tags": [
+      "daily_life_reentry",
+      "light_teasing"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-117",
+    "category": "LIGHT_TEASING",
+    "text": "今天先放你一马。",
+    "tags": [
+      "daily_life_reentry",
+      "light_teasing"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-118",
+    "category": "LIGHT_TEASING",
+    "text": "你再说两句好听的我听听。",
+    "tags": [
+      "daily_life_reentry",
+      "light_teasing"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-119",
+    "category": "LIGHT_TEASING",
+    "text": "这么会认错，刚才去哪儿了？",
+    "tags": [
+      "daily_life_reentry",
+      "light_teasing"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-120",
+    "category": "LIGHT_TEASING",
+    "text": "行啦，别摆出那副可怜样。",
+    "tags": [
+      "daily_life_reentry",
+      "light_teasing"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-121",
+    "category": "COMPANIONSHIP",
+    "text": "陪我坐一会儿。",
+    "tags": [
+      "daily_life_reentry",
+      "companionship"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-122",
+    "category": "COMPANIONSHIP",
+    "text": "你别忙了，陪我待会儿。",
+    "tags": [
+      "daily_life_reentry",
+      "companionship"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-123",
+    "category": "COMPANIONSHIP",
+    "text": "我们安静一会儿吧。",
+    "tags": [
+      "daily_life_reentry",
+      "companionship"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-124",
+    "category": "COMPANIONSHIP",
+    "text": "你在旁边就行。",
+    "tags": [
+      "daily_life_reentry",
+      "companionship"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-125",
+    "category": "COMPANIONSHIP",
+    "text": "过来陪我看会儿。",
+    "tags": [
+      "daily_life_reentry",
+      "companionship"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-126",
+    "category": "COMPANIONSHIP",
+    "text": "我不想再说了，陪着就好。",
+    "tags": [
+      "daily_life_reentry",
+      "companionship"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-127",
+    "category": "COMPANIONSHIP",
+    "text": "今晚别各玩各的了。",
+    "tags": [
+      "daily_life_reentry",
+      "companionship"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-128",
+    "category": "COMPANIONSHIP",
+    "text": "你坐这儿，别走开。",
+    "tags": [
+      "daily_life_reentry",
+      "companionship"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-129",
+    "category": "COMPANIONSHIP",
+    "text": "我们缓一会儿再睡。",
+    "tags": [
+      "daily_life_reentry",
+      "companionship"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-130",
+    "category": "COMPANIONSHIP",
+    "text": "陪我发会儿呆。",
+    "tags": [
+      "daily_life_reentry",
+      "companionship"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-131",
+    "category": "COMPANIONSHIP",
+    "text": "你把手机放下，陪我一会儿。",
+    "tags": [
+      "daily_life_reentry",
+      "companionship"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-132",
+    "category": "COMPANIONSHIP",
+    "text": "先什么都别做，坐着。",
+    "tags": [
+      "daily_life_reentry",
+      "companionship"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-133",
+    "category": "COMPANIONSHIP",
+    "text": "我想跟你待一会儿。",
+    "tags": [
+      "daily_life_reentry",
+      "companionship"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-134",
+    "category": "COMPANIONSHIP",
+    "text": "你在就行，不用解释了。",
+    "tags": [
+      "daily_life_reentry",
+      "companionship"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-135",
+    "category": "COMPANIONSHIP",
+    "text": "我们先安静下来。",
+    "tags": [
+      "daily_life_reentry",
+      "companionship"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-136",
+    "category": "COMPANIONSHIP",
+    "text": "陪我听会儿歌。",
+    "tags": [
+      "daily_life_reentry",
+      "companionship"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-137",
+    "category": "COMPANIONSHIP",
+    "text": "你过来，我不想一个人待着。",
+    "tags": [
+      "daily_life_reentry",
+      "companionship"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-138",
+    "category": "COMPANIONSHIP",
+    "text": "先靠着坐一会儿。",
+    "tags": [
+      "daily_life_reentry",
+      "companionship"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-139",
+    "category": "COMPANIONSHIP",
+    "text": "这事先放着，陪我待到困。",
+    "tags": [
+      "daily_life_reentry",
+      "companionship"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-140",
+    "category": "COMPANIONSHIP",
+    "text": "你别走，我们缓缓。",
+    "tags": [
+      "daily_life_reentry",
+      "companionship"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-141",
+    "category": "ACTIVITY_SHIFT",
+    "text": "陪我看会儿电视。",
+    "tags": [
+      "daily_life_reentry",
+      "activity_shift"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-142",
+    "category": "ACTIVITY_SHIFT",
+    "text": "走，出去转一圈。",
+    "tags": [
+      "daily_life_reentry",
+      "activity_shift"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-143",
+    "category": "ACTIVITY_SHIFT",
+    "text": "陪我打会儿游戏。",
+    "tags": [
+      "daily_life_reentry",
+      "activity_shift"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-144",
+    "category": "ACTIVITY_SHIFT",
+    "text": "我们找个电影看。",
+    "tags": [
+      "daily_life_reentry",
+      "activity_shift"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-145",
+    "category": "ACTIVITY_SHIFT",
+    "text": "去楼下走走吧。",
+    "tags": [
+      "daily_life_reentry",
+      "activity_shift"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-146",
+    "category": "ACTIVITY_SHIFT",
+    "text": "一起把房间收一下。",
+    "tags": [
+      "daily_life_reentry",
+      "activity_shift"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-147",
+    "category": "ACTIVITY_SHIFT",
+    "text": "陪我去买点东西。",
+    "tags": [
+      "daily_life_reentry",
+      "activity_shift"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-148",
+    "category": "ACTIVITY_SHIFT",
+    "text": "我们换个话题聊。",
+    "tags": [
+      "daily_life_reentry",
+      "activity_shift"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-149",
+    "category": "ACTIVITY_SHIFT",
+    "text": "去阳台吹会儿风。",
+    "tags": [
+      "daily_life_reentry",
+      "activity_shift"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-150",
+    "category": "ACTIVITY_SHIFT",
+    "text": "看个轻松点的电影吧。",
+    "tags": [
+      "daily_life_reentry",
+      "activity_shift"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-151",
+    "category": "ACTIVITY_SHIFT",
+    "text": "要不我们出去买杯喝的。",
+    "tags": [
+      "daily_life_reentry",
+      "activity_shift"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-152",
+    "category": "ACTIVITY_SHIFT",
+    "text": "陪我把这集看完。",
+    "tags": [
+      "daily_life_reentry",
+      "activity_shift"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-153",
+    "category": "ACTIVITY_SHIFT",
+    "text": "一起去超市逛一圈。",
+    "tags": [
+      "daily_life_reentry",
+      "activity_shift"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-154",
+    "category": "ACTIVITY_SHIFT",
+    "text": "我们听会儿歌。",
+    "tags": [
+      "daily_life_reentry",
+      "activity_shift"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-155",
+    "category": "ACTIVITY_SHIFT",
+    "text": "去楼下拿个快递，顺便走走。",
+    "tags": [
+      "daily_life_reentry",
+      "activity_shift"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-156",
+    "category": "ACTIVITY_SHIFT",
+    "text": "你陪我玩两局。",
+    "tags": [
+      "daily_life_reentry",
+      "activity_shift"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-157",
+    "category": "ACTIVITY_SHIFT",
+    "text": "一起把晚饭解决了。",
+    "tags": [
+      "daily_life_reentry",
+      "activity_shift"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-158",
+    "category": "ACTIVITY_SHIFT",
+    "text": "我们先出门透透气。",
+    "tags": [
+      "daily_life_reentry",
+      "activity_shift"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-159",
+    "category": "ACTIVITY_SHIFT",
+    "text": "看会儿综艺吧，别想刚才了。",
+    "tags": [
+      "daily_life_reentry",
+      "activity_shift"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-160",
+    "category": "ACTIVITY_SHIFT",
+    "text": "去把那部电影接着看。",
+    "tags": [
+      "daily_life_reentry",
+      "activity_shift"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-161",
+    "category": "CARE_BEHAVIOR",
+    "text": "你先喝点水。",
+    "tags": [
+      "daily_life_reentry",
+      "care_behavior"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-162",
+    "category": "CARE_BEHAVIOR",
+    "text": "别一直憋着，缓一缓。",
+    "tags": [
+      "daily_life_reentry",
+      "care_behavior"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-163",
+    "category": "CARE_BEHAVIOR",
+    "text": "你今天也累了吧，先坐下。",
+    "tags": [
+      "daily_life_reentry",
+      "care_behavior"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-164",
+    "category": "CARE_BEHAVIOR",
+    "text": "把外套披上，别着凉。",
+    "tags": [
+      "daily_life_reentry",
+      "care_behavior"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-165",
+    "category": "CARE_BEHAVIOR",
+    "text": "你先吃两口再说。",
+    "tags": [
+      "daily_life_reentry",
+      "care_behavior"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-166",
+    "category": "CARE_BEHAVIOR",
+    "text": "别站着了，坐下来。",
+    "tags": [
+      "daily_life_reentry",
+      "care_behavior"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-167",
+    "category": "CARE_BEHAVIOR",
+    "text": "你声音都哑了，少说点。",
+    "tags": [
+      "daily_life_reentry",
+      "care_behavior"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-168",
+    "category": "CARE_BEHAVIOR",
+    "text": "先把气顺了。",
+    "tags": [
+      "daily_life_reentry",
+      "care_behavior"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-169",
+    "category": "CARE_BEHAVIOR",
+    "text": "你去躺一会儿吧。",
+    "tags": [
+      "daily_life_reentry",
+      "care_behavior"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-170",
+    "category": "CARE_BEHAVIOR",
+    "text": "外面冷，回来把手捂热。",
+    "tags": [
+      "daily_life_reentry",
+      "care_behavior"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-171",
+    "category": "CARE_BEHAVIOR",
+    "text": "你先歇着，我来弄。",
+    "tags": [
+      "daily_life_reentry",
+      "care_behavior"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-172",
+    "category": "CARE_BEHAVIOR",
+    "text": "别饿着自己。",
+    "tags": [
+      "daily_life_reentry",
+      "care_behavior"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-173",
+    "category": "CARE_BEHAVIOR",
+    "text": "喝口水，别光顾着嘴硬。",
+    "tags": [
+      "daily_life_reentry",
+      "care_behavior"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-174",
+    "category": "CARE_BEHAVIOR",
+    "text": "你先把情绪放一放。",
+    "tags": [
+      "daily_life_reentry",
+      "care_behavior"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-175",
+    "category": "CARE_BEHAVIOR",
+    "text": "今天就别折腾了。",
+    "tags": [
+      "daily_life_reentry",
+      "care_behavior"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-176",
+    "category": "CARE_BEHAVIOR",
+    "text": "过来，我给你倒水。",
+    "tags": [
+      "daily_life_reentry",
+      "care_behavior"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-177",
+    "category": "CARE_BEHAVIOR",
+    "text": "你眼睛都困了，早点休息。",
+    "tags": [
+      "daily_life_reentry",
+      "care_behavior"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-178",
+    "category": "CARE_BEHAVIOR",
+    "text": "先把饭吃了，别空着肚子吵。",
+    "tags": [
+      "daily_life_reentry",
+      "care_behavior"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-179",
+    "category": "CARE_BEHAVIOR",
+    "text": "你去换件舒服的衣服。",
+    "tags": [
+      "daily_life_reentry",
+      "care_behavior"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-180",
+    "category": "CARE_BEHAVIOR",
+    "text": "没事，先让自己缓下来。",
+    "tags": [
+      "daily_life_reentry",
+      "care_behavior"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-181",
+    "category": "HUMOROUS_BARGAIN",
+    "text": "想让我原谅你？奶茶一杯。",
+    "tags": [
+      "daily_life_reentry",
+      "humorous_bargain"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-182",
+    "category": "HUMOROUS_BARGAIN",
+    "text": "你请我吃饭，我就考虑考虑。",
+    "tags": [
+      "daily_life_reentry",
+      "humorous_bargain"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-183",
+    "category": "HUMOROUS_BARGAIN",
+    "text": "给我买个冰淇淋，这事先翻一页。",
+    "tags": [
+      "daily_life_reentry",
+      "humorous_bargain"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-184",
+    "category": "HUMOROUS_BARGAIN",
+    "text": "你把垃圾扔了，我就不跟你计较。",
+    "tags": [
+      "daily_life_reentry",
+      "humorous_bargain"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-185",
+    "category": "HUMOROUS_BARGAIN",
+    "text": "笑一个，不然不算和好。",
+    "tags": [
+      "daily_life_reentry",
+      "humorous_bargain"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-186",
+    "category": "HUMOROUS_BARGAIN",
+    "text": "你先把水递过来，和好仪式开始。",
+    "tags": [
+      "daily_life_reentry",
+      "humorous_bargain"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-187",
+    "category": "HUMOROUS_BARGAIN",
+    "text": "请我看电影，我就给你加分。",
+    "tags": [
+      "daily_life_reentry",
+      "humorous_bargain"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-188",
+    "category": "HUMOROUS_BARGAIN",
+    "text": "你负责洗碗，我负责暂时消气。",
+    "tags": [
+      "daily_life_reentry",
+      "humorous_bargain"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-189",
+    "category": "HUMOROUS_BARGAIN",
+    "text": "行，拿一杯热饮换我不板脸。",
+    "tags": [
+      "daily_life_reentry",
+      "humorous_bargain"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-190",
+    "category": "HUMOROUS_BARGAIN",
+    "text": "你把我逗笑，这事就先放着。",
+    "tags": [
+      "daily_life_reentry",
+      "humorous_bargain"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-191",
+    "category": "HUMOROUS_BARGAIN",
+    "text": "给我一块蛋糕，剩下的以后再审。",
+    "tags": [
+      "daily_life_reentry",
+      "humorous_bargain"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-192",
+    "category": "HUMOROUS_BARGAIN",
+    "text": "你先把灯关了，表现分加一分。",
+    "tags": [
+      "daily_life_reentry",
+      "humorous_bargain"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-193",
+    "category": "HUMOROUS_BARGAIN",
+    "text": "陪我散步一圈，算你诚意到了。",
+    "tags": [
+      "daily_life_reentry",
+      "humorous_bargain"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-194",
+    "category": "HUMOROUS_BARGAIN",
+    "text": "今天的和好条件是：不许再顶嘴。",
+    "tags": [
+      "daily_life_reentry",
+      "humorous_bargain"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-195",
+    "category": "HUMOROUS_BARGAIN",
+    "text": "你给我挑个电影，我就不追问了。",
+    "tags": [
+      "daily_life_reentry",
+      "humorous_bargain"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-196",
+    "category": "HUMOROUS_BARGAIN",
+    "text": "先把水果端来，我听听你的解释。",
+    "tags": [
+      "daily_life_reentry",
+      "humorous_bargain"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-197",
+    "category": "HUMOROUS_BARGAIN",
+    "text": "你表现好一点，我就少念叨两句。",
+    "tags": [
+      "daily_life_reentry",
+      "humorous_bargain"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-198",
+    "category": "HUMOROUS_BARGAIN",
+    "text": "给我捏两分钟肩，暂时放过你。",
+    "tags": [
+      "daily_life_reentry",
+      "humorous_bargain"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-199",
+    "category": "HUMOROUS_BARGAIN",
+    "text": "行，先交一份拥抱，我再决定。",
+    "tags": [
+      "daily_life_reentry",
+      "humorous_bargain"
+    ],
+    "sourceType": "synthetic_seed"
+  },
+  {
+    "id": "reentry-200",
+    "category": "HUMOROUS_BARGAIN",
+    "text": "你把晚饭安排好，今天就算你过关。",
+    "tags": [
+      "daily_life_reentry",
+      "humorous_bargain"
+    ],
+    "sourceType": "synthetic_seed"
+  }
+]

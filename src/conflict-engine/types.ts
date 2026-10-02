@@ -176,6 +176,22 @@ export type DebugTrace = {
   selectedStrategy: StrategySelection;
   retrievedEpisodeIds: string[];
   validator: { valid: boolean; issues: string[] };
+  memory?: {
+    sessionId: string;
+    sessionType: string;
+    continuePreviousScene: boolean;
+    activeTopic: string;
+    memoryClaimDetected: boolean;
+    claim: string;
+    evidenceId?: string;
+    evidenceSource?: string;
+    evidenceConfidence: number;
+    exactQuoteMatch: boolean;
+    inferenceUsed: boolean;
+    userCorrection: boolean;
+    referenceDataUsedAsFact: false;
+    issues: string[];
+  };
   relationship?: {
     currentState: string;
     previousState: string;
@@ -206,6 +222,22 @@ export type DebugTrace = {
     rejectionCount: number;
     conflictBudget: number;
     conflictPhase: string;
+  };
+  topic?: {
+    topic: string;
+    status: string;
+    agreement?: string;
+    actionOwner?: string;
+    actionDeadline?: string;
+    newEvidence: boolean;
+    repetitionCount: number;
+    topicExhaustionScore: number;
+    stuckTopic: boolean;
+    reopenAllowed: boolean;
+    lettingGoReadiness: number;
+    topicShiftProbability: number;
+    dailyLifeReentryStrategy?: string;
+    reason: string;
   };
   userState?: {
     anger: number;
