@@ -410,10 +410,11 @@ export default function Home() {
       setLatestSpokenText("");
       spokenTextRef.current = "";
       interruptModeRef.current = true;
+      // 暂时关闭抢话：AI 说完后才重新开启 ASR，避免用户声音和 TTS 重叠。
+      asrRef.current.stop();
       ttsRef.current.speak({ text: reply, emotion: data.voice?.emotion, primaryEmotion: data.voice?.primaryEmotion, emotionScale: data.voice?.emotionScale, intensity: data.voice?.intensity, speed: data.voice?.speed, volume: data.voice?.volume, speechRate: data.voice?.speechRate, loudnessRate: data.voice?.loudnessRate, sectionId: data.voice?.sectionId || sectionIdRef.current, contextText: data.voice?.contextText, fallbackUsed: data.voice?.fallbackUsed, voiceId: selectedVoiceId || undefined }, {
         onStart: () => {
           setRealtimeState("AI_SPEAKING");
-          startListening(true);
         },
         onProgress: ({ spokenText }) => { spokenTextRef.current = spokenText; setLatestSpokenText(spokenText); },
         onEnd: () => { if (ttsGuardRef.current !== null) window.clearTimeout(ttsGuardRef.current); interruptModeRef.current = false; setRealtimeState("LISTENING"); resumeListening(); },
@@ -517,15 +518,7 @@ export default function Home() {
       setMicHealth((current) => ({ ...current, asrAlive: true, lastAsrResultAt: Date.now() }));
       asrSpeechActiveRef.current = !isFinal;
       if (interruptOnly || interruptModeRef.current) {
-        if (text.trim() && lastVoiceAtRef.current && Date.now() - lastVoiceAtRef.current < 900 && !spokenTextRef.current.includes(text.trim())) {
-          setRealtimeState("BARGE_IN_DETECTED");
-          setRealtimeState("INTERRUPTING_AI");
-          interruptModeRef.current = false;
-          ttsRef.current.stop();
-          trimInterruptedAssistant(spokenTextRef.current);
-          setLatestSpokenText((spoken) => spoken || "");
-          window.setTimeout(() => { if (conversationActiveRef.current) startListening(false); }, 80);
-        }
+        // 当前版本不允许用户打断 AI；播放期间的旧 ASR 回调直接丢弃。
         return;
       }
       if (realtimeState === "FINALIZING_USER_TURN" || realtimeState === "AI_GENERATING") return;

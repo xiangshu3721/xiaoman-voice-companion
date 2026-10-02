@@ -9,6 +9,7 @@ const check = (name: string, condition: boolean) => { assert.equal(condition, tr
 
 check("first speech grace", !detectEndOfTurn({ ...base, silenceDuration: 500, interimTranscript: "我刚才想说" }).shouldFinalize);
 check("unfinished connector protection", !detectEndOfTurn({ ...base, silenceDuration: 1800, interimTranscript: "我其实想" }).shouldFinalize);
+check("unfinished connector eventually finalizes", detectEndOfTurn({ ...base, silenceDuration: 2800, interimTranscript: "我其实想" }).shouldFinalize);
 check("700ms possible end waits", !detectEndOfTurn({ ...base, silenceDuration: 900, interimTranscript: "我回来了" }).shouldFinalize);
 check("1200ms joint detector still waits for final", !detectEndOfTurn({ ...base, silenceDuration: 1200, interimTranscript: "我回来了" }).shouldFinalize);
 check("complete turn finalizes after silence", detectEndOfTurn({ ...base, silenceDuration: 1900, interimTranscript: "我回来了" }).shouldFinalize);

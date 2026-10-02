@@ -15,8 +15,9 @@ export function detectEndOfTurn(input: EndOfTurnInput) {
   const text = input.interimTranscript.trim();
   const hasUnfinishedConnector = UNFINISHED.test(text);
   const finalAge = input.lastFinalSegmentTime == null ? 0 : now - input.lastFinalSegmentTime;
+  const connectorGrace = hasUnfinishedConnector && input.silenceDuration < 2600;
   if (!text) return { shouldFinalize: false, confidence: 0, reason: "no_transcript" };
-  if (input.utteranceDuration < 500 || input.silenceDuration < 700 || input.vadActive || hasUnfinishedConnector) return { shouldFinalize: false, confidence: 0.2, reason: "still_speaking_or_grace" };
+  if (input.utteranceDuration < 500 || input.silenceDuration < 700 || input.vadActive || connectorGrace) return { shouldFinalize: false, confidence: 0.2, reason: "still_speaking_or_grace" };
   if (input.silenceDuration < 1200) return { shouldFinalize: false, confidence: 0.45, reason: "possible_end" };
   if (input.silenceDuration < 1800 && (input.interimTranscript.trim() || finalAge < 700)) return { shouldFinalize: false, confidence: 0.6, reason: "waiting_for_asr_final" };
   const confidence = Math.min(1, 0.65 + Math.min(0.25, input.silenceDuration / 8000) + Math.min(0.1, input.semanticCompleteness * 0.1));
