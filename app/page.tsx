@@ -20,6 +20,7 @@ import { detectEndOfTurn, semanticCompleteness } from "@/src/realtime/end-of-tur
 import { TranscriptAccumulator } from "@/src/realtime/transcript-accumulator";
 import type { MicHealth, RealtimeConversationState } from "@/src/realtime/types";
 import { MicrophonePermissionManager } from "@/src/realtime/microphone-permission";
+import { VoiceDeliveryPipeline } from "@/src/voice/voice-delivery-pipeline";
 
 type Status = "idle" | "listening" | "thinking" | "speaking";
 type MicrophoneState = "unknown" | "requesting" | "granted" | "denied" | "unavailable" | "error";
@@ -195,7 +196,7 @@ export default function Home() {
   const sectionIdRef = useRef(newSectionId());
   const conversationActiveRef = useRef(false);
   const asrRef = useRef(new BrowserSpeechRecognitionProvider());
-  const ttsRef = useRef(new DoubaoTTSProvider());
+  const voicePipelineRef = useRef(new VoiceDeliveryPipeline(new DoubaoTTSProvider()));
   const microphoneRef = useRef(new MicrophonePermissionManager());
   const streamRef = useRef<MediaStream | null>(null);
   const vadRef = useRef(new AdaptiveVadMonitor());
@@ -237,7 +238,7 @@ export default function Home() {
     return () => {
       stopMicWatch();
       asrRef.current.stop();
-      ttsRef.current.stop();
+      voicePipelineRef.current.stop("SESSION_END");
       vadRef.current.stop();
       streamRef.current?.getTracks().forEach((track) => track.stop());
     };
@@ -261,7 +262,7 @@ export default function Home() {
     setNotice("");
     // 必须在用户点击触发的同步阶段先解锁音频，移动 Safari/部分 WebView
     // 才允许异步请求完成后播放 AI 语音。
-    ttsRef.current.unlockAudio();
+    voicePipelineRef.current.unlockAudio();
     setMicrophoneState("requesting");
     const micResult = await microphoneRef.current.request({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
     const nextMicrophoneState: MicrophoneState = micResult.status;
@@ -295,7 +296,7 @@ export default function Home() {
     conversationActiveRef.current = false;
     setConversationActive(false);
     asrRef.current.stop();
-    ttsRef.current.stop();
+    voicePipelineRef.current.stop("SESSION_END");
     vadRef.current.stop();
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
@@ -418,15 +419,15 @@ export default function Home() {
       setReviewTurns([]);
       setReviewQuestion("");
       setReviewError("");
-      setStatus("speaking");
+      setStatus("thinking");
       setRealtimeState("AI_SPEAKING");
       setLatestSpokenText("");
       spokenTextRef.current = "";
       interruptModeRef.current = true;
       // 暂时关闭抢话：AI 说完后才重新开启 ASR，避免用户声音和 TTS 重叠。
       asrRef.current.stop();
-      ttsRef.current.speak({ text: reply, emotion: data.voice?.emotion, primaryEmotion: data.voice?.primaryEmotion, emotionScale: data.voice?.emotionScale, intensity: data.voice?.intensity, speed: data.voice?.speed, volume: data.voice?.volume, speechRate: data.voice?.speechRate, loudnessRate: data.voice?.loudnessRate, sectionId: data.voice?.sectionId || sectionIdRef.current, contextText: data.voice?.contextText, fallbackUsed: data.voice?.fallbackUsed, voiceId: selectedVoiceId || undefined }, {
-        onStateChange: (state) => { setTtsPlaybackState(state); if (state === "READY" || state === "PLAYING") { if (ttsGuardRef.current !== null) window.clearTimeout(ttsGuardRef.current); } },
+      voicePipelineRef.current.speak(turnId, { text: reply, emotion: data.voice?.emotion, primaryEmotion: data.voice?.primaryEmotion, emotionScale: data.voice?.emotionScale, intensity: data.voice?.intensity, speed: data.voice?.speed, volume: data.voice?.volume, speechRate: data.voice?.speechRate, loudnessRate: data.voice?.loudnessRate, sectionId: data.voice?.sectionId || sectionIdRef.current, contextText: data.voice?.contextText, fallbackUsed: data.voice?.fallbackUsed, voiceId: selectedVoiceId || undefined }, {
+        onStateChange: (state) => { setTtsPlaybackState(state); if (state === "READY" || state === "PLAYING") { if (ttsGuardRef.current !== null) window.clearTimeout(ttsGuardRef.current); } if (state === "PLAYING") setStatus("speaking"); },
         onStart: () => {
           setRealtimeState("AI_SPEAKING");
         },
@@ -442,7 +443,7 @@ export default function Home() {
       });
       if (ttsGuardRef.current !== null) window.clearTimeout(ttsGuardRef.current);
       ttsGuardRef.current = window.setTimeout(() => {
-        ttsRef.current.stop();
+        voicePipelineRef.current.stop("SYSTEM_ERROR");
         interruptModeRef.current = false;
         setNotice("语音播放超时，已恢复收音；你可以继续说。 ");
         resumeListening();
@@ -608,7 +609,7 @@ export default function Home() {
     conversationActiveRef.current = false;
     setConversationActive(false);
     asrRef.current.stop();
-    ttsRef.current.stop();
+    voicePipelineRef.current.stop("SESSION_END");
     vadRef.current.stop();
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
@@ -687,6 +688,7 @@ export default function Home() {
           </form>}
           {notice && <div className="mt-4 flex items-center gap-3 rounded-full border border-[#e98972]/30 bg-[#e98972]/10 px-4 py-2 text-xs text-[#f6a08b]" role="alert">{notice}<button type="button" onClick={() => setNotice("")} className="text-[#f4efeb]">×</button></div>}
           {mode && <p className="mt-3 text-[10px] text-[#5f5856]">{mode === "deepseek" ? "DeepSeek 已连接" : mode === "safety" ? "Safety Override 已接管" : "当前为本地演示回复"}</p>}
+          {debugEnabled && <p className="mt-2 text-[10px] text-[#756d6b]">TTS 状态：{ttsPlaybackState}</p>}
           {debugEnabled && ttsDebug && <details open className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-xs text-[#b7adab]"><summary className="cursor-pointer text-[#e98972]">TTS Debug</summary><div className="mt-3 grid gap-2 sm:grid-cols-2"><p>Provider：{ttsDebug.provider === "volcengine" ? "Doubao / 火山引擎" : "Browser SpeechSynthesis fallback"}</p><p>Voice：{ttsDebug.voice}</p><p>Emotion：{ttsDebug.emotion || "neutral"}</p><p>Intensity：{ttsDebug.intensity ?? "-"}</p><p>Streaming：{ttsDebug.streaming ? "yes" : "no"}</p><p>首包延迟：{ttsDebug.firstByteLatencyMs == null ? "-" : `${ttsDebug.firstByteLatencyMs} ms`}</p><p>总耗时：{ttsDebug.totalLatencyMs == null ? "播放中" : `${ttsDebug.totalLatencyMs} ms`}</p>{ttsDebug.fallbackReason && <p className="sm:col-span-2 text-[#f6a08b]">Fallback：{ttsDebug.fallbackReason}</p>}</div></details>}
           {debugEnabled && debugInfo && <details open className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-xs text-[#b7adab]"><summary className="cursor-pointer text-[#e98972]">Conflict Engine Debug</summary><div className="mt-3 grid gap-2 sm:grid-cols-2"><p>User Strategy：{debugInfo.userStrategy.join(" + ")}</p><p>Confidence：{debugInfo.confidence}</p><p>Intensity：{debugInfo.emotion.conflictIntensity}/5</p><p>Selected：{debugInfo.selectedStrategy.primary}{debugInfo.selectedStrategy.secondary.length ? ` + ${debugInfo.selectedStrategy.secondary.join(" + ")}` : ""}</p><p className="sm:col-span-2">Emotion：anger {debugInfo.emotion.anger} · hurt {debugInfo.emotion.hurt} · trust {debugInfo.emotion.trust} · connection {debugInfo.emotion.connection}</p><p className="sm:col-span-2">Retrieved：{debugInfo.retrievedEpisodeIds.join(", ")}</p><p className="sm:col-span-2">Validator：{debugInfo.validator.valid ? "通过" : debugInfo.validator.issues.join(", ")}</p>{debugInfo.topic && <><p className="sm:col-span-2">Topic：{debugInfo.topic.topic}</p><p>Topic Status：{debugInfo.topic.status}</p><p>Agreement：{debugInfo.topic.agreement || "—"}</p><p>Action Owner：{debugInfo.topic.actionOwner || "—"}</p><p>Action Deadline：{debugInfo.topic.actionDeadline || "—"}</p><p>New Evidence：{debugInfo.topic.newEvidence ? "yes" : "no"}</p><p>Topic Repetition：{debugInfo.topic.repetitionCount}</p><p>Topic Exhaustion：{debugInfo.topic.topicExhaustionScore}</p><p>Stuck Topic：{debugInfo.topic.stuckTopic ? "yes" : "no"}</p><p>Reopen Allowed：{debugInfo.topic.reopenAllowed ? "yes" : "no"}</p><p>Letting Go Readiness：{debugInfo.topic.lettingGoReadiness}</p><p>Topic Shift Probability：{Math.round(debugInfo.topic.topicShiftProbability * 100)}%</p><p>Daily Reentry：{debugInfo.topic.dailyLifeReentryStrategy || "—"}</p><p className="sm:col-span-2">Topic Gate：{debugInfo.topic.reason}</p></>}{debugInfo.relationship && <><p>Relationship State：{debugInfo.relationship.currentState}</p><p>Previous State：{debugInfo.relationship.previousState}</p><p>Transition Confidence：{debugInfo.relationship.stateConfidence}</p><p>State Duration：{debugInfo.relationship.stateDuration}</p><p>Conflict Locked：{debugInfo.relationship.conflictLocked ? "yes" : "no"}</p><p className="sm:col-span-2">Transition：{debugInfo.relationship.transitionReason}</p></>}{debugInfo.reflection && <><p>Reflection Depth：{debugInfo.reflection.insightDepth}/3</p><p>Mutual Understanding：{debugInfo.reflection.mutualUnderstanding}</p><p>Surface Conflict：{debugInfo.reflection.surfaceConflict || "—"}</p><p>Trigger：{debugInfo.reflection.triggerIdentified || "—"}</p><p>Underlying Need：{debugInfo.reflection.underlyingNeed || "—"}</p><p>User Contribution：{debugInfo.reflection.userContribution || "—"}</p><p>Character Contribution：{debugInfo.reflection.characterContribution || "—"}</p><p className="sm:col-span-2">Interaction Pattern：{debugInfo.reflection.interactionPattern || "—"}</p></>}{debugInfo.safety && <><p>Safety Active：{debugInfo.safety.active ? "yes" : "no"}</p><p>Risk Level：{debugInfo.safety.riskLevel}</p><p>Safety Confidence：{debugInfo.safety.confidence}</p><p className="sm:col-span-2">Safety Signals：{debugInfo.safety.signals.join(", ") || "none"}</p></>}{debugInfo.userState && <><p className="sm:col-span-2">User State：hurt {debugInfo.userState.hurt} · anger {debugInfo.userState.anger} · sadness {debugInfo.userState.sadness} · aggression {debugInfo.userState.aggression} · withdrawal {debugInfo.userState.withdrawal} · openness {debugInfo.userState.openness}</p><p className="sm:col-span-2">Intent：{debugInfo.userState.intent.join(" + ")} · Trend：{debugInfo.userState.trend}</p><p>Voice Emotion：{debugInfo.userState.voiceSignals}</p><p>Visual Emotion：{debugInfo.userState.visualSignals}</p></>}</div></details>}
         {debugEnabled && debugInfo?.memory && <details open className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-xs text-[#b7adab]"><summary className="cursor-pointer text-[#e98972]">Memory Grounding Debug</summary><div className="mt-3 grid gap-2 sm:grid-cols-2"><p>Session：{debugInfo.memory.sessionId}</p><p>Session Type：{debugInfo.memory.sessionType}</p><p>Continue Previous Scene：{debugInfo.memory.continuePreviousScene ? "TRUE" : "FALSE"}</p><p>Active Topic：{debugInfo.memory.activeTopic}</p><p>Memory Claim：{debugInfo.memory.memoryClaimDetected ? "yes" : "no"}</p><p>Evidence ID：{debugInfo.memory.evidenceId || "NONE"}</p><p>Evidence Source：{debugInfo.memory.evidenceSource || "NONE"}</p><p>Evidence Confidence：{debugInfo.memory.evidenceConfidence}</p><p>Exact Quote Match：{debugInfo.memory.exactQuoteMatch ? "yes" : "no"}</p><p>Inference Used：{debugInfo.memory.inferenceUsed ? "yes" : "no"}</p><p>User Correction：{debugInfo.memory.userCorrection ? "yes" : "no"}</p><p>Reference Data Used as Fact：FALSE</p><p className="sm:col-span-2">Memory Guard：{debugInfo.memory.issues.join(", ") || "通过"}</p></div></details>}

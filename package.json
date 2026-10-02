@@ -25,6 +25,7 @@
     ,"performance:seed:generate": "tsx scripts/generate-emotion-performance-seed.ts"
     ,"test:emotion-performance": "tsx scripts/test-emotion-performance.ts"
     ,"test:realtime": "tsx scripts/test-realtime-reliability.ts"
+    ,"test:tts-reliability": "tsx scripts/test-tts-reliability.ts"
     ,"tts:probe": "tsx scripts/probe-tts-capabilities.ts"
     ,"tts:voice-matrix": "tsx scripts/generate-voice-test-matrix.ts"
   },

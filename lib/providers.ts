@@ -47,9 +47,14 @@ export type TTSMetrics = {
   playbackSuccess?: boolean;
   playbackState?: TTSPlaybackState;
   error?: string;
+  audioBytes?: number;
+  mimeType?: string;
+  audioDuration?: number;
 };
 
 export type TTSPlaybackState = "IDLE" | "REQUESTING" | "BUFFERING" | "READY" | "PLAYING" | "COMPLETED" | "INTERRUPTED" | "FAILED" | "RECOVERING";
+
+export type TTSPlaybackSignal = { type: "loadedmetadata" | "canplay" | "play" | "playing" | "timeupdate" | "ended" | "error"; currentTime?: number; duration?: number; readyState?: number; networkState?: number; errorName?: string; errorMessage?: string };
 
 export type TTSCallbacks = {
   onEnd: () => void;
@@ -58,6 +63,7 @@ export type TTSCallbacks = {
   onStart?: () => void;
   onProgress?: (progress: { spokenRatio: number; spokenText: string }) => void;
   onStateChange?: (state: TTSPlaybackState) => void;
+  onPlaybackSignal?: (signal: TTSPlaybackSignal) => void;
 };
 
 export type ScenarioId = "late-home" | "no-reply" | "forgotten" | "free";
@@ -424,7 +430,10 @@ export class DoubaoTTSProvider implements TTSProvider {
       }
       const audioBlob = await response.blob();
       if (!audioBlob.size) throw new Error("火山引擎返回了空音频");
-      callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, generationSuccess: true, ...ttsDebugFields(request) });
+      if (audioBlob.size < 128) throw new Error("火山引擎返回的音频过小");
+      const mime = response.headers.get("content-type") || audioBlob.type || "audio/mpeg";
+      if (typeof Audio !== "undefined" && !new Audio().canPlayType(mime) && !this.audioContext) throw new Error(`当前浏览器不支持音频格式 ${mime}`);
+      callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, generationSuccess: true, audioBytes: audioBlob.size, mimeType: mime, ...ttsDebugFields(request) });
       await this.playBlob(audioBlob, request, callbacks, startedAt, voice, generation);
     }).catch((error: unknown) => {
       if (generation !== this.requestGeneration) return;
@@ -439,19 +448,30 @@ export class DoubaoTTSProvider implements TTSProvider {
   }
 
   private playBlob(blob: Blob, request: TTSRequest, callbacks: TTSCallbacks, startedAt: number, voice: string, generation: number) {
-    if (isMobileBrowser() && this.audioContext) {
-      return this.playWithWebAudio(blob, request, callbacks, startedAt, voice, generation).catch(() => {
-        if (generation !== this.requestGeneration) return;
-        return this.playWithHtmlAudio(blob, request, callbacks, startedAt, voice, generation);
-      });
-    }
     if (this.audioContext) {
-      return this.playWithWebAudio(blob, request, callbacks, startedAt, voice, generation).catch(() => {
+      return this.playWithWebAudio(blob, request, callbacks, startedAt, voice, generation).catch(async () => {
         if (generation !== this.requestGeneration) return;
-        return this.playWithHtmlAudio(blob, request, callbacks, startedAt, voice, generation);
+        callbacks.onStateChange?.("RECOVERING");
+        try {
+          return await this.playWithHtmlAudio(blob, request, callbacks, startedAt, voice, generation);
+        } catch (firstRecoveryError) {
+          if (generation !== this.requestGeneration) return;
+          callbacks.onStateChange?.("RECOVERING");
+          this.audio = null;
+          try {
+            return await this.playWithHtmlAudio(blob, request, callbacks, startedAt, voice, generation);
+          } catch {
+            throw firstRecoveryError;
+          }
+        }
       });
     }
-    return this.playWithHtmlAudio(blob, request, callbacks, startedAt, voice, generation);
+    return this.playWithHtmlAudio(blob, request, callbacks, startedAt, voice, generation).catch(async (error) => {
+      if (generation !== this.requestGeneration) return;
+      callbacks.onStateChange?.("RECOVERING");
+      this.audio = null;
+      try { return await this.playWithHtmlAudio(blob, request, callbacks, startedAt, voice, generation); } catch { throw error; }
+    });
   }
 
   private async playResponseStream(stream: ReadableStream<Uint8Array>, request: TTSRequest, callbacks: TTSCallbacks, startedAt: number, voice: string, generation: number) {
@@ -468,6 +488,7 @@ export class DoubaoTTSProvider implements TTSProvider {
     callbacks.onStart?.();
     audio.ontimeupdate = () => {
       const ratio = audio.duration > 0 ? Math.min(1, audio.currentTime / audio.duration) : 0;
+      callbacks.onPlaybackSignal?.({ type: "timeupdate", currentTime: audio.currentTime, duration: audio.duration, readyState: audio.readyState, networkState: audio.networkState });
       callbacks.onProgress?.({ spokenRatio: ratio, spokenText: request.text.slice(0, Math.ceil(request.text.length * ratio)) });
     };
     audio.load();
@@ -488,8 +509,11 @@ export class DoubaoTTSProvider implements TTSProvider {
       callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: true, totalLatencyMs: Math.round(performance.now() - startedAt), generationSuccess: true, playbackSuccess: true, ...ttsDebugFields(request) });
       callbacks.onEnd();
     };
-    audio.onended = finish;
-    audio.onerror = () => { if (!settled) settled = true; };
+    audio.onloadedmetadata = () => callbacks.onPlaybackSignal?.({ type: "loadedmetadata", currentTime: audio.currentTime, duration: audio.duration, readyState: audio.readyState, networkState: audio.networkState });
+    audio.oncanplay = () => callbacks.onPlaybackSignal?.({ type: "canplay", currentTime: audio.currentTime, duration: audio.duration, readyState: audio.readyState, networkState: audio.networkState });
+    audio.onplaying = () => callbacks.onPlaybackSignal?.({ type: "playing", currentTime: audio.currentTime, duration: audio.duration, readyState: audio.readyState, networkState: audio.networkState });
+    audio.onended = () => { callbacks.onPlaybackSignal?.({ type: "ended", currentTime: audio.currentTime, duration: audio.duration, readyState: audio.readyState, networkState: audio.networkState }); finish(); };
+    audio.onerror = () => { callbacks.onPlaybackSignal?.({ type: "error", currentTime: audio.currentTime, duration: audio.duration, readyState: audio.readyState, networkState: audio.networkState, errorName: "MediaError", errorMessage: "流式音频播放失败" }); if (!settled) settled = true; };
     const waitForPlayback = () => new Promise<void>((resolve, reject) => {
       const startedWaiting = performance.now();
       const poll = () => {
@@ -525,6 +549,7 @@ export class DoubaoTTSProvider implements TTSProvider {
           firstChunk = false;
           callbacks.onStateChange?.("READY");
           callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: true, firstByteLatencyMs: Math.round(performance.now() - startedAt), ...ttsDebugFields(request) });
+          callbacks.onPlaybackSignal?.({ type: "play", currentTime: audio.currentTime, duration: audio.duration, readyState: audio.readyState, networkState: audio.networkState });
           await audio.play();
           callbacks.onStateChange?.("PLAYING");
           await waitForPlayback();
@@ -552,19 +577,35 @@ export class DoubaoTTSProvider implements TTSProvider {
       source.buffer = buffer;
       source.connect(context.destination);
       const startedAtAudio = context.currentTime;
+      let lastPlaybackTime = 0;
+      let lastMovementAt = performance.now();
       callbacks.onStart?.();
       const progressTimer = window.setInterval(() => {
         if (settled) { window.clearInterval(progressTimer); return; }
-        const ratio = buffer.duration > 0 ? Math.min(1, (context.currentTime - startedAtAudio) / buffer.duration) : 0;
+        const currentTime = Math.max(0, context.currentTime - startedAtAudio);
+        const ratio = buffer.duration > 0 ? Math.min(1, currentTime / buffer.duration) : 0;
+        if (currentTime > lastPlaybackTime + 0.01) { lastPlaybackTime = currentTime; lastMovementAt = performance.now(); }
+        if (performance.now() - lastMovementAt > 1200 && currentTime < Math.max(0, buffer.duration - 0.05)) {
+          settled = true;
+          window.clearInterval(progressTimer);
+          try { source.stop(); } catch { /* already stopped */ }
+          source.disconnect();
+          this.audioSource = null;
+          callbacks.onStateChange?.("FAILED");
+          reject(new Error("PLAYBACK_STALLED"));
+          return;
+        }
+        callbacks.onPlaybackSignal?.({ type: "timeupdate", currentTime, duration: buffer.duration });
         callbacks.onProgress?.({ spokenRatio: ratio, spokenText: request.text.slice(0, Math.ceil(request.text.length * ratio)) });
       }, 120);
-      callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, firstByteLatencyMs: Math.round(performance.now() - startedAt), ...ttsDebugFields(request) });
+      callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, firstByteLatencyMs: Math.round(performance.now() - startedAt), audioBytes: blob.size, mimeType: blob.type || "audio/mpeg", audioDuration: buffer.duration, ...ttsDebugFields(request) });
       source.onended = () => {
         if (settled || generation !== this.requestGeneration) return;
         settled = true;
         window.clearInterval(progressTimer);
         source.disconnect();
         this.audioSource = null;
+        callbacks.onPlaybackSignal?.({ type: "ended", currentTime: buffer.duration, duration: buffer.duration });
         callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, totalLatencyMs: Math.round(performance.now() - startedAt), generationSuccess: true, playbackSuccess: true, ...ttsDebugFields(request) });
         callbacks.onStateChange?.("COMPLETED");
         callbacks.onEnd();
@@ -573,10 +614,13 @@ export class DoubaoTTSProvider implements TTSProvider {
       try {
         callbacks.onStateChange?.("READY");
         source.start(0);
+        callbacks.onPlaybackSignal?.({ type: "play", currentTime: 0, duration: buffer.duration });
+        window.setTimeout(() => { if (!settled && generation === this.requestGeneration) { callbacks.onStateChange?.("PLAYING"); callbacks.onPlaybackSignal?.({ type: "playing", currentTime: Math.max(0, context.currentTime - startedAtAudio), duration: buffer.duration }); } }, 80);
       } catch (error) {
         settled = true;
         source.disconnect();
         this.audioSource = null;
+        callbacks.onPlaybackSignal?.({ type: "error", errorName: error instanceof Error ? error.name : "UnknownError", errorMessage: error instanceof Error ? error.message : "浏览器无法启动音频播放" });
         reject(error instanceof Error ? error : new Error("浏览器无法启动音频播放"));
       }
     });
@@ -596,17 +640,36 @@ export class DoubaoTTSProvider implements TTSProvider {
     audio.src = this.objectUrl;
     audio.load();
     callbacks.onStart?.();
+    audio.onloadedmetadata = () => callbacks.onPlaybackSignal?.({ type: "loadedmetadata", currentTime: audio.currentTime, duration: audio.duration, readyState: audio.readyState, networkState: audio.networkState });
+    audio.oncanplay = () => callbacks.onPlaybackSignal?.({ type: "canplay", currentTime: audio.currentTime, duration: audio.duration, readyState: audio.readyState, networkState: audio.networkState });
+    audio.onplay = () => callbacks.onPlaybackSignal?.({ type: "play", currentTime: audio.currentTime, duration: audio.duration, readyState: audio.readyState, networkState: audio.networkState });
+    audio.onplaying = () => callbacks.onPlaybackSignal?.({ type: "playing", currentTime: audio.currentTime, duration: audio.duration, readyState: audio.readyState, networkState: audio.networkState });
     audio.ontimeupdate = () => {
       const ratio = audio.duration > 0 ? Math.min(1, audio.currentTime / audio.duration) : 0;
+      callbacks.onPlaybackSignal?.({ type: "timeupdate", currentTime: audio.currentTime, duration: audio.duration, readyState: audio.readyState, networkState: audio.networkState });
       callbacks.onProgress?.({ spokenRatio: ratio, spokenText: request.text.slice(0, Math.ceil(request.text.length * ratio)) });
     };
-    callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, firstByteLatencyMs: Math.round(performance.now() - startedAt), generationSuccess: true, ...ttsDebugFields(request) });
+    callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, firstByteLatencyMs: Math.round(performance.now() - startedAt), generationSuccess: true, audioBytes: blob.size, mimeType: blob.type || "audio/mpeg", ...ttsDebugFields(request) });
+    const mediaReady = new Promise<void>((resolve, reject) => {
+      if (audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) { resolve(); return; }
+      const timeout = window.setTimeout(() => { cleanup(); reject(new Error("AUDIO_LOAD_TIMEOUT")); }, 5000);
+      const cleanup = () => { window.clearTimeout(timeout); audio.removeEventListener("canplay", ready); audio.removeEventListener("error", failed); };
+      const ready = () => { cleanup(); resolve(); };
+      const failed = () => { cleanup(); reject(new Error("AUDIO_LOAD_FAILED")); };
+      audio.addEventListener("canplay", ready, { once: true });
+      audio.addEventListener("error", failed, { once: true });
+    });
     const playback = new Promise<void>((resolve, reject) => {
       audio.onended = () => {
         if (settled || !isCurrent()) return;
         settled = true;
         if (watchdog !== null) window.clearTimeout(watchdog);
+        const endedAt = audio.currentTime;
+        const endedDuration = audio.duration;
+        const endedReadyState = audio.readyState;
+        const endedNetworkState = audio.networkState;
         this.cleanupAudio();
+        callbacks.onPlaybackSignal?.({ type: "ended", currentTime: endedAt, duration: endedDuration, readyState: endedReadyState, networkState: endedNetworkState });
         callbacks.onProgress?.({ spokenRatio: 1, spokenText: request.text });
         callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, totalLatencyMs: Math.round(performance.now() - startedAt), generationSuccess: true, playbackSuccess: true, ...ttsDebugFields(request) });
         callbacks.onStateChange?.("COMPLETED");
@@ -614,7 +677,7 @@ export class DoubaoTTSProvider implements TTSProvider {
         resolve();
       };
       audio.onerror = () => {
-        if (!settled && isCurrent()) { settled = true; if (watchdog !== null) window.clearTimeout(watchdog); this.cleanupAudio(); callbacks.onStateChange?.("FAILED"); reject(new Error("浏览器无法播放火山引擎音频")); }
+        if (!settled && isCurrent()) { settled = true; if (watchdog !== null) window.clearTimeout(watchdog); this.cleanupAudio(); callbacks.onPlaybackSignal?.({ type: "error", currentTime: audio.currentTime, duration: audio.duration, readyState: audio.readyState, networkState: audio.networkState, errorName: "MediaError", errorMessage: "浏览器无法播放火山引擎音频" }); callbacks.onStateChange?.("FAILED"); reject(new Error("浏览器无法播放火山引擎音频")); }
       };
       callbacks.onStateChange?.("READY");
       watchdog = window.setTimeout(() => {
@@ -626,6 +689,7 @@ export class DoubaoTTSProvider implements TTSProvider {
       }, isMobileBrowser() ? 4500 : 8000);
     });
     try {
+      await mediaReady;
       await audio.play();
       callbacks.onStateChange?.("PLAYING");
       await playback;
