@@ -19,5 +19,6 @@ export class TranscriptAccumulator {
     return this.state;
   }
   snapshot() { return { ...this.state, segmentHistory: [...this.state.segmentHistory] }; }
-  finalText() { return this.state.committedTranscript.trim(); }
+  fullText() { return [this.state.committedTranscript, this.state.interimTranscript].filter(Boolean).join("").trim(); }
+  finalText() { return this.fullText(); }
 }

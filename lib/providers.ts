@@ -177,15 +177,12 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
     recognition.onresult = (event) => {
-      let text = "";
-      let isFinal = false;
       for (let index = event.resultIndex; index < event.results.length; index += 1) {
-        text = event.results[index][0].transcript;
-        isFinal = event.results[index].isFinal;
+        const text = event.results[index][0].transcript.trim();
+        if (!text || !isCurrent()) continue;
+        if (text) this.retries = 0;
+        this.callbacks?.onResult(text, event.results[index].isFinal);
       }
-      const trimmed = text.trim();
-      if (trimmed) this.retries = 0;
-      if (trimmed && isCurrent()) this.callbacks?.onResult(trimmed, isFinal);
     };
     const recognitionEvents = recognition as SpeechRecognition & { onstart?: () => void; onaudiostart?: () => void; onspeechstart?: () => void; onspeechend?: () => void };
     recognitionEvents.onstart = () => { if (isCurrent()) this.callbacks?.onReady?.(); };

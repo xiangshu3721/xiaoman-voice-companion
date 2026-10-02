@@ -460,8 +460,12 @@ export default function Home() {
       return;
     }
     if (endTimerRef.current !== null) window.clearTimeout(endTimerRef.current);
+    asrRef.current.stop();
     accumulatorRef.current.reset();
     setInterimText("");
+    utteranceStartRef.current = null;
+    lastVoiceAtRef.current = null;
+    lastFinalAtRef.current = null;
     setRealtimeState("FINALIZING_USER_TURN");
     const turnId = `turn-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const baseHistory = [...historyRef.current, { role: "user", content: text } satisfies ChatMessage];
@@ -475,8 +479,9 @@ export default function Home() {
       const snapshot = accumulatorRef.current.snapshot();
       const now = Date.now();
       const lastVoice = lastVoiceAtRef.current || lastFinalAtRef.current || now;
+      const currentText = [snapshot.committedTranscript, snapshot.interimTranscript].filter(Boolean).join("");
       const vadStillActive = now - lastVoice < 180 && asrSpeechActiveRef.current;
-      const decision = detectEndOfTurn({ silenceDuration: now - lastVoice, vadActive: vadStillActive, interimTranscript: [snapshot.committedTranscript, snapshot.interimTranscript].filter(Boolean).join(""), lastFinalSegmentTime: lastFinalAtRef.current, semanticCompleteness: semanticCompleteness(snapshot.committedTranscript), utteranceDuration: now - (utteranceStartRef.current || lastFinalAtRef.current || now), now });
+      const decision = detectEndOfTurn({ silenceDuration: now - lastVoice, vadActive: vadStillActive, interimTranscript: currentText, lastFinalSegmentTime: lastFinalAtRef.current, semanticCompleteness: semanticCompleteness(currentText), utteranceDuration: now - (utteranceStartRef.current || lastFinalAtRef.current || now), now });
       setEndOfTurnConfidence(decision.confidence);
       if (decision.shouldFinalize) finalizeCurrentTurn();
       else if (conversationActiveRef.current && !interruptModeRef.current) endTimerRef.current = window.setTimeout(check, 180);
@@ -507,6 +512,8 @@ export default function Home() {
       }
     }, 2800);
     asrRef.current.start((text, isFinal) => {
+      const resultAt = Date.now();
+      lastVoiceAtRef.current = resultAt;
       setMicHealth((current) => ({ ...current, asrAlive: true, lastAsrResultAt: Date.now() }));
       asrSpeechActiveRef.current = !isFinal;
       if (interruptOnly || interruptModeRef.current) {
@@ -521,8 +528,9 @@ export default function Home() {
         }
         return;
       }
+      if (realtimeState === "FINALIZING_USER_TURN" || realtimeState === "AI_GENERATING") return;
       const snapshot = accumulatorRef.current.accept(text, isFinal);
-      setInterimText(snapshot.interimTranscript || snapshot.committedTranscript);
+      setInterimText([snapshot.committedTranscript, snapshot.interimTranscript].filter(Boolean).join(""));
       if (snapshot.committedTranscript && utteranceStartRef.current == null) utteranceStartRef.current = Date.now();
       if (isFinal) lastFinalAtRef.current = Date.now();
       setRealtimeState(isFinal ? "POSSIBLE_END" : "USER_SPEAKING");

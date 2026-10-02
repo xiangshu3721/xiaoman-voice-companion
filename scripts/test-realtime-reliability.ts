@@ -17,8 +17,11 @@ check("quiet microphone does not invent a turn", !detectEndOfTurn({ ...base, sil
 check("VAD activity keeps turn open", !detectEndOfTurn({ ...base, silenceDuration: 2200, vadActive: true, interimTranscript: "我还没说完" }).shouldFinalize);
 const accumulator = new TranscriptAccumulator();
 accumulator.accept("我刚才", true); accumulator.accept("其实", true); accumulator.accept("其实", true); accumulator.accept("想说但是", false);
-check("three ASR segments concatenate once", accumulator.finalText() === "我刚才其实");
+check("three ASR segments concatenate once", accumulator.snapshot().committedTranscript === "我刚才其实");
 check("interim is not committed", accumulator.snapshot().interimTranscript === "想说但是");
+check("interim remains visible after committed text", accumulator.fullText() === "我刚才其实想说但是");
+accumulator.accept("想说但是你都没听完", false);
+check("new interim does not replace committed prefix", accumulator.fullText() === "我刚才其实想说但是你都没听完");
 const negated = analyzeUserSemantic("对不起什么啊，我又没错");
 const positive = analyzeUserSemantic("对不起，刚才是我不好");
 check("partial apology is overridden by final negation", negated.negatedIntents.includes("APOLOGY") && !negated.explicitIntents.includes("APOLOGY"));
@@ -30,4 +33,4 @@ const duplicate = noveltyReport("好，我记住了", [...prior], "我饿了", a
 check("novelty guard spots repeated acknowledgement", duplicate.semanticDuplicateScore >= 0.7);
 check("latest delta remains visible", novelty.latestDeltaScore > 0);
 
-console.log("realtime reliability checks passed: 15 scenarios");
+console.log("realtime reliability checks passed: 17 scenarios");
