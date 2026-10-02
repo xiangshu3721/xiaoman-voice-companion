@@ -22,6 +22,10 @@ export type TTSRequest = {
   intensity?: number;
   speed?: number;
   volume?: number;
+  /** Client-side playback gain used by the audio diagnostics page. */
+  clientGain?: number;
+  /** Internal diagnostics cache key; never sent to the TTS API. */
+  diagnosticCacheKey?: string;
   /** Internal voice-lab override; the API key never reaches this object. */
   voiceId?: string;
 };
@@ -50,6 +54,23 @@ export type TTSMetrics = {
   audioBytes?: number;
   mimeType?: string;
   audioDuration?: number;
+  sourceRms?: number;
+  sourcePeak?: number;
+  clientGain?: number;
+  audioContextState?: string;
+  audioSessionType?: string;
+};
+
+export type TTSAudioDiagnostics = {
+  audioContextState: string;
+  audioVolume: number | "UNAVAILABLE";
+  audioMuted: boolean | "UNAVAILABLE";
+  audioDefaultMuted: boolean | "UNAVAILABLE";
+  playbackRate: number | "UNAVAILABLE";
+  clientGain: number;
+  sourceRms: number | "UNAVAILABLE";
+  sourcePeak: number | "UNAVAILABLE";
+  audioSessionType: string;
 };
 
 export type TTSPlaybackState = "IDLE" | "REQUESTING" | "BUFFERING" | "READY" | "PLAYING" | "COMPLETED" | "INTERRUPTED" | "FAILED" | "RECOVERING";
@@ -108,9 +129,34 @@ export interface LLMProvider {
 
 export interface ASRProvider {
   isSupported(): boolean;
-  start(onResult: (text: string, isFinal: boolean) => void, onError: (message: string) => void, onEnd: () => void, options?: { onReady?: () => void; onActivity?: (event: string) => void }): void;
+  start(onResult: (text: string, isFinal: boolean) => void, onError: (message: string) => void, onEnd: () => void, options?: ASRStartOptions): void;
   stop(): void;
 }
+
+export type ASRSessionEvent = {
+  type: "start" | "result" | "end" | "error" | "restart";
+  sessionId: string;
+  sessionCount: number;
+  restartCount: number;
+  at: number;
+  text?: string;
+  isFinal?: boolean;
+  error?: string;
+};
+
+export type ASRStartOptions = { onReady?: () => void; onActivity?: (event: string) => void; onSessionEvent?: (event: ASRSessionEvent) => void };
+
+export type ASRDiagnostics = {
+  running: boolean;
+  sessionId: string;
+  sessionCount: number;
+  restartCount: number;
+  lastPartialAt: number | null;
+  lastFinalSegmentAt: number | null;
+  lastResultAt: number | null;
+  lastEndAt: number | null;
+  lastError: string;
+};
 
 export interface TTSProvider {
   isSupported(): boolean;
@@ -144,19 +190,28 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
   private restartTimer: number | null = null;
   private retries = 0;
   private recognitionToken = 0;
+  private sessionId = "";
+  private sessionCount = 0;
+  private restartCount = 0;
+  private lastPartialAt: number | null = null;
+  private lastFinalSegmentAt: number | null = null;
+  private lastResultAt: number | null = null;
+  private lastEndAt: number | null = null;
+  private lastError = "";
   private callbacks: {
     onResult: (text: string, isFinal: boolean) => void;
     onError: (message: string) => void;
     onEnd: () => void;
     onReady?: () => void;
     onActivity?: (event: string) => void;
+    onSessionEvent?: (event: ASRSessionEvent) => void;
   } | null = null;
 
   isSupported() {
     return typeof window !== "undefined" && Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
   }
 
-  start(onResult: (text: string, isFinal: boolean) => void, onError: (message: string) => void, onEnd: () => void, options?: { onReady?: () => void; onActivity?: (event: string) => void }) {
+  start(onResult: (text: string, isFinal: boolean) => void, onError: (message: string) => void, onEnd: () => void, options?: ASRStartOptions) {
     if (!this.isSupported()) {
       onError("当前浏览器不支持语音识别，建议使用 Chrome。");
       return;
@@ -175,6 +230,14 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
     this.recognition = null;
     this.active = true;
     this.retries = 0;
+    this.sessionId = "";
+    this.sessionCount = 0;
+    this.restartCount = 0;
+    this.lastPartialAt = null;
+    this.lastFinalSegmentAt = null;
+    this.lastResultAt = null;
+    this.lastEndAt = null;
+    this.lastError = "";
     this.callbacks = { onResult, onError, onEnd, ...options };
     this.startRecognition(Recognition);
   }
@@ -185,6 +248,9 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
     const token = ++this.recognitionToken;
     const isCurrent = () => token === this.recognitionToken && this.recognition === recognition;
     this.recognition = recognition;
+    this.sessionCount += 1;
+    this.sessionId = `asr-${Date.now().toString(36)}-${this.sessionCount}`;
+    this.callbacks.onSessionEvent?.({ type: this.restartCount ? "restart" : "start", sessionId: this.sessionId, sessionCount: this.sessionCount, restartCount: this.restartCount, at: Date.now() });
     recognition.lang = "zh-CN";
     recognition.continuous = true;
     recognition.interimResults = true;
@@ -194,6 +260,11 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
         const text = event.results[index][0].transcript.trim();
         if (!text || !isCurrent()) continue;
         if (text) this.retries = 0;
+        const at = Date.now();
+        this.lastResultAt = at;
+        if (event.results[index].isFinal) this.lastFinalSegmentAt = at;
+        else this.lastPartialAt = at;
+        this.callbacks?.onSessionEvent?.({ type: "result", sessionId: this.sessionId, sessionCount: this.sessionCount, restartCount: this.restartCount, at, text, isFinal: event.results[index].isFinal });
         this.callbacks?.onResult(text, event.results[index].isFinal);
       }
     };
@@ -209,20 +280,30 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
         return;
       }
       this.callbacks?.onActivity?.("end");
+      this.lastEndAt = Date.now();
+      this.callbacks?.onSessionEvent?.({ type: "end", sessionId: this.sessionId, sessionCount: this.sessionCount, restartCount: this.restartCount, at: this.lastEndAt });
       this.scheduleRestart(Recognition);
     };
     recognition.onerror = (event) => {
       if (!isCurrent()) return;
       if (event.error === "not-allowed" || event.error === "service-not-allowed") {
         this.active = false;
+        this.lastError = event.error;
+        this.callbacks?.onSessionEvent?.({ type: "error", sessionId: this.sessionId, sessionCount: this.sessionCount, restartCount: this.restartCount, at: Date.now(), error: event.error });
         this.callbacks?.onError("麦克风权限被拒绝了，请在浏览器地址栏重新允许麦克风。");
       } else if (event.error === "audio-capture") {
         this.active = false;
+        this.lastError = event.error;
+        this.callbacks?.onSessionEvent?.({ type: "error", sessionId: this.sessionId, sessionCount: this.sessionCount, restartCount: this.restartCount, at: Date.now(), error: event.error });
         this.callbacks?.onError("没有找到可用的麦克风，请检查系统输入设备。");
       } else if (event.error === "network") {
+        this.lastError = event.error;
+        this.callbacks?.onSessionEvent?.({ type: "error", sessionId: this.sessionId, sessionCount: this.sessionCount, restartCount: this.restartCount, at: Date.now(), error: event.error });
         this.scheduleRestart(Recognition);
       } else if (event.error !== "aborted" && event.error !== "no-speech") {
         this.active = false;
+        this.lastError = event.error;
+        this.callbacks?.onSessionEvent?.({ type: "error", sessionId: this.sessionId, sessionCount: this.sessionCount, restartCount: this.restartCount, at: Date.now(), error: event.error });
         this.callbacks?.onError("语音识别连接不稳定，再试一次？");
       }
     };
@@ -244,6 +325,7 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
     }
     this.restartTimer = window.setTimeout(() => {
       this.restartTimer = null;
+      this.restartCount += 1;
       this.startRecognition(Recognition);
     }, 450);
   }
@@ -257,6 +339,10 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
     }
     this.recognition?.stop();
     this.recognition = null;
+  }
+
+  getDiagnostics(): ASRDiagnostics {
+    return { running: this.active, sessionId: this.sessionId, sessionCount: this.sessionCount, restartCount: this.restartCount, lastPartialAt: this.lastPartialAt, lastFinalSegmentAt: this.lastFinalSegmentAt, lastResultAt: this.lastResultAt, lastEndAt: this.lastEndAt, lastError: this.lastError };
   }
 }
 
@@ -289,6 +375,7 @@ export class BrowserSpeechSynthesisProvider implements TTSProvider {
       callbacks.onStateChange?.("COMPLETED");
       callbacks.onEnd();
     };
+    utterance.onstart = () => callbacks.onPlaybackSignal?.({ type: "playing", currentTime: 0.01 });
     utterance.onerror = () => { callbacks.onStateChange?.("FAILED"); callbacks.onError("语音播放出了点问题，你可以继续说。"); };
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
@@ -349,6 +436,11 @@ export class DoubaoTTSProvider implements TTSProvider {
   private abortController: AbortController | null = null;
   private requestGeneration = 0;
   private lifecycleInstalled = false;
+  private outputGain: GainNode | null = null;
+  private lastSourceRms: number | "UNAVAILABLE" = "UNAVAILABLE";
+  private lastSourcePeak: number | "UNAVAILABLE" = "UNAVAILABLE";
+  private lastClientGain = 1;
+  private cachedDiagnosticAudio: { key: string; blob: Blob; mime: string; voice: string } | null = null;
 
   isSupported() {
     // Mobile Safari/微信内置浏览器不一定支持 MediaSource，但通常可以播放已经
@@ -369,6 +461,7 @@ export class DoubaoTTSProvider implements TTSProvider {
       try { this.audioContext = new AudioContextConstructor(); } catch { /* HTMLAudio fallback below */ }
     }
     if (this.audioContext?.state === "suspended") void this.audioContext.resume().catch(() => undefined);
+    this.setAudioSessionType("play-and-record");
     const audio = this.audio || new Audio();
     audio.muted = true;
     audio.setAttribute("playsinline", "true");
@@ -384,6 +477,33 @@ export class DoubaoTTSProvider implements TTSProvider {
     }).catch(() => {
       audio.muted = false;
     });
+  }
+
+  setAudioSessionType(type: "auto" | "playback" | "play-and-record") {
+    if (typeof navigator === "undefined") return "UNAVAILABLE";
+    const audioSession = (navigator as Navigator & { audioSession?: { type?: string } }).audioSession;
+    if (!audioSession || typeof audioSession !== "object" || !("type" in audioSession)) return "UNAVAILABLE";
+    try {
+      audioSession.type = type;
+      return audioSession.type || type;
+    } catch {
+      return audioSession.type || "UNAVAILABLE";
+    }
+  }
+
+  getAudioDiagnostics(): TTSAudioDiagnostics {
+    const audioSession = typeof navigator !== "undefined" ? (navigator as Navigator & { audioSession?: { type?: string } }).audioSession : undefined;
+    return {
+      audioContextState: this.audioContext?.state || "UNAVAILABLE",
+      audioVolume: this.audio ? this.audio.volume : "UNAVAILABLE",
+      audioMuted: this.audio ? this.audio.muted : "UNAVAILABLE",
+      audioDefaultMuted: this.audio ? this.audio.defaultMuted : "UNAVAILABLE",
+      playbackRate: this.audio ? this.audio.playbackRate : "UNAVAILABLE",
+      clientGain: this.lastClientGain,
+      sourceRms: this.lastSourceRms,
+      sourcePeak: this.lastSourcePeak,
+      audioSessionType: audioSession?.type || "UNAVAILABLE",
+    };
   }
 
   private installAudioLifecycle() {
@@ -409,16 +529,26 @@ export class DoubaoTTSProvider implements TTSProvider {
     const controller = new AbortController();
     this.abortController = controller;
     const requestTimeout = window.setTimeout(() => controller.abort(), 18000);
+    this.lastClientGain = Math.max(0.5, Math.min(1.4, request.clientGain ?? 1));
     callbacks.onMetrics?.({ provider: "volcengine", voice: request.voiceId || "volcengine-default", emotion: request.emotion, intensity: request.intensity, streaming: false, ...ttsDebugFields(request) });
-    fetch(`${apiUrl("/api/tts")}${isMobileBrowser() ? "?stream=false" : ""}`, {
+    const { clientGain: _clientGain, diagnosticCacheKey, ...apiRequest } = request;
+    const cached = diagnosticCacheKey && this.cachedDiagnosticAudio?.key === diagnosticCacheKey ? this.cachedDiagnosticAudio : null;
+    const responsePromise: Promise<{ response: Response | null; audioBlob?: Blob; mime?: string; voice?: string }> = cached ? Promise.resolve({ response: null, audioBlob: cached.blob, mime: cached.mime, voice: cached.voice }) : fetch(`${apiUrl("/api/tts")}${isMobileBrowser() ? "?stream=false" : ""}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...request, streaming: !isMobileBrowser() }),
+      body: JSON.stringify({ ...apiRequest, streaming: !isMobileBrowser() }),
       signal: controller.signal,
-    }).then(async (response) => {
+    }).then(async (response) => ({ response }));
+    responsePromise.then(async ({ response, audioBlob: cachedBlob, mime: cachedMime, voice: cachedVoice }) => {
       if (generation !== this.requestGeneration) return;
       if (controller.signal.aborted) throw new Error("火山引擎 TTS 请求超时");
-      if (!response.ok) throw new Error(await response.text() || `TTS request failed: ${response.status}`);
+      if (cachedBlob) {
+        callbacks.onStateChange?.("BUFFERING");
+        callbacks.onMetrics?.({ provider: "volcengine", voice: cachedVoice || request.voiceId || "volcengine-default", emotion: request.emotion, intensity: request.intensity, streaming: false, generationSuccess: true, audioBytes: cachedBlob.size, mimeType: cachedMime || "audio/mpeg", ...ttsDebugFields(request) });
+        await this.playBlob(cachedBlob, request, callbacks, startedAt, cachedVoice || request.voiceId || "volcengine-default", generation);
+        return;
+      }
+      if (!response || !response.ok) throw new Error(response ? await response.text() || `TTS request failed: ${response.status}` : "TTS request failed");
       callbacks.onStateChange?.("BUFFERING");
       const voice = response.headers.get("X-TTS-Voice") || request.voiceId || "volcengine-default";
       // Mobile browsers are unreliable with MediaSource and some CloudBase
@@ -432,6 +562,7 @@ export class DoubaoTTSProvider implements TTSProvider {
       if (!audioBlob.size) throw new Error("火山引擎返回了空音频");
       if (audioBlob.size < 128) throw new Error("火山引擎返回的音频过小");
       const mime = response.headers.get("content-type") || audioBlob.type || "audio/mpeg";
+      if (diagnosticCacheKey) this.cachedDiagnosticAudio = { key: diagnosticCacheKey, blob: audioBlob, mime, voice };
       if (typeof Audio !== "undefined" && !new Audio().canPlayType(mime) && !this.audioContext) throw new Error(`当前浏览器不支持音频格式 ${mime}`);
       callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, generationSuccess: true, audioBytes: audioBlob.size, mimeType: mime, ...ttsDebugFields(request) });
       await this.playBlob(audioBlob, request, callbacks, startedAt, voice, generation);
@@ -567,15 +698,26 @@ export class DoubaoTTSProvider implements TTSProvider {
   private async playWithWebAudio(blob: Blob, request: TTSRequest, callbacks: TTSCallbacks, startedAt: number, voice: string, generation: number) {
     const context = this.audioContext;
     if (!context || generation !== this.requestGeneration) return;
+    if (context.state === "closed") throw new Error("AUDIO_CONTEXT_CLOSED");
     await context.resume();
+    if (context.state !== "running") throw new Error(`AUDIO_CONTEXT_${context.state.toUpperCase()}`);
     const buffer = await context.decodeAudioData(await blob.arrayBuffer());
     if (generation !== this.requestGeneration) return;
+    const loudness = measureAudioBuffer(buffer);
+    this.lastSourceRms = loudness.rms;
+    this.lastSourcePeak = loudness.peak;
+    const clientGain = Math.max(0.5, Math.min(1.4, request.clientGain ?? 1));
+    this.lastClientGain = clientGain;
     return new Promise<void>((resolve, reject) => {
       let settled = false;
       const source = context.createBufferSource();
       this.audioSource = source;
       source.buffer = buffer;
-      source.connect(context.destination);
+      const gain = context.createGain();
+      this.outputGain = gain;
+      gain.gain.value = clientGain;
+      source.connect(gain);
+      gain.connect(context.destination);
       const startedAtAudio = context.currentTime;
       let lastPlaybackTime = 0;
       let lastMovementAt = performance.now();
@@ -590,6 +732,8 @@ export class DoubaoTTSProvider implements TTSProvider {
           window.clearInterval(progressTimer);
           try { source.stop(); } catch { /* already stopped */ }
           source.disconnect();
+          gain.disconnect();
+          this.outputGain = null;
           this.audioSource = null;
           callbacks.onStateChange?.("FAILED");
           reject(new Error("PLAYBACK_STALLED"));
@@ -598,12 +742,14 @@ export class DoubaoTTSProvider implements TTSProvider {
         callbacks.onPlaybackSignal?.({ type: "timeupdate", currentTime, duration: buffer.duration });
         callbacks.onProgress?.({ spokenRatio: ratio, spokenText: request.text.slice(0, Math.ceil(request.text.length * ratio)) });
       }, 120);
-      callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, firstByteLatencyMs: Math.round(performance.now() - startedAt), audioBytes: blob.size, mimeType: blob.type || "audio/mpeg", audioDuration: buffer.duration, ...ttsDebugFields(request) });
+      callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, firstByteLatencyMs: Math.round(performance.now() - startedAt), audioBytes: blob.size, mimeType: blob.type || "audio/mpeg", audioDuration: buffer.duration, sourceRms: loudness.rms, sourcePeak: loudness.peak, clientGain, audioContextState: context.state, audioSessionType: this.getAudioDiagnostics().audioSessionType, ...ttsDebugFields(request) });
       source.onended = () => {
         if (settled || generation !== this.requestGeneration) return;
         settled = true;
         window.clearInterval(progressTimer);
         source.disconnect();
+        gain.disconnect();
+        this.outputGain = null;
         this.audioSource = null;
         callbacks.onPlaybackSignal?.({ type: "ended", currentTime: buffer.duration, duration: buffer.duration });
         callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, totalLatencyMs: Math.round(performance.now() - startedAt), generationSuccess: true, playbackSuccess: true, ...ttsDebugFields(request) });
@@ -619,6 +765,8 @@ export class DoubaoTTSProvider implements TTSProvider {
       } catch (error) {
         settled = true;
         source.disconnect();
+        gain.disconnect();
+        this.outputGain = null;
         this.audioSource = null;
         callbacks.onPlaybackSignal?.({ type: "error", errorName: error instanceof Error ? error.name : "UnknownError", errorMessage: error instanceof Error ? error.message : "浏览器无法启动音频播放" });
         reject(error instanceof Error ? error : new Error("浏览器无法启动音频播放"));
@@ -635,6 +783,9 @@ export class DoubaoTTSProvider implements TTSProvider {
     this.objectUrl = URL.createObjectURL(blob);
     let watchdog: number | null = null;
     audio.muted = false;
+    audio.defaultMuted = false;
+    audio.volume = 1;
+    audio.playbackRate = 1;
     audio.setAttribute("playsinline", "true");
     audio.preload = "auto";
     audio.src = this.objectUrl;
@@ -649,7 +800,7 @@ export class DoubaoTTSProvider implements TTSProvider {
       callbacks.onPlaybackSignal?.({ type: "timeupdate", currentTime: audio.currentTime, duration: audio.duration, readyState: audio.readyState, networkState: audio.networkState });
       callbacks.onProgress?.({ spokenRatio: ratio, spokenText: request.text.slice(0, Math.ceil(request.text.length * ratio)) });
     };
-    callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, firstByteLatencyMs: Math.round(performance.now() - startedAt), generationSuccess: true, audioBytes: blob.size, mimeType: blob.type || "audio/mpeg", ...ttsDebugFields(request) });
+    callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, firstByteLatencyMs: Math.round(performance.now() - startedAt), generationSuccess: true, audioBytes: blob.size, mimeType: blob.type || "audio/mpeg", clientGain: 1, audioContextState: this.audioContext?.state || "UNAVAILABLE", audioSessionType: this.getAudioDiagnostics().audioSessionType, ...ttsDebugFields(request) });
     const mediaReady = new Promise<void>((resolve, reject) => {
       if (audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) { resolve(); return; }
       const timeout = window.setTimeout(() => { cleanup(); reject(new Error("AUDIO_LOAD_TIMEOUT")); }, 5000);
@@ -710,6 +861,8 @@ export class DoubaoTTSProvider implements TTSProvider {
       try { this.audioSource.disconnect(); } catch { /* already disconnected */ }
     }
     this.audioSource = null;
+    this.outputGain?.disconnect();
+    this.outputGain = null;
     this.audio?.pause();
     if (this.audio) {
       this.audio.removeAttribute("src");
@@ -726,6 +879,22 @@ export class DoubaoTTSProvider implements TTSProvider {
     this.cleanupAudio();
     this.fallback.stop();
   }
+}
+
+function measureAudioBuffer(buffer: AudioBuffer) {
+  let sumSquares = 0;
+  let peak = 0;
+  let samples = 0;
+  for (let channel = 0; channel < buffer.numberOfChannels; channel += 1) {
+    const data = buffer.getChannelData(channel);
+    for (let index = 0; index < data.length; index += 1) {
+      const value = Math.abs(data[index]);
+      sumSquares += value * value;
+      peak = Math.max(peak, value);
+      samples += 1;
+    }
+  }
+  return { rms: samples ? Number(Math.sqrt(sumSquares / samples).toFixed(6)) : 0, peak: Number(peak.toFixed(6)) };
 }
 
 // Kept as an alias so older callers do not break while the provider is renamed.

@@ -79,7 +79,7 @@ export class VoiceDeliveryPipeline {
         callbacks.onPlaybackSignal?.(signal, { ...job });
       },
       onEnd: () => { if (!isActive()) return; publish("COMPLETED"); callbacks.onEnd(); this.activeJob = null; },
-      onError: (message) => { if (!isActive()) return; publish("FAILED", message); callbacks.onError(message); },
+      onError: (message) => { if (!isActive()) return; publish("FAILED", message); callbacks.onError(message); this.activeJob = null; },
     };
     publish("GENERATING");
     this.provider.speak(request, wrapped);

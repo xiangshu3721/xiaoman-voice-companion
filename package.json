@@ -26,6 +26,9 @@
     ,"test:emotion-performance": "tsx scripts/test-emotion-performance.ts"
     ,"test:realtime": "tsx scripts/test-realtime-reliability.ts"
     ,"test:tts-reliability": "tsx scripts/test-tts-reliability.ts"
+    ,"test:assistant-turn": "tsx scripts/test-assistant-turn-coordinator.ts"
+    ,"test:android-reliability": "tsx scripts/test-android-reliability.ts"
+    ,"test:android-boot": "tsx scripts/test-android-boot.ts"
     ,"tts:probe": "tsx scripts/probe-tts-capabilities.ts"
     ,"tts:voice-matrix": "tsx scripts/generate-voice-test-matrix.ts"
   },
