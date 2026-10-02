@@ -53,7 +53,7 @@ jobs:
           API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL }}
         run: |
           test -n "$API_BASE_URL"
-          rg -l --glob '*.js' --fixed-strings "$API_BASE_URL" out/_next/static >/dev/null || (echo "CloudBase API origin missing from Pages bundle" >&2; exit 1)
+          grep -R -l --include='*.js' -- "$API_BASE_URL" out/_next/static >/dev/null || (echo "CloudBase API origin missing from Pages bundle" >&2; exit 1)
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
