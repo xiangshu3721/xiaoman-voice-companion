@@ -48,6 +48,8 @@ VOLCENGINE_TTS_RESOURCE_ID=seed-tts-2.0
 VOLCENGINE_TTS_MODEL=seed-tts-2.0-standard
 VOLCENGINE_TTS_VOICE=zh_female_vv_uranus_bigtts
 VOLCENGINE_TTS_VOICE_NAME=vivi 2.0（官方预置·通用场景女声）
+DEFAULT_FEMALE_SPEAKER=zh_female_vv_uranus_bigtts
+DEFAULT_MALE_SPEAKER=zh_male_dayi_saturn_bigtts
 CORS_ORIGIN=https://你的 GitHub 用户名.github.io
 ```
 
@@ -102,6 +104,8 @@ CORS_ORIGIN=https://你的用户名.github.io
 
 - ASR：`SpeechRecognition / webkitSpeechRecognition`，中文 `zh-CN`
 - TTS：`DoubaoTTSProvider` → 火山引擎 Seed-TTS 2.0；失败自动 fallback 到 `BrowserSpeechSynthesisProvider`
+- Voice Lab：`/voice-lab` 提供候选音色筛选、Runtime Probe、Emotion Scale、语速/音量、Context Instruction 和 36 条实际试听矩阵；能力未验证的音色不会被标记为支持 Emotion。
+- Emotion Performance：Relationship Engine → Emotion Performance Plan → Seed-TTS 2.0；内部情绪只映射到当前 speaker 已验证的 API emotion，不支持时自动改用 context / 语速 / 音量并记录 fallback。
 - LLM：DeepSeek `deepseek-chat`；无 Key 时为 mock
 - 场景：晚回家、没回消息、忘记答应的事、自由对话
 - 记忆：当前页面会话内保留最近 10 轮，不使用数据库

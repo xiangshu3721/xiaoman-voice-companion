@@ -9,7 +9,15 @@ export const TTS_VOICE_STORAGE_KEY = "xiaoman-tts-voice";
 
 export type TTSRequest = {
   text: string;
-  emotion?: "neutral" | "sarcastic" | "annoyed" | "angry" | "hurt" | "cold" | "disappointed" | "calm" | "reflect";
+  emotion?: "neutral" | "sarcastic" | "annoyed" | "angry" | "sad" | "happy" | "hurt" | "cold" | "disappointed" | "calm" | "reflect";
+  primaryEmotion?: string;
+  emotionScale?: number;
+  sectionId?: string;
+  contextText?: string;
+  useSectionContext?: boolean;
+  speechRate?: number;
+  loudnessRate?: number;
+  fallbackUsed?: boolean;
   intensity?: number;
   speed?: number;
   volume?: number;
@@ -26,6 +34,14 @@ export type TTSMetrics = {
   firstByteLatencyMs?: number;
   totalLatencyMs?: number;
   fallbackReason?: string;
+  primaryEmotion?: string;
+  apiEmotion?: string;
+  emotionScale?: number;
+  speechRate?: number;
+  loudnessRate?: number;
+  sectionId?: string;
+  contextText?: string;
+  fallbackUsed?: boolean;
 };
 
 export type TTSCallbacks = {
@@ -256,16 +272,30 @@ function browserEmotionProfile(emotion: NonNullable<TTSRequest["emotion"]>, inte
     sarcastic: { rate: 0.98, pitch: 1.08, volume: 1 },
     annoyed: { rate: 1.03, pitch: 1.02, volume: 1 },
     angry: { rate: 1.08, pitch: 0.98, volume: 1.04 },
+    sad: { rate: 0.88, pitch: 0.94, volume: 0.94 },
+    happy: { rate: 1.02, pitch: 1.06, volume: 1 },
     hurt: { rate: 0.88, pitch: 0.94, volume: 0.94 },
     cold: { rate: 0.9, pitch: 0.9, volume: 0.9 },
     disappointed: { rate: 0.86, pitch: 0.92, volume: 0.92 },
     calm: { rate: 0.96, pitch: 1.02, volume: 1 },
     reflect: { rate: 0.88, pitch: 0.98, volume: 0.92 },
-  }[emotion];
+  }[emotion] || { rate: 0.96, pitch: 1.02, volume: 1 };
   return {
     rate: Math.max(0.5, Math.min(2, speed ?? profiles.rate + (profiles.rate - 0.96) * intensity * 0.25)),
     pitch: Math.max(0.5, Math.min(2, profiles.pitch)),
     volume: Math.max(0, Math.min(1, volume ?? profiles.volume)),
+  };
+}
+
+function ttsDebugFields(request: TTSRequest, fallbackUsed = request.fallbackUsed) {
+  return {
+    primaryEmotion: request.primaryEmotion,
+    emotionScale: request.emotionScale,
+    speechRate: request.speechRate,
+    loudnessRate: request.loudnessRate,
+    sectionId: request.sectionId,
+    contextText: request.contextText,
+    fallbackUsed,
   };
 }
 
@@ -323,7 +353,7 @@ export class DoubaoTTSProvider implements TTSProvider {
     const startedAt = performance.now();
     const controller = new AbortController();
     this.abortController = controller;
-    callbacks.onMetrics?.({ provider: "volcengine", voice: request.voiceId || "volcengine-default", emotion: request.emotion, intensity: request.intensity, streaming: false });
+    callbacks.onMetrics?.({ provider: "volcengine", voice: request.voiceId || "volcengine-default", emotion: request.emotion, intensity: request.intensity, streaming: false, ...ttsDebugFields(request) });
     fetch(apiUrl("/api/tts"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -333,6 +363,10 @@ export class DoubaoTTSProvider implements TTSProvider {
       if (generation !== this.requestGeneration || controller.signal.aborted) return;
       if (!response.ok) throw new Error(await response.text() || `TTS request failed: ${response.status}`);
       const voice = response.headers.get("X-TTS-Voice") || request.voiceId || "volcengine-default";
+      if (response.headers.get("X-TTS-Streaming") === "true" && response.body) {
+        const streamed = await this.playResponseStream(response.body, request, callbacks, startedAt, voice, generation);
+        if (streamed) return;
+      }
       const audioBlob = await response.blob();
       if (!audioBlob.size) throw new Error("火山引擎返回了空音频");
       await this.playBlob(audioBlob, request, callbacks, startedAt, voice, generation);
@@ -343,7 +377,7 @@ export class DoubaoTTSProvider implements TTSProvider {
   }
 
   private fallbackWithReason(request: TTSRequest, callbacks: TTSCallbacks, reason: string) {
-    callbacks.onMetrics?.({ provider: "browser", voice: "browser-fallback", emotion: request.emotion, intensity: request.intensity, streaming: false, fallbackReason: reason });
+    callbacks.onMetrics?.({ provider: "browser", voice: "browser-fallback", emotion: request.emotion, intensity: request.intensity, streaming: false, fallbackReason: reason, ...ttsDebugFields(request, true) });
     this.fallback.speak(request, callbacks);
   }
 
@@ -355,6 +389,74 @@ export class DoubaoTTSProvider implements TTSProvider {
       });
     }
     return this.playWithHtmlAudio(blob, request, callbacks, startedAt, voice, generation);
+  }
+
+  private async playResponseStream(stream: ReadableStream<Uint8Array>, request: TTSRequest, callbacks: TTSCallbacks, startedAt: number, voice: string, generation: number) {
+    const MediaSourceConstructor = typeof window !== "undefined" ? window.MediaSource : undefined;
+    if (!MediaSourceConstructor || !MediaSourceConstructor.isTypeSupported("audio/mpeg")) return false;
+    const mediaSource = new MediaSourceConstructor();
+    const audio = this.audio || new Audio();
+    this.audio = audio;
+    this.objectUrl = URL.createObjectURL(mediaSource);
+    audio.muted = false;
+    audio.setAttribute("playsinline", "true");
+    audio.preload = "auto";
+    audio.src = this.objectUrl;
+    audio.load();
+    await new Promise<void>((resolve, reject) => {
+      const onOpen = () => { mediaSource.removeEventListener("sourceopen", onOpen); resolve(); };
+      mediaSource.addEventListener("sourceopen", onOpen);
+      window.setTimeout(() => reject(new Error("流式音频初始化超时")), 5000);
+    });
+    if (generation !== this.requestGeneration) return true;
+    const sourceBuffer = mediaSource.addSourceBuffer("audio/mpeg");
+    const reader = stream.getReader();
+    let firstChunk = true;
+    let settled = false;
+    const finish = () => {
+      if (settled || generation !== this.requestGeneration) return;
+      settled = true;
+      this.cleanupAudio();
+      callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: true, totalLatencyMs: Math.round(performance.now() - startedAt), ...ttsDebugFields(request) });
+      callbacks.onEnd();
+    };
+    audio.onended = finish;
+    audio.onerror = () => { if (!settled) settled = true; };
+    try {
+      let first = await reader.read();
+      if (first.done || !first.value?.byteLength) throw new Error("火山引擎返回了空音频");
+      while (!first.done) {
+        const chunk = first.value;
+        if (!chunk?.byteLength) throw new Error("火山引擎返回了空音频片段");
+        await new Promise<void>((resolve, reject) => {
+          const append = () => {
+            sourceBuffer.removeEventListener("updateend", append);
+            sourceBuffer.removeEventListener("error", fail);
+            resolve();
+          };
+          const fail = () => {
+            sourceBuffer.removeEventListener("updateend", append);
+            sourceBuffer.removeEventListener("error", fail);
+            reject(new Error("流式音频缓冲失败"));
+          };
+          sourceBuffer.addEventListener("updateend", append);
+          sourceBuffer.addEventListener("error", fail);
+          const audioChunk = new Uint8Array(chunk);
+          sourceBuffer.appendBuffer(audioChunk.buffer);
+        });
+        if (firstChunk) {
+          firstChunk = false;
+          callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: true, firstByteLatencyMs: Math.round(performance.now() - startedAt), ...ttsDebugFields(request) });
+          await audio.play();
+        }
+        first = await reader.read();
+      }
+      if (mediaSource.readyState === "open") mediaSource.endOfStream();
+      return true;
+    } catch (error) {
+      this.cleanupAudio();
+      throw error instanceof Error ? error : new Error("流式音频播放失败");
+    }
   }
 
   private async playWithWebAudio(blob: Blob, request: TTSRequest, callbacks: TTSCallbacks, startedAt: number, voice: string, generation: number) {
@@ -369,13 +471,13 @@ export class DoubaoTTSProvider implements TTSProvider {
       this.audioSource = source;
       source.buffer = buffer;
       source.connect(context.destination);
-      callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, firstByteLatencyMs: Math.round(performance.now() - startedAt) });
+      callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, firstByteLatencyMs: Math.round(performance.now() - startedAt), ...ttsDebugFields(request) });
       source.onended = () => {
         if (settled || generation !== this.requestGeneration) return;
         settled = true;
         source.disconnect();
         this.audioSource = null;
-        callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, totalLatencyMs: Math.round(performance.now() - startedAt) });
+        callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, totalLatencyMs: Math.round(performance.now() - startedAt), ...ttsDebugFields(request) });
         callbacks.onEnd();
         resolve();
       };
@@ -404,13 +506,13 @@ export class DoubaoTTSProvider implements TTSProvider {
       audio.preload = "auto";
       audio.src = this.objectUrl;
       audio.load();
-      callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, firstByteLatencyMs: Math.round(performance.now() - startedAt) });
+      callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, firstByteLatencyMs: Math.round(performance.now() - startedAt), ...ttsDebugFields(request) });
       audio.onended = () => {
         if (settled || !isCurrent()) return;
         settled = true;
         if (watchdog !== null) window.clearTimeout(watchdog);
         this.cleanupAudio();
-        callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, totalLatencyMs: Math.round(performance.now() - startedAt) });
+        callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, totalLatencyMs: Math.round(performance.now() - startedAt), ...ttsDebugFields(request) });
         callbacks.onEnd();
         resolve();
       };

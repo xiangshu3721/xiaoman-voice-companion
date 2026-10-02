@@ -14,6 +14,10 @@ import { buildRelationshipSnapshot } from "@/src/relationship/state-manager";
 import { selectRelationshipStrategy } from "@/src/relationship/strategy-selector";
 import { ttsForRelationship } from "@/src/relationship/tts-state-controller";
 import { createSessionBoundary, isCasualOpening, isUserCorrection, validateMemoryGrounding, type MemoryGuardResult } from "@/src/memory/grounding";
+import { createEmotionPerformancePlan } from "@/src/emotion-performance/emotion-director";
+import { validatePerformance } from "@/src/emotion-performance/performance-validator";
+import { getSpeakerCapability } from "@/src/tts/speaker-registry";
+import type { EmotionPerformancePlan } from "@/src/emotion-performance/types";
 
 export const maxDuration = 60;
 
@@ -29,6 +33,8 @@ type ChatRequest = {
   characterGender?: "female" | "male";
   sessionId?: string;
   continuePreviousScene?: boolean;
+  voiceId?: string;
+  sectionId?: string;
   debug?: boolean;
 };
 
@@ -179,6 +185,7 @@ export async function POST(request: Request) {
   if (!userMessage) return NextResponse.json({ error: "请输入你想说的话。" }, { status: 400, headers: corsHeaders() });
 
   const debugRequested = body.debug === true || new URL(request.url).searchParams.get("debug") === "true";
+  const sectionId = body.sectionId || crypto.randomUUID();
   const fullHistory = (body.history || []).slice(-20);
   const history = removeDuplicatedCurrentTurn(fullHistory, userMessage);
   const sessionBoundary = createSessionBoundary({ history, sessionId: body.sessionId, continuePreviousScene: body.continuePreviousScene });
@@ -190,7 +197,7 @@ export async function POST(request: Request) {
     const relationship = buildRelationshipSnapshot({ history, userMessage, classification, conflictState: safeState, scene, sessionBoundary });
     const safeStrategy = { primary: "softening" as const, secondary: ["validation" as const], rationale: "Safety Override：停止刺激性策略" };
     const safeValidation = { valid: true, issues: [] as string[] };
-    const safeVoice = { emotion: "calm" as const, intensity: earlySafety.riskLevel === "CRITICAL" ? 0.18 : 0.24 };
+    const safeVoice = { emotion: "calm" as const, primaryEmotion: "warm", intensity: earlySafety.riskLevel === "CRITICAL" ? 0.18 : 0.24, sectionId, contextText: "语气稳定、清楚、温和，不继续刺激对方。", fallbackUsed: false };
     const debug = debugForRelationship(relationship, classification, safeStrategy, safeValidation);
     return NextResponse.json({ text: safetyResponse({ name: "Ta", riskLevel: earlySafety.riskLevel }), reply: safetyResponse({ name: "Ta", riskLevel: earlySafety.riskLevel }), mode: "safety", voice: safeVoice, ...(debugRequested ? { debug } : {}) }, { headers: corsHeaders() });
   }
@@ -203,6 +210,7 @@ export async function POST(request: Request) {
   relationship.conflictState = effectiveState;
   const strategy = selectRelationshipStrategy({ snapshot: relationship, labels: classification.labels, archetype: "Pursuer" });
   const voice = relationship.currentState === "CONFLICT" ? voiceCue(strategy, effectiveState) : ttsForRelationship(relationship);
+  const speaker = body.voiceId ? getSpeakerCapability(body.voiceId) : undefined;
   const retrieved = relationship.topicClosure.shouldBlockReopen || relationship.stuckTopic
     ? []
     : retrieveSimilarEpisodes({ scene, archetype: "Pursuer", labels: classification.labels, intensity: state.conflictIntensity, currentState: relationship.currentState, intent: relationship.userState.intent, interactionPattern: relationship.reflection.interactionPattern, limit: 3 });
@@ -213,6 +221,7 @@ export async function POST(request: Request) {
   const apiKey = process.env.DEEPSEEK_API_KEY;
   let reply = "";
   let mode: "mock" | "deepseek" | "fallback" | "safety" = "mock";
+  let performancePlan: EmotionPerformancePlan | null = null;
   let validation: ReturnType<typeof validateGeneratedReply> = { valid: true, issues: [], memory: validateMemoryGrounding({ reply: "", history, currentUserMessage: userMessage, sessionId: sessionBoundary.sessionId }) };
 
   try {
@@ -242,7 +251,36 @@ export async function POST(request: Request) {
     validation = { valid: true, issues: [], memory: validateMemoryGrounding({ reply, history, currentUserMessage: userMessage, sessionId: sessionBoundary.sessionId }) };
   }
 
+  performancePlan = createEmotionPerformancePlan({ relationship, strategy, reply, history, sectionId, speaker });
+  const performanceThreshold = effectiveState.conflictIntensity >= 4 ? 75 : 65;
+  const performanceCheck = validatePerformance(performancePlan, reply, speaker);
+  if (apiKey && mode === "deepseek" && relationship.currentState === "CONFLICT" && effectiveState.conflictIntensity >= 3 && (performancePlan.emotionalPunchScore < performanceThreshold || !performanceCheck.valid)) {
+    try {
+      const performancePrompt = { ...prompt, systemPrompt: `${prompt.systemPrompt}\n\n【Emotion Performance要求】这句不能写成平淡说明。请让用户听出${performancePlan.primaryEmotion}，使用自然中国情侣口语、短句、反问、停顿或重音；不要心理咨询腔，不要凭空编造事实。情绪表现最低分目标：${performanceThreshold}/100。` };
+      reply = await callDeepSeek(apiKey, performancePrompt, history, userMessage);
+      validation = validateGeneratedReply(reply, relationship, history, userMessage, strategy, referenceTexts);
+      performancePlan = createEmotionPerformancePlan({ relationship, strategy, reply, history, sectionId, speaker });
+    } catch (error) {
+      console.error("emotion performance retry failed", error);
+    }
+  }
+
   const debug = debugForRelationship(relationship, classification, strategy, validation, validation.memory);
   debug.retrievedEpisodeIds = retrieved.map((item) => item.episode.id);
-  return NextResponse.json({ text: reply, reply, mode, voice, ...(debugRequested ? { debug } : {}) }, { headers: corsHeaders() });
+  const finalVoice = performancePlan ? {
+    ...voice,
+    emotion: performancePlan.apiEmotion as TTSRequest["emotion"],
+    primaryEmotion: performancePlan.primaryEmotion,
+    emotionScale: performancePlan.emotionScale,
+    intensity: performancePlan.intensity / 5,
+    speed: undefined,
+    volume: undefined,
+    speechRate: performancePlan.speechRate,
+    loudnessRate: performancePlan.loudnessRate,
+    sectionId: performancePlan.sectionId,
+    contextText: performancePlan.ttsInstruction,
+    fallbackUsed: performancePlan.fallbackUsed,
+  } : voice;
+  debug.emotionPerformance = performancePlan;
+  return NextResponse.json({ text: reply, reply, mode, voice: finalVoice, ...(debugRequested ? { debug } : {}) }, { headers: corsHeaders() });
 }

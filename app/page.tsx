@@ -13,6 +13,7 @@ import {
 } from "@/lib/providers";
 import { apiUrl, sitePath } from "@/lib/api";
 import { readChatArchives, upsertChatArchive, type ChatArchive } from "@/lib/chat-history";
+import type { EmotionPerformancePlan } from "@/src/emotion-performance/types";
 
 type Status = "idle" | "listening" | "thinking" | "speaking";
 type MicrophoneState = "unknown" | "granted" | "denied" | "unavailable";
@@ -25,6 +26,7 @@ type DebugInfo = {
   selectedStrategy: { primary: string; secondary: string[]; rationale: string };
   retrievedEpisodeIds: string[];
   validator: { valid: boolean; issues: string[] };
+  emotionPerformance?: EmotionPerformancePlan;
   memory?: { sessionId: string; sessionType: string; continuePreviousScene: boolean; activeTopic: string; memoryClaimDetected: boolean; claim: string; evidenceId?: string; evidenceSource?: string; evidenceConfidence: number; exactQuoteMatch: boolean; inferenceUsed: boolean; userCorrection: boolean; referenceDataUsedAsFact: false; issues: string[] };
   relationship?: { currentState: string; previousState: string; stateConfidence: number; stateDuration: number; conflictLocked: boolean; transitionReason: string };
   reflection?: { insightDepth: 0 | 1 | 2 | 3; mutualUnderstanding: number; surfaceConflict?: string; triggerIdentified?: string; underlyingNeed?: string; userContribution?: string; characterContribution?: string; interactionPattern?: string };
@@ -62,6 +64,10 @@ function Avatar({ small = false, gender = "female" }: { small?: boolean; gender?
   );
 }
 
+function newSectionId() {
+  return typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `section-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 function Wave() {
   return <div className="wave flex h-8 items-center justify-center gap-1" aria-hidden="true"><span /><span /><span /><span /><span /></div>;
 }
@@ -70,6 +76,11 @@ function RepairDebug({ debugInfo }: { debugInfo: DebugInfo | null }) {
   if (!debugInfo?.repair) return null;
   const repair = debugInfo.repair;
   return <details open className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-xs text-[#b7adab]"><summary className="cursor-pointer text-[#e98972]">Repair Bid Debug</summary><div className="mt-3 grid gap-2 sm:grid-cols-2"><p>Repair Bid：{repair.detected ? "yes" : "no"}</p><p>Repair Type：{repair.type}</p><p>Repair Strength：{repair.strength.toFixed(2)}</p><p>Sincerity：{repair.sincerity.toFixed(2)}</p><p>Repair Momentum：{repair.momentum}</p><p>Attack Momentum：{repair.attackMomentum}</p><p>User Softening：{repair.userSoftening}</p><p>Repair Rejections：{repair.rejectionCount}</p><p>Conflict Budget：{repair.conflictBudget}</p><p>Conflict Phase：{repair.conflictPhase}</p></div></details>;
+}
+
+function PerformanceDebug({ plan }: { plan: EmotionPerformancePlan | null }) {
+  if (!plan) return null;
+  return <details open className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-xs text-[#b7adab]"><summary className="cursor-pointer text-[#e98972]">Emotion Performance Debug</summary><div className="mt-3 grid gap-2 sm:grid-cols-2"><p>Primary Emotion：{plan.primaryEmotion}</p><p>Internal Intensity：{plan.intensity}/5</p><p>API Emotion：{plan.apiEmotion || "omitted"}</p><p>Emotion Scale：{plan.emotionScale ?? "-"}</p><p>Arousal：{plan.arousal}</p><p>Valence：{plan.valence}</p><p>Speech Rate：{plan.delivery.pace}</p><p>Loudness：{plan.delivery.loudness}</p><p>Section ID：{plan.sectionId}</p><p>Punch Score：{plan.emotionalPunchScore}/100</p><p>Profanity Level：{plan.profanityLevel}</p><p>Fallback Used：{plan.fallbackUsed ? "yes" : "no"}</p><p className="sm:col-span-2">Context：{plan.ttsInstruction}</p></div></details>;
 }
 
 function VoiceSelector({ voices, selectedVoiceId, onChange }: { voices: VoiceOption[]; selectedVoiceId: string; onChange: (voiceId: string) => void }) {
@@ -167,6 +178,7 @@ export default function Home() {
   const [selectedArchiveId, setSelectedArchiveId] = useState<string | null>(null);
   const historyRef = useRef<ChatMessage[]>([WELCOME]);
   const archiveIdRef = useRef(`conversation-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`);
+  const sectionIdRef = useRef(newSectionId());
   const conversationActiveRef = useRef(false);
   const asrRef = useRef(new BrowserSpeechRecognitionProvider());
   const ttsRef = useRef(new DoubaoTTSProvider());
@@ -257,6 +269,7 @@ export default function Home() {
     setReviewQuestion("");
     setReviewError("");
     archiveIdRef.current = `conversation-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    sectionIdRef.current = newSectionId();
     updateMessages([WELCOME]);
   };
 
@@ -314,9 +327,9 @@ export default function Home() {
       const response = await fetch(apiUrl("/api/chat"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ history: baseHistory.slice(-20), userMessage: userText, sceneContext: scenario.context, scenarioId: scenario.id, characterGender, sessionId: archiveIdRef.current, continuePreviousScene: false, debug: debugEnabled }),
+        body: JSON.stringify({ history: baseHistory.slice(-20), userMessage: userText, sceneContext: scenario.context, scenarioId: scenario.id, characterGender, voiceId: selectedVoiceId || undefined, sessionId: archiveIdRef.current, sectionId: sectionIdRef.current, continuePreviousScene: false, debug: debugEnabled }),
       });
-      const data = await response.json() as { text?: string; reply?: string; mode?: "mock" | "deepseek" | "fallback" | "safety"; error?: string; debug?: DebugInfo; voice?: { emotion?: TTSRequest["emotion"]; intensity?: number; speed?: number; volume?: number } };
+      const data = await response.json() as { text?: string; reply?: string; mode?: "mock" | "deepseek" | "fallback" | "safety"; error?: string; debug?: DebugInfo; voice?: { emotion?: TTSRequest["emotion"]; primaryEmotion?: string; emotionScale?: number; intensity?: number; speed?: number; volume?: number; sectionId?: string; contextText?: string; speechRate?: number; loudnessRate?: number; fallbackUsed?: boolean } };
       const reply = data.text || data.reply;
       if (!response.ok || !reply) throw new Error(data.error || "reply failed");
       setMode(data.mode || "");
@@ -330,7 +343,7 @@ export default function Home() {
       setReviewQuestion("");
       setReviewError("");
       setStatus("speaking");
-      ttsRef.current.speak({ text: reply, emotion: data.voice?.emotion, intensity: data.voice?.intensity, speed: data.voice?.speed, volume: data.voice?.volume, voiceId: selectedVoiceId || undefined }, {
+      ttsRef.current.speak({ text: reply, emotion: data.voice?.emotion, primaryEmotion: data.voice?.primaryEmotion, emotionScale: data.voice?.emotionScale, intensity: data.voice?.intensity, speed: data.voice?.speed, volume: data.voice?.volume, speechRate: data.voice?.speechRate, loudnessRate: data.voice?.loudnessRate, sectionId: data.voice?.sectionId || sectionIdRef.current, contextText: data.voice?.contextText, fallbackUsed: data.voice?.fallbackUsed, voiceId: selectedVoiceId || undefined }, {
         onEnd: () => resumeListening(),
         onError: (message) => {
           setNotice(message);
@@ -463,6 +476,7 @@ export default function Home() {
           {hasUserTurn && status !== "thinking" && <div className="mt-7 w-full max-w-xl"><button type="button" onClick={openReview} aria-expanded={reviewOpen} className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-[#1b1818] px-4 py-3 text-left transition hover:border-[#e98972]/40 hover:bg-[#211e1d] active:scale-[.99]"><span><span className="block text-sm text-[#f4efeb]">情绪复盘</span><span className="mt-1 block text-xs text-[#817876]">看看刚刚真正发生了什么</span></span><span className="text-lg text-[#e98972]">{reviewOpen ? "⌃" : "→"}</span></button>{reviewOpen && <EmotionReviewPanel review={review} turns={reviewTurns} question={reviewQuestion} loading={reviewLoading} error={reviewError} onQuestionChange={setReviewQuestion} onContinue={() => void requestReview(reviewQuestion)} onRetry={() => void requestReview()} onClose={() => setReviewOpen(false)} />}</div>}
         </section>
         {debugEnabled && <RepairDebug debugInfo={debugInfo} />}
+        {debugEnabled && <PerformanceDebug plan={debugInfo?.emotionPerformance || null} />}
         <footer className="mt-8 flex flex-col items-center">
           {voiceInputSupported ? <>
             <button type="button" onClick={handleMic} aria-label={conversationActive ? "结束持续语音对话" : "开始持续语音对话"} className={`relative flex h-20 w-20 items-center justify-center rounded-full text-[#241615] shadow-2xl shadow-black/20 transition active:scale-[.96] ${conversationActive ? "breathing bg-[#f6a08b]" : "bg-[#e98972] hover:bg-[#f6a08b]"}`}><span className="mic-glyph" /></button>

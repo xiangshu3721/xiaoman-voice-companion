@@ -1,3 +1,5 @@
+import type { EmotionPerformancePlan } from "@/src/emotion-performance/types";
+
 export type SourceType = "human" | "public" | "synthetic" | "synthetic_seed" | "manual_synthetic" | "human_verified" | "expert";
 
 export type RelationshipType = "dating" | "cohabiting" | "married";
@@ -176,6 +178,7 @@ export type DebugTrace = {
   selectedStrategy: StrategySelection;
   retrievedEpisodeIds: string[];
   validator: { valid: boolean; issues: string[] };
+  emotionPerformance?: EmotionPerformancePlan;
   memory?: {
     sessionId: string;
     sessionType: string;

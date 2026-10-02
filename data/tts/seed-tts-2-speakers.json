@@ -1,0 +1,122 @@
+[
+  {
+    "speakerId": "zh_female_vv_uranus_bigtts",
+    "displayName": "vivi 2.0（官方预置·通用场景女声）",
+    "gender": "female",
+    "model": "seed-tts-2.0",
+    "supportsEmotion": true,
+    "supportedEmotions": [
+      "angry",
+      "sad",
+      "happy"
+    ],
+    "supportsContextTexts": true,
+    "supportsSectionId": true,
+    "supportsLoudnessRate": true,
+    "supportsSpeechRate": true,
+    "source": "runtime_verified",
+    "verificationStatus": "verified",
+    "notes": "Runtime Probe：angry=success, sad=success, happy=success",
+    "verifiedAt": "2026-10-02T01:49:25.080Z"
+  },
+  {
+    "speakerId": "zh_female_santongyongns_saturn_bigtts",
+    "displayName": "流畅女声",
+    "gender": "female",
+    "model": "seed-tts-2.0",
+    "supportsEmotion": true,
+    "supportedEmotions": [
+      "angry",
+      "sad",
+      "happy"
+    ],
+    "supportsContextTexts": true,
+    "supportsSectionId": true,
+    "supportsLoudnessRate": true,
+    "supportsSpeechRate": true,
+    "source": "runtime_verified",
+    "verificationStatus": "verified",
+    "notes": "Runtime Probe：angry=success, sad=success, happy=success",
+    "verifiedAt": "2026-10-02T01:49:27.123Z"
+  },
+  {
+    "speakerId": "zh_female_mizai_saturn_bigtts",
+    "displayName": "咪仔",
+    "gender": "female",
+    "model": "seed-tts-2.0",
+    "supportsEmotion": true,
+    "supportedEmotions": [
+      "angry",
+      "sad",
+      "happy"
+    ],
+    "supportsContextTexts": true,
+    "supportsSectionId": true,
+    "supportsLoudnessRate": true,
+    "supportsSpeechRate": true,
+    "source": "runtime_verified",
+    "verificationStatus": "verified",
+    "notes": "Runtime Probe：angry=success, sad=success, happy=success",
+    "verifiedAt": "2026-10-02T01:49:28.820Z"
+  },
+  {
+    "speakerId": "zh_female_meilinvyou_saturn_bigtts",
+    "displayName": "魅力女友",
+    "gender": "female",
+    "model": "seed-tts-2.0",
+    "supportsEmotion": true,
+    "supportedEmotions": [
+      "angry",
+      "sad",
+      "happy"
+    ],
+    "supportsContextTexts": true,
+    "supportsSectionId": true,
+    "supportsLoudnessRate": true,
+    "supportsSpeechRate": true,
+    "source": "runtime_verified",
+    "verificationStatus": "verified",
+    "notes": "Runtime Probe：angry=success, sad=success, happy=success",
+    "verifiedAt": "2026-10-02T01:49:30.877Z"
+  },
+  {
+    "speakerId": "zh_male_dayi_saturn_bigtts",
+    "displayName": "大壹",
+    "gender": "male",
+    "model": "seed-tts-2.0",
+    "supportsEmotion": true,
+    "supportedEmotions": [
+      "angry",
+      "sad",
+      "happy"
+    ],
+    "supportsContextTexts": true,
+    "supportsSectionId": true,
+    "supportsLoudnessRate": true,
+    "supportsSpeechRate": true,
+    "source": "runtime_verified",
+    "verificationStatus": "verified",
+    "notes": "Runtime Probe：angry=success, sad=success, happy=success",
+    "verifiedAt": "2026-10-02T01:49:32.847Z"
+  },
+  {
+    "speakerId": "zh_male_ruyayichen_saturn_bigtts",
+    "displayName": "儒雅逸辰",
+    "gender": "male",
+    "model": "seed-tts-2.0",
+    "supportsEmotion": true,
+    "supportedEmotions": [
+      "angry",
+      "sad",
+      "happy"
+    ],
+    "supportsContextTexts": true,
+    "supportsSectionId": true,
+    "supportsLoudnessRate": true,
+    "supportsSpeechRate": true,
+    "source": "runtime_verified",
+    "verificationStatus": "verified",
+    "notes": "Runtime Probe：angry=success, sad=success, happy=success",
+    "verifiedAt": "2026-10-02T01:49:35.279Z"
+  }
+]

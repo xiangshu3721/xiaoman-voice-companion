@@ -22,6 +22,10 @@
     ,"relationship:episodes:generate": "tsx scripts/generate-relationship-episodes.ts"
     ,"relationship:episodes:validate": "tsx scripts/validate-relationship-episodes.ts"
     ,"relationship:manual:generate": "tsx scripts/generate-manual-seed.ts"
+    ,"performance:seed:generate": "tsx scripts/generate-emotion-performance-seed.ts"
+    ,"test:emotion-performance": "tsx scripts/test-emotion-performance.ts"
+    ,"tts:probe": "tsx scripts/probe-tts-capabilities.ts"
+    ,"tts:voice-matrix": "tsx scripts/generate-voice-test-matrix.ts"
   },
   "dependencies": {
     "next": "^15.5.9",
