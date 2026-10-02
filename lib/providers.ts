@@ -393,7 +393,10 @@ export class DoubaoTTSProvider implements TTSProvider {
       if (controller.signal.aborted) throw new Error("火山引擎 TTS 请求超时");
       if (!response.ok) throw new Error(await response.text() || `TTS request failed: ${response.status}`);
       const voice = response.headers.get("X-TTS-Voice") || request.voiceId || "volcengine-default";
-      if (response.headers.get("X-TTS-Streaming") === "true" && response.body) {
+      // Mobile browsers are unreliable with MediaSource and some CloudBase
+      // gateways rewrite the streaming marker. Always consume a complete
+      // audio blob on mobile, regardless of the response header.
+      if (!isMobileBrowser() && response.headers.get("X-TTS-Streaming") === "true" && response.body) {
         const streamed = await this.playResponseStream(response.body, request, callbacks, startedAt, voice, generation);
         if (streamed) return;
       }
