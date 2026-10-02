@@ -9,6 +9,7 @@ import {
   type ChatMessage,
   type ScenarioId,
   type TTSMetrics,
+  type TTSPlaybackState,
   type TTSRequest,
 } from "@/lib/providers";
 import { apiUrl, sitePath } from "@/lib/api";
@@ -18,9 +19,10 @@ import { AdaptiveVadMonitor } from "@/src/realtime/adaptive-vad";
 import { detectEndOfTurn, semanticCompleteness } from "@/src/realtime/end-of-turn";
 import { TranscriptAccumulator } from "@/src/realtime/transcript-accumulator";
 import type { MicHealth, RealtimeConversationState } from "@/src/realtime/types";
+import { MicrophonePermissionManager } from "@/src/realtime/microphone-permission";
 
 type Status = "idle" | "listening" | "thinking" | "speaking";
-type MicrophoneState = "unknown" | "granted" | "denied" | "unavailable";
+type MicrophoneState = "unknown" | "requesting" | "granted" | "denied" | "unavailable" | "error";
 type CharacterGender = "female" | "male";
 
 type DebugInfo = {
@@ -169,6 +171,7 @@ export default function Home() {
   const [debugEnabled, setDebugEnabled] = useState(false);
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
   const [ttsDebug, setTtsDebug] = useState<TTSMetrics | null>(null);
+  const [ttsPlaybackState, setTtsPlaybackState] = useState<TTSPlaybackState>("IDLE");
   const [selectedVoiceId, setSelectedVoiceId] = useState("");
   const [voiceOptions, setVoiceOptions] = useState<VoiceOption[]>([]);
   const [mode, setMode] = useState<"mock" | "deepseek" | "fallback" | "safety" | "">("");
@@ -193,6 +196,7 @@ export default function Home() {
   const conversationActiveRef = useRef(false);
   const asrRef = useRef(new BrowserSpeechRecognitionProvider());
   const ttsRef = useRef(new DoubaoTTSProvider());
+  const microphoneRef = useRef(new MicrophonePermissionManager());
   const streamRef = useRef<MediaStream | null>(null);
   const vadRef = useRef(new AdaptiveVadMonitor());
   const accumulatorRef = useRef(new TranscriptAccumulator());
@@ -225,7 +229,13 @@ export default function Home() {
       setVoiceOptions(nextVoices);
       setSelectedVoiceId(storedVoice && nextVoices.some((voice) => voice.id === storedVoice) ? storedVoice : nextVoices[0]?.id || "");
     }).catch(() => undefined);
+    const stopMicWatch = microphoneRef.current.watchDeviceChanges(() => {
+      const track = streamRef.current?.getAudioTracks()[0];
+      if (!track || track.readyState !== "live") setNotice("麦克风设备发生变化，请重新点击开始语音。");
+      else setMicHealth((current) => ({ ...current, trackState: track.readyState, trackMuted: track.muted }));
+    });
     return () => {
+      stopMicWatch();
       asrRef.current.stop();
       ttsRef.current.stop();
       vadRef.current.stop();
@@ -252,17 +262,16 @@ export default function Home() {
     // 必须在用户点击触发的同步阶段先解锁音频，移动 Safari/部分 WebView
     // 才允许异步请求完成后播放 AI 语音。
     ttsRef.current.unlockAudio();
-    let nextMicrophoneState: MicrophoneState = "unavailable";
-    if (navigator.mediaDevices?.getUserMedia) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
-        streamRef.current = stream;
-        nextMicrophoneState = "granted";
-        setMicHealth((current) => ({ ...current, permissionGranted: true, trackState: stream.getAudioTracks()[0]?.readyState || "live", trackMuted: stream.getAudioTracks()[0]?.muted || false }));
-      } catch {
-        nextMicrophoneState = "denied";
-        setMicHealth((current) => ({ ...current, permissionGranted: false, trackState: "denied", trackMuted: false }));
-      }
+    setMicrophoneState("requesting");
+    const micResult = await microphoneRef.current.request({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    const nextMicrophoneState: MicrophoneState = micResult.status;
+    if (micResult.stream) {
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = micResult.stream;
+      const track = micResult.stream.getAudioTracks()[0];
+      setMicHealth((current) => ({ ...current, permissionGranted: true, trackState: track?.readyState || "live", trackMuted: track?.muted || false }));
+    } else {
+      setMicHealth((current) => ({ ...current, permissionGranted: false, trackState: nextMicrophoneState === "denied" ? "denied" : "unavailable", trackMuted: false }));
     }
     setMicrophoneState(nextMicrophoneState);
     if (!asrRef.current.isSupported()) {
@@ -270,12 +279,12 @@ export default function Home() {
       setStarted(true);
       setConversationActive(false);
       setStatus("idle");
-      setNotice(nextMicrophoneState === "granted" ? "麦克风已授权，但当前浏览器没有语音识别能力，已切换为文字对话。" : "当前浏览器不支持网页语音识别，已切换为文字对话。想用麦克风，请用系统浏览器打开。");
+      setNotice(nextMicrophoneState === "granted" ? "麦克风已授权，但当前浏览器没有语音识别能力，已切换为文字对话。" : `${micResult.message || "当前浏览器不支持网页语音识别"} 已切换为文字对话。`);
       return;
     }
     setVoiceInputSupported(true);
-    if (nextMicrophoneState === "denied") {
-      setNotice("麦克风权限没有打开，请在浏览器设置里允许；也可以先用文字对话。");
+    if (nextMicrophoneState !== "granted") {
+      setNotice(`${micResult.message || "麦克风暂时不可用"} 也可以先用文字对话。`);
       return;
     }
     setStarted(true);
@@ -308,6 +317,7 @@ export default function Home() {
     setMode("");
     setDebugInfo(null);
     setTtsDebug(null);
+    setTtsPlaybackState("IDLE");
     setReviewOpen(false);
     setReview(null);
     setReviewTurns([]);
@@ -416,6 +426,7 @@ export default function Home() {
       // 暂时关闭抢话：AI 说完后才重新开启 ASR，避免用户声音和 TTS 重叠。
       asrRef.current.stop();
       ttsRef.current.speak({ text: reply, emotion: data.voice?.emotion, primaryEmotion: data.voice?.primaryEmotion, emotionScale: data.voice?.emotionScale, intensity: data.voice?.intensity, speed: data.voice?.speed, volume: data.voice?.volume, speechRate: data.voice?.speechRate, loudnessRate: data.voice?.loudnessRate, sectionId: data.voice?.sectionId || sectionIdRef.current, contextText: data.voice?.contextText, fallbackUsed: data.voice?.fallbackUsed, voiceId: selectedVoiceId || undefined }, {
+        onStateChange: (state) => { setTtsPlaybackState(state); if (state === "READY" || state === "PLAYING") { if (ttsGuardRef.current !== null) window.clearTimeout(ttsGuardRef.current); } },
         onStart: () => {
           setRealtimeState("AI_SPEAKING");
         },
@@ -488,7 +499,7 @@ export default function Home() {
       const asrResultFresh = lastAsrResultAtRef.current !== null && now - lastAsrResultAtRef.current < 700;
       const lastVoice = asrResultFresh ? Math.max(lastAsrResult, lastVoiceAtRef.current || 0) : lastAsrResult;
       const vadStillActive = asrResultFresh && now - lastVoice < 180 && asrSpeechActiveRef.current;
-      const decision = detectEndOfTurn({ silenceDuration: now - lastVoice, vadActive: vadStillActive, interimTranscript: currentText, lastFinalSegmentTime: lastFinalAtRef.current, semanticCompleteness: semanticCompleteness(currentText), utteranceDuration: now - (utteranceStartRef.current || lastFinalAtRef.current || now), now });
+      const decision = detectEndOfTurn({ silenceDuration: now - lastVoice, vadActive: vadStillActive, interimTranscript: currentText, hasInterimTranscript: Boolean(snapshot.interimTranscript), lastFinalSegmentTime: lastFinalAtRef.current, semanticCompleteness: semanticCompleteness(currentText), utteranceDuration: now - (utteranceStartRef.current || lastFinalAtRef.current || now), now });
       setEndOfTurnConfidence(decision.confidence);
       if (decision.shouldFinalize) finalizeCurrentTurn();
       else if (conversationActiveRef.current) endTimerRef.current = window.setTimeout(check, 180);
@@ -653,7 +664,7 @@ export default function Home() {
           <div className="flex items-center gap-4"><button type="button" onClick={() => { setSelectedArchiveId(null); setHistoryOpen(true); }} className="text-xs text-[#9f9795] transition hover:text-[#f4efeb]">历史记录</button><button type="button" onClick={resetConversation} className="text-xs text-[#9f9795] transition hover:text-[#f4efeb]">重新开始</button></div>
         </header>
         <section className="flex flex-1 flex-col items-center pt-11 sm:pt-14">
-          <div className="flex flex-col items-center"><div className={`relative rounded-full ${status === "listening" && listeningReady ? "breathing" : ""}`}><Avatar gender={characterGender} /></div><p className="mt-6 text-sm text-[#d1c7c4]">{realtimeState === "PREPARING_MIC" ? "正在准备麦克风……" : realtimeState === "RECOVERING_ASR" ? "刚刚没听清，正在恢复……" : STATUS_COPY[status].replace("小满", characterName)}</p><p className="mt-2 text-[11px] text-[#756d6b]">麦克风：{microphoneState === "granted" ? "已授权" : microphoneState === "denied" ? "未授权" : "检测中"}{micHealth.trackMuted ? "（设备静音）" : ""}</p>{status === "listening" && interimText && <p className="mt-3 max-w-xs text-center text-xs leading-5 text-[#a9a09e]">“{interimText}”</p>}<div className="mt-3 h-8">{status === "speaking" ? <Wave /> : status === "thinking" ? <div className="flex h-8 items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:120ms]" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:240ms]" /></div> : <span className="text-xs text-[#756d6b]">{scenario.shortTitle}</span>}</div></div>
+          <div className="flex flex-col items-center"><div className={`relative rounded-full ${status === "listening" && listeningReady ? "breathing" : ""}`}><Avatar gender={characterGender} /></div><p className="mt-6 text-sm text-[#d1c7c4]">{realtimeState === "PREPARING_MIC" ? "正在准备麦克风……" : realtimeState === "RECOVERING_ASR" ? "刚刚没听清，正在恢复……" : STATUS_COPY[status].replace("小满", characterName)}</p><p className="mt-2 text-[11px] text-[#756d6b]">麦克风：{microphoneState === "granted" ? "已授权" : microphoneState === "requesting" ? "请求中" : microphoneState === "denied" ? "未授权" : microphoneState === "error" ? "暂时不可用" : "检测中"}{micHealth.trackMuted ? "（设备静音）" : ""}</p>{status === "listening" && interimText && <p className="mt-3 max-w-xs text-center text-xs leading-5 text-[#a9a09e]">“{interimText}”</p>}<div className="mt-3 h-8">{status === "speaking" ? <Wave /> : status === "thinking" ? <div className="flex h-8 items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:120ms]" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:240ms]" /></div> : <span className="text-xs text-[#756d6b]">{scenario.shortTitle}</span>}</div></div>
           <div className="mt-10 w-full max-w-xl space-y-4" aria-live="polite">
             {visibleMessages.map((message, index) => <div key={`${message.role}-${index}-${message.content.slice(0, 8)}`} className={`flex items-start gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>{message.role === "assistant" && <Avatar small gender={characterGender} />}<div className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === "user" ? "rounded-br-md bg-[#e98972] text-[#241615]" : "rounded-bl-md bg-[#211e1d] text-[#ded4d1]"}`}><span className="mb-1 block text-[10px] tracking-[0.12em] opacity-50">{message.role === "user" ? "我" : characterName}</span>{message.content}</div></div>)}
           </div>

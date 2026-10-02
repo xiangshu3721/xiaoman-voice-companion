@@ -43,7 +43,13 @@ export type TTSMetrics = {
   sectionId?: string;
   contextText?: string;
   fallbackUsed?: boolean;
+  generationSuccess?: boolean;
+  playbackSuccess?: boolean;
+  playbackState?: TTSPlaybackState;
+  error?: string;
 };
+
+export type TTSPlaybackState = "IDLE" | "REQUESTING" | "BUFFERING" | "READY" | "PLAYING" | "COMPLETED" | "INTERRUPTED" | "FAILED" | "RECOVERING";
 
 export type TTSCallbacks = {
   onEnd: () => void;
@@ -51,6 +57,7 @@ export type TTSCallbacks = {
   onMetrics?: (metrics: TTSMetrics) => void;
   onStart?: () => void;
   onProgress?: (progress: { spokenRatio: number; spokenText: string }) => void;
+  onStateChange?: (state: TTSPlaybackState) => void;
 };
 
 export type ScenarioId = "late-home" | "no-reply" | "forgotten" | "free";
@@ -252,6 +259,7 @@ export class BrowserSpeechSynthesisProvider implements TTSProvider {
 
   speak(request: TTSRequest, callbacks: TTSCallbacks) {
     if (!this.isSupported()) { callbacks.onError("当前浏览器不支持语音播放。"); return; }
+    callbacks.onStateChange?.("REQUESTING");
     const startedAt = performance.now();
     const emotion = request.emotion || "neutral";
     const intensity = Math.max(0, Math.min(1, request.intensity ?? 0.5));
@@ -266,14 +274,16 @@ export class BrowserSpeechSynthesisProvider implements TTSProvider {
     utterance.pitch = profile.pitch;
     utterance.volume = profile.volume;
     callbacks.onStart?.();
+    callbacks.onStateChange?.("PLAYING");
     callbacks.onProgress?.({ spokenRatio: 0, spokenText: "" });
     callbacks.onMetrics?.({ provider: "browser", voice: preferred?.name || chineseVoices[0]?.name || "browser-default", emotion, intensity, streaming: false });
     utterance.onend = () => {
       callbacks.onProgress?.({ spokenRatio: 1, spokenText: request.text });
-      callbacks.onMetrics?.({ provider: "browser", voice: preferred?.name || chineseVoices[0]?.name || "browser-default", emotion, intensity, streaming: false, totalLatencyMs: Math.round(performance.now() - startedAt) });
+      callbacks.onMetrics?.({ provider: "browser", voice: preferred?.name || chineseVoices[0]?.name || "browser-default", emotion, intensity, streaming: false, totalLatencyMs: Math.round(performance.now() - startedAt), generationSuccess: true, playbackSuccess: true });
+      callbacks.onStateChange?.("COMPLETED");
       callbacks.onEnd();
     };
-    utterance.onerror = () => callbacks.onError("语音播放出了点问题，你可以继续说。");
+    utterance.onerror = () => { callbacks.onStateChange?.("FAILED"); callbacks.onError("语音播放出了点问题，你可以继续说。"); };
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
   }
@@ -332,6 +342,7 @@ export class DoubaoTTSProvider implements TTSProvider {
   private objectUrl: string | null = null;
   private abortController: AbortController | null = null;
   private requestGeneration = 0;
+  private lifecycleInstalled = false;
 
   isSupported() {
     // Mobile Safari/微信内置浏览器不一定支持 MediaSource，但通常可以播放已经
@@ -346,6 +357,7 @@ export class DoubaoTTSProvider implements TTSProvider {
    */
   unlockAudio() {
     if (typeof window === "undefined" || typeof Audio === "undefined") return;
+    this.installAudioLifecycle();
     const AudioContextConstructor = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (AudioContextConstructor && !this.audioContext) {
       try { this.audioContext = new AudioContextConstructor(); } catch { /* HTMLAudio fallback below */ }
@@ -368,9 +380,21 @@ export class DoubaoTTSProvider implements TTSProvider {
     });
   }
 
+  private installAudioLifecycle() {
+    if (this.lifecycleInstalled || typeof window === "undefined") return;
+    this.lifecycleInstalled = true;
+    const resume = () => {
+      if (this.audioContext?.state === "suspended") void this.audioContext.resume().catch(() => undefined);
+    };
+    window.addEventListener("pageshow", resume);
+    window.addEventListener("visibilitychange", resume);
+  }
+
   speak(request: TTSRequest, callbacks: TTSCallbacks) {
     this.stop();
     const generation = ++this.requestGeneration;
+    this.installAudioLifecycle();
+    callbacks.onStateChange?.("REQUESTING");
     if (!this.isSupported()) {
       this.fallbackWithReason(request, callbacks, "当前浏览器不支持原生音频播放");
       return;
@@ -389,6 +413,7 @@ export class DoubaoTTSProvider implements TTSProvider {
       if (generation !== this.requestGeneration) return;
       if (controller.signal.aborted) throw new Error("火山引擎 TTS 请求超时");
       if (!response.ok) throw new Error(await response.text() || `TTS request failed: ${response.status}`);
+      callbacks.onStateChange?.("BUFFERING");
       const voice = response.headers.get("X-TTS-Voice") || request.voiceId || "volcengine-default";
       // Mobile browsers are unreliable with MediaSource and some CloudBase
       // gateways rewrite the streaming marker. Always consume a complete
@@ -399,9 +424,11 @@ export class DoubaoTTSProvider implements TTSProvider {
       }
       const audioBlob = await response.blob();
       if (!audioBlob.size) throw new Error("火山引擎返回了空音频");
+      callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, generationSuccess: true, ...ttsDebugFields(request) });
       await this.playBlob(audioBlob, request, callbacks, startedAt, voice, generation);
     }).catch((error: unknown) => {
       if (generation !== this.requestGeneration) return;
+      callbacks.onStateChange?.("RECOVERING");
       this.fallbackWithReason(request, callbacks, controller.signal.aborted ? "火山引擎 TTS 请求超时" : error instanceof Error ? error.message : "火山引擎 TTS 失败");
     }).finally(() => window.clearTimeout(requestTimeout));
   }
@@ -458,7 +485,7 @@ export class DoubaoTTSProvider implements TTSProvider {
       if (settled || generation !== this.requestGeneration) return;
       settled = true;
       this.cleanupAudio();
-      callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: true, totalLatencyMs: Math.round(performance.now() - startedAt), ...ttsDebugFields(request) });
+      callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: true, totalLatencyMs: Math.round(performance.now() - startedAt), generationSuccess: true, playbackSuccess: true, ...ttsDebugFields(request) });
       callbacks.onEnd();
     };
     audio.onended = finish;
@@ -496,8 +523,10 @@ export class DoubaoTTSProvider implements TTSProvider {
         });
         if (firstChunk) {
           firstChunk = false;
+          callbacks.onStateChange?.("READY");
           callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: true, firstByteLatencyMs: Math.round(performance.now() - startedAt), ...ttsDebugFields(request) });
           await audio.play();
+          callbacks.onStateChange?.("PLAYING");
           await waitForPlayback();
         }
         first = await reader.read();
@@ -536,11 +565,13 @@ export class DoubaoTTSProvider implements TTSProvider {
         window.clearInterval(progressTimer);
         source.disconnect();
         this.audioSource = null;
-        callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, totalLatencyMs: Math.round(performance.now() - startedAt), ...ttsDebugFields(request) });
+        callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, totalLatencyMs: Math.round(performance.now() - startedAt), generationSuccess: true, playbackSuccess: true, ...ttsDebugFields(request) });
+        callbacks.onStateChange?.("COMPLETED");
         callbacks.onEnd();
         resolve();
       };
       try {
+        callbacks.onStateChange?.("READY");
         source.start(0);
       } catch (error) {
         settled = true;
@@ -551,55 +582,62 @@ export class DoubaoTTSProvider implements TTSProvider {
     });
   }
 
-  private playWithHtmlAudio(blob: Blob, request: TTSRequest, callbacks: TTSCallbacks, startedAt: number, voice: string, generation: number) {
-    return new Promise<void>((resolve, reject) => {
-      if (generation !== this.requestGeneration) { resolve(); return; }
-      let settled = false;
-      const isCurrent = () => generation === this.requestGeneration;
-      const audio = this.audio || new Audio();
-      this.audio = audio;
-      this.objectUrl = URL.createObjectURL(blob);
-      let watchdog: number | null = null;
-      audio.muted = false;
-      audio.setAttribute("playsinline", "true");
-      audio.preload = "auto";
-      audio.src = this.objectUrl;
-      audio.load();
-      callbacks.onStart?.();
-      audio.ontimeupdate = () => {
-        const ratio = audio.duration > 0 ? Math.min(1, audio.currentTime / audio.duration) : 0;
-        callbacks.onProgress?.({ spokenRatio: ratio, spokenText: request.text.slice(0, Math.ceil(request.text.length * ratio)) });
-      };
-      callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, firstByteLatencyMs: Math.round(performance.now() - startedAt), ...ttsDebugFields(request) });
+  private async playWithHtmlAudio(blob: Blob, request: TTSRequest, callbacks: TTSCallbacks, startedAt: number, voice: string, generation: number) {
+    if (generation !== this.requestGeneration) return;
+    let settled = false;
+    const isCurrent = () => generation === this.requestGeneration;
+    const audio = this.audio || new Audio();
+    this.audio = audio;
+    this.objectUrl = URL.createObjectURL(blob);
+    let watchdog: number | null = null;
+    audio.muted = false;
+    audio.setAttribute("playsinline", "true");
+    audio.preload = "auto";
+    audio.src = this.objectUrl;
+    audio.load();
+    callbacks.onStart?.();
+    audio.ontimeupdate = () => {
+      const ratio = audio.duration > 0 ? Math.min(1, audio.currentTime / audio.duration) : 0;
+      callbacks.onProgress?.({ spokenRatio: ratio, spokenText: request.text.slice(0, Math.ceil(request.text.length * ratio)) });
+    };
+    callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, firstByteLatencyMs: Math.round(performance.now() - startedAt), generationSuccess: true, ...ttsDebugFields(request) });
+    const playback = new Promise<void>((resolve, reject) => {
       audio.onended = () => {
         if (settled || !isCurrent()) return;
         settled = true;
         if (watchdog !== null) window.clearTimeout(watchdog);
         this.cleanupAudio();
         callbacks.onProgress?.({ spokenRatio: 1, spokenText: request.text });
-        callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, totalLatencyMs: Math.round(performance.now() - startedAt), ...ttsDebugFields(request) });
+        callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, totalLatencyMs: Math.round(performance.now() - startedAt), generationSuccess: true, playbackSuccess: true, ...ttsDebugFields(request) });
+        callbacks.onStateChange?.("COMPLETED");
         callbacks.onEnd();
         resolve();
       };
       audio.onerror = () => {
-        if (!settled && isCurrent()) { settled = true; if (watchdog !== null) window.clearTimeout(watchdog); this.cleanupAudio(); reject(new Error("浏览器无法播放火山引擎音频")); }
+        if (!settled && isCurrent()) { settled = true; if (watchdog !== null) window.clearTimeout(watchdog); this.cleanupAudio(); callbacks.onStateChange?.("FAILED"); reject(new Error("浏览器无法播放火山引擎音频")); }
       };
-      audio.play().then(() => undefined).catch((error) => {
-        if (settled || !isCurrent()) return;
-        settled = true;
-        if (watchdog !== null) window.clearTimeout(watchdog);
-        this.cleanupAudio();
-        reject(error instanceof Error ? error : new Error("浏览器阻止了音频自动播放"));
-      });
-      // 少数 WebView 会让 play() 成功但一直不推进 currentTime，也不触发 error。
-      // 避免 UI 永久停留在“小满正在说”。
+      callbacks.onStateChange?.("READY");
       watchdog = window.setTimeout(() => {
         if (settled || !isCurrent() || audio.ended || audio.currentTime > 0.05) return;
         settled = true;
         this.cleanupAudio();
+        callbacks.onStateChange?.("FAILED");
         reject(new Error("移动浏览器没有真正开始播放音频"));
       }, isMobileBrowser() ? 4500 : 8000);
     });
+    try {
+      await audio.play();
+      callbacks.onStateChange?.("PLAYING");
+      await playback;
+    } catch (error) {
+      if (!settled && isCurrent()) {
+        settled = true;
+        if (watchdog !== null) window.clearTimeout(watchdog);
+        this.cleanupAudio();
+        callbacks.onStateChange?.("FAILED");
+      }
+      throw error instanceof Error ? error : new Error("浏览器阻止了音频自动播放");
+    }
   }
 
   private cleanupAudio() {
@@ -609,9 +647,11 @@ export class DoubaoTTSProvider implements TTSProvider {
     }
     this.audioSource = null;
     this.audio?.pause();
-    if (this.audio) this.audio.src = "";
+    if (this.audio) {
+      this.audio.removeAttribute("src");
+      this.audio.load();
+    }
     if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
-    this.audio = null;
     this.objectUrl = null;
   }
 

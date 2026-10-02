@@ -12,6 +12,8 @@ check("unfinished connector protection", !detectEndOfTurn({ ...base, silenceDura
 check("unfinished connector eventually finalizes", detectEndOfTurn({ ...base, silenceDuration: 1900, interimTranscript: "我其实想" }).shouldFinalize);
 check("700ms possible end waits", !detectEndOfTurn({ ...base, silenceDuration: 600, interimTranscript: "我回来了" }).shouldFinalize);
 check("900ms joint detector still waits for final", !detectEndOfTurn({ ...base, silenceDuration: 900, interimTranscript: "我回来了" }).shouldFinalize);
+check("fast path final segment", detectEndOfTurn({ ...base, silenceDuration: 800, interimTranscript: "我回来了", hasInterimTranscript: false }).shouldFinalize);
+check("interim transcript slow path", !detectEndOfTurn({ ...base, silenceDuration: 1000, interimTranscript: "我回来了", hasInterimTranscript: true }).shouldFinalize);
 check("complete turn finalizes after silence", detectEndOfTurn({ ...base, silenceDuration: 1200, interimTranscript: "我回来了" }).shouldFinalize);
 check("long speech still finalizes", detectEndOfTurn({ ...base, silenceDuration: 2000, interimTranscript: "我说了很多很多内容" , utteranceDuration: 60000 }).shouldFinalize);
 check("quiet microphone does not invent a turn", !detectEndOfTurn({ ...base, silenceDuration: 5000, interimTranscript: "" }).shouldFinalize);
@@ -34,4 +36,4 @@ const duplicate = noveltyReport("好，我记住了", [...prior], "我饿了", a
 check("novelty guard spots repeated acknowledgement", duplicate.semanticDuplicateScore >= 0.7);
 check("latest delta remains visible", novelty.latestDeltaScore > 0);
 
-console.log("realtime reliability checks passed: 17 scenarios");
+console.log("realtime reliability checks passed: 19 scenarios");

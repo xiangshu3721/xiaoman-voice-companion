@@ -7,6 +7,7 @@ export type EndOfTurnInput = {
   lastFinalSegmentTime: number | null;
   semanticCompleteness: number;
   utteranceDuration: number;
+  hasInterimTranscript?: boolean;
   now?: number;
 };
 
@@ -19,7 +20,8 @@ export function detectEndOfTurn(input: EndOfTurnInput) {
   if (!text) return { shouldFinalize: false, confidence: 0, reason: "no_transcript" };
   if (input.utteranceDuration < 350 || input.silenceDuration < 450 || input.vadActive || connectorGrace) return { shouldFinalize: false, confidence: 0.2, reason: "still_speaking_or_grace" };
   if (input.silenceDuration < 750) return { shouldFinalize: false, confidence: 0.45, reason: "possible_end" };
-  if (input.silenceDuration < 1100 && (input.interimTranscript.trim() || finalAge < 700)) return { shouldFinalize: false, confidence: 0.6, reason: "waiting_for_asr_final" };
+  const hasInterimTranscript = input.hasInterimTranscript ?? Boolean(input.interimTranscript.trim());
+  if (input.silenceDuration < 1100 && (hasInterimTranscript || finalAge < 700)) return { shouldFinalize: false, confidence: 0.6, reason: "waiting_for_asr_final" };
   const confidence = Math.min(1, 0.65 + Math.min(0.25, input.silenceDuration / 8000) + Math.min(0.1, input.semanticCompleteness * 0.1));
   return { shouldFinalize: true, confidence, reason: "joint_silence_vad_semantics" };
 }
