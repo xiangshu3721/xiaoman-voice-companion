@@ -412,7 +412,12 @@ export class DoubaoTTSProvider implements TTSProvider {
   }
 
   private playBlob(blob: Blob, request: TTSRequest, callbacks: TTSCallbacks, startedAt: number, voice: string, generation: number) {
-    if (isMobileBrowser()) return this.playWithHtmlAudio(blob, request, callbacks, startedAt, voice, generation);
+    if (isMobileBrowser() && this.audioContext) {
+      return this.playWithWebAudio(blob, request, callbacks, startedAt, voice, generation).catch(() => {
+        if (generation !== this.requestGeneration) return;
+        return this.playWithHtmlAudio(blob, request, callbacks, startedAt, voice, generation);
+      });
+    }
     if (this.audioContext) {
       return this.playWithWebAudio(blob, request, callbacks, startedAt, voice, generation).catch(() => {
         if (generation !== this.requestGeneration) return;

@@ -8,11 +8,11 @@ const base = { vadActive: false, lastFinalSegmentTime: Date.now() - 2000, semant
 const check = (name: string, condition: boolean) => { assert.equal(condition, true, name); };
 
 check("first speech grace", !detectEndOfTurn({ ...base, silenceDuration: 500, interimTranscript: "我刚才想说" }).shouldFinalize);
-check("unfinished connector protection", !detectEndOfTurn({ ...base, silenceDuration: 1800, interimTranscript: "我其实想" }).shouldFinalize);
-check("unfinished connector eventually finalizes", detectEndOfTurn({ ...base, silenceDuration: 2800, interimTranscript: "我其实想" }).shouldFinalize);
-check("700ms possible end waits", !detectEndOfTurn({ ...base, silenceDuration: 900, interimTranscript: "我回来了" }).shouldFinalize);
-check("1200ms joint detector still waits for final", !detectEndOfTurn({ ...base, silenceDuration: 1200, interimTranscript: "我回来了" }).shouldFinalize);
-check("complete turn finalizes after silence", detectEndOfTurn({ ...base, silenceDuration: 1900, interimTranscript: "我回来了" }).shouldFinalize);
+check("unfinished connector protection", !detectEndOfTurn({ ...base, silenceDuration: 1600, interimTranscript: "我其实想" }).shouldFinalize);
+check("unfinished connector eventually finalizes", detectEndOfTurn({ ...base, silenceDuration: 1900, interimTranscript: "我其实想" }).shouldFinalize);
+check("700ms possible end waits", !detectEndOfTurn({ ...base, silenceDuration: 600, interimTranscript: "我回来了" }).shouldFinalize);
+check("900ms joint detector still waits for final", !detectEndOfTurn({ ...base, silenceDuration: 900, interimTranscript: "我回来了" }).shouldFinalize);
+check("complete turn finalizes after silence", detectEndOfTurn({ ...base, silenceDuration: 1200, interimTranscript: "我回来了" }).shouldFinalize);
 check("long speech still finalizes", detectEndOfTurn({ ...base, silenceDuration: 2000, interimTranscript: "我说了很多很多内容" , utteranceDuration: 60000 }).shouldFinalize);
 check("quiet microphone does not invent a turn", !detectEndOfTurn({ ...base, silenceDuration: 5000, interimTranscript: "" }).shouldFinalize);
 check("VAD activity keeps turn open", !detectEndOfTurn({ ...base, silenceDuration: 2200, vadActive: true, interimTranscript: "我还没说完" }).shouldFinalize);
