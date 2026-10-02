@@ -52,7 +52,7 @@ const WELCOME: ChatMessage = {
 };
 
 function Avatar({ small = false, gender = "female" }: { small?: boolean; gender?: CharacterGender }) {
-  const source = gender === "male" ? "/avatars/ta-male.png" : "/avatars/ta-female.png";
+  const source = sitePath(gender === "male" ? "/avatars/ta-male.png" : "/avatars/ta-female.png");
   const label = gender === "male" ? "Ta 的男声头像" : "Ta 的女声头像";
   return (
     <div className={`relative shrink-0 overflow-hidden rounded-full bg-[#211e1d] ${small ? "h-11 w-11" : "h-44 w-44 sm:h-52 sm:w-52"}`} aria-label={label}>
