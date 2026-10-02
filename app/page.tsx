@@ -12,6 +12,7 @@ import {
   type TTSRequest,
 } from "@/lib/providers";
 import { apiUrl, sitePath } from "@/lib/api";
+import { readChatArchives, upsertChatArchive, type ChatArchive } from "@/lib/chat-history";
 
 type Status = "idle" | "listening" | "thinking" | "speaking";
 type MicrophoneState = "unknown" | "granted" | "denied" | "unavailable";
@@ -48,18 +49,16 @@ const WELCOME: ChatMessage = {
   content: "你来了。今天想跟我说什么？",
 };
 
-function Avatar({ small = false, gender = "female" }: { small?: boolean; gender?: CharacterGender }) {
-  const male = gender === "male";
+function Avatar({ small = false }: { small?: boolean }) {
   return (
-    <div className={`relative shrink-0 overflow-hidden rounded-full ${male ? "bg-[#b9a9b0]" : "bg-[#d7b9aa]"} ${small ? "h-11 w-11" : "h-44 w-44 sm:h-52 sm:w-52"}`} aria-label={`${male ? "男性" : "女性"}角色头像`}>
-      <div className={`absolute left-[18%] top-[9%] h-[48%] w-[64%] rounded-[48%_48%_42%_42%] ${male ? "bg-[#211c27]" : "bg-[#372828]"}`} />
-      <div className={`absolute left-[24%] top-[20%] h-[48%] w-[52%] rounded-[47%_47%_42%_42%] ${male ? "bg-[#d7ac94]" : "bg-[#f1c2a7]"}`} />
-      {male && <div className="absolute left-[31%] top-[56%] h-[12%] w-[38%] rounded-b-[45%] bg-[#6d4e4c]/60" />}
-      <div className={`absolute left-[32%] top-[38%] h-[3px] w-[9px] rotate-[10deg] rounded-full ${male ? "bg-[#291f2a]" : "bg-[#382526]"}`} />
-      <div className={`absolute right-[32%] top-[38%] h-[3px] w-[9px] -rotate-[10deg] rounded-full ${male ? "bg-[#291f2a]" : "bg-[#382526]"}`} />
-      <div className={`absolute left-1/2 top-[51%] h-[7px] w-[26px] -translate-x-1/2 rounded-[0_0_12px_12px] border-b-2 ${male ? "border-[#744448]" : "border-[#9c5f5a]"}`} />
-      <div className={`absolute bottom-[-5%] left-[15%] h-[34%] w-[70%] rounded-[45%_45%_0_0] ${male ? "bg-[#76546b]" : "bg-[#eb8e75]"}`} />
-      <div className={`absolute bottom-[8%] left-[37%] h-[8px] w-[26%] rounded-full ${male ? "bg-[#bc8da0]/60" : "bg-[#f5b09b]/60"}`} />
+    <div className={`relative shrink-0 overflow-hidden rounded-full bg-[#c7b2a7] ${small ? "h-11 w-11" : "h-44 w-44 sm:h-52 sm:w-52"}`} aria-label="Ta 的中性头像">
+      <div className="absolute left-[16%] top-[10%] h-[44%] w-[68%] rounded-[46%_46%_35%_35%] bg-[#30282b]" />
+      <div className="absolute left-[24%] top-[20%] h-[50%] w-[52%] rounded-[45%_45%_40%_40%] bg-[#edbca5]" />
+      <div className="absolute left-[31%] top-[39%] h-[3px] w-[9px] rotate-[8deg] rounded-full bg-[#33262a]" />
+      <div className="absolute right-[31%] top-[39%] h-[3px] w-[9px] -rotate-[8deg] rounded-full bg-[#33262a]" />
+      <div className="absolute left-1/2 top-[52%] h-[8px] w-[25px] -translate-x-1/2 rounded-[0_0_12px_12px] border-b-2 border-[#985d5d]" />
+      <div className="absolute bottom-[-5%] left-[15%] h-[34%] w-[70%] rounded-[45%_45%_0_0] bg-[#9e8b9d]" />
+      <div className="absolute bottom-[8%] left-[37%] h-[8px] w-[26%] rounded-full bg-[#c9b8c8]/70" />
     </div>
   );
 }
@@ -77,17 +76,42 @@ function RepairDebug({ debugInfo }: { debugInfo: DebugInfo | null }) {
 function VoiceSelector({ voices, selectedVoiceId, onChange }: { voices: VoiceOption[]; selectedVoiceId: string; onChange: (voiceId: string) => void }) {
   const selectedVoice = voices.find((voice) => voice.id === selectedVoiceId) || voices[0];
   if (!selectedVoice) return null;
-  const characterName = selectedVoice.gender === "male" ? "死鬼" : "臭娘们";
   return (
     <div className="mt-5 rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-left">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div><p className="text-xs tracking-[0.12em] text-[#9f9795]">角色声音 · {selectedVoice.gender === "male" ? "男版" : "女版"}</p><p className="mt-1 text-sm text-[#f4efeb]">{characterName} · {selectedVoice.name}</p></div>
+        <div><p className="text-xs tracking-[0.12em] text-[#9f9795]">Ta 的声音 · {selectedVoice.gender === "male" ? "男版" : "女版"}</p><p className="mt-1 text-sm text-[#f4efeb]">Ta · {selectedVoice.name}</p></div>
         <a href={sitePath("/voice-lab")} className="text-xs text-[#f6a08b] underline decoration-[#f6a08b]/30 underline-offset-4">试听更多音色</a>
       </div>
       <select value={selectedVoiceId || selectedVoice.id} onChange={(event) => onChange(event.target.value)} className="mt-3 w-full rounded-xl border border-white/10 bg-[#141313] px-3 py-3 text-sm text-[#f4efeb] outline-none transition focus:border-[#e98972]">
         {voices.map((voice) => <option key={voice.id} value={voice.id}>{voice.gender === "male" ? "男声 · " : "女声 · "}{voice.name}</option>)}
       </select>
       <p className="mt-2 text-[11px] leading-5 text-[#746c6a]">切换后，头像、昵称和下一次回复会同步使用这个角色。</p>
+    </div>
+  );
+}
+
+function formatArchiveDate(value: string) {
+  try {
+    return new Intl.DateTimeFormat("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
+  } catch {
+    return "刚刚";
+  }
+}
+
+function ChatHistoryPanel({ archives, selectedArchiveId, onSelect, onBack, onClose }: { archives: ChatArchive[]; selectedArchiveId: string | null; onSelect: (id: string) => void; onBack: () => void; onClose: () => void }) {
+  const selectedArchive = archives.find((archive) => archive.id === selectedArchiveId);
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3 sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label="历史聊天记录">
+      <section className="flex max-h-[88dvh] w-full max-w-xl flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#1b1818] shadow-2xl shadow-black/40">
+        <header className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+          <div><p className="text-[10px] tracking-[0.16em] text-[#e98972]">LOCAL / ARCHIVE</p><h2 className="mt-1 text-lg font-medium text-[#f4efeb]">历史聊天记录</h2></div>
+          <button type="button" onClick={onClose} className="rounded-full px-2 py-1 text-xl leading-none text-[#817876] transition hover:bg-white/5 hover:text-[#f4efeb]" aria-label="关闭历史聊天记录">×</button>
+        </header>
+        {selectedArchive ? <>
+          <div className="flex items-center gap-3 border-b border-white/10 px-5 py-3"><button type="button" onClick={onBack} className="text-xs text-[#f6a08b]">← 返回记录</button><span className="text-xs text-[#817876]">{formatArchiveDate(selectedArchive.updatedAt)}</span></div>
+          <div className="overflow-y-auto px-5 py-4"><h3 className="text-base leading-6 text-[#f4efeb]">{selectedArchive.title}</h3><p className="mt-1 text-xs text-[#817876]">{Math.floor(selectedArchive.messages.filter((message) => message.role === "user").length)} 轮对话</p><div className="mt-5 space-y-3">{selectedArchive.messages.map((message, index) => <div key={`${message.role}-${index}`} className={`flex items-start gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>{message.role === "assistant" && <Avatar small />}<div className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === "user" ? "rounded-br-md bg-[#e98972] text-[#241615]" : "rounded-bl-md bg-[#211e1d] text-[#ded4d1]"}`}><span className="mb-1 block text-[10px] tracking-[0.12em] opacity-50">{message.role === "user" ? "我" : "Ta"}</span>{message.content}</div></div>)}</div></div>
+        </> : <div className="overflow-y-auto px-5 py-4">{archives.length === 0 ? <div className="py-12 text-center"><p className="text-sm text-[#c7bdb9]">还没有历史记录</p><p className="mt-2 text-xs leading-5 text-[#817876]">完成一轮对话后，会自动保存在这台设备的浏览器里。</p></div> : <div className="space-y-2">{archives.map((archive) => <button key={archive.id} type="button" onClick={() => onSelect(archive.id)} className="w-full rounded-2xl border border-white/10 bg-[#211e1d] px-4 py-3 text-left transition hover:border-[#e98972]/50"><div className="flex items-center justify-between gap-3"><span className="line-clamp-2 text-sm leading-6 text-[#f4efeb]">{archive.title}</span><span className="shrink-0 text-[10px] text-[#817876]">{formatArchiveDate(archive.updatedAt)}</span></div><p className="mt-1 text-xs text-[#817876]">{archive.messages.filter((message) => message.role === "user").length} 轮 · 点击查看</p></button>)}</div>}<p className="mt-5 text-center text-[10px] leading-5 text-[#756d6b]">记录只保存在本机浏览器，不会自动上传。</p></div>}
+      </section>
     </div>
   );
 }
@@ -139,7 +163,11 @@ export default function Home() {
   const [reviewQuestion, setReviewQuestion] = useState("");
   const [reviewLoading, setReviewLoading] = useState(false);
   const [reviewError, setReviewError] = useState("");
+  const [archives, setArchives] = useState<ChatArchive[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [selectedArchiveId, setSelectedArchiveId] = useState<string | null>(null);
   const historyRef = useRef<ChatMessage[]>([WELCOME]);
+  const archiveIdRef = useRef(`conversation-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`);
   const conversationActiveRef = useRef(false);
   const asrRef = useRef(new BrowserSpeechRecognitionProvider());
   const ttsRef = useRef(new DoubaoTTSProvider());
@@ -147,7 +175,7 @@ export default function Home() {
   const scenario = useMemo(() => SCENARIOS.find((item) => item.id === scenarioId) || SCENARIOS[0], [scenarioId]);
   const selectedVoice = voiceOptions.find((voice) => voice.id === selectedVoiceId);
   const characterGender: CharacterGender = selectedVoice?.gender === "male" ? "male" : "female";
-  const characterName = characterGender === "male" ? "死鬼" : "臭娘们";
+  const characterName = "Ta";
   const visibleMessages = messages.slice(-8);
   const hasUserTurn = messages.some((message) => message.role === "user");
 
@@ -164,6 +192,10 @@ export default function Home() {
       asrRef.current.stop();
       ttsRef.current.stop();
     };
+  }, []);
+
+  useEffect(() => {
+    setArchives(readChatArchives());
   }, []);
 
   const selectVoice = (voiceId: string) => {
@@ -225,7 +257,27 @@ export default function Home() {
     setReviewTurns([]);
     setReviewQuestion("");
     setReviewError("");
+    archiveIdRef.current = `conversation-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
     updateMessages([WELCOME]);
+  };
+
+  const saveRound = (userText: string, reply: string) => {
+    const now = new Date().toISOString();
+    const current = readChatArchives().find((archive) => archive.id === archiveIdRef.current);
+    const roundMessages: ChatMessage[] = [
+      ...(current?.messages || []),
+      { role: "user", content: userText },
+      { role: "assistant", content: reply },
+    ];
+    const firstUserMessage = roundMessages.find((message) => message.role === "user")?.content.trim() || "这一轮对话";
+    const nextArchive: ChatArchive = {
+      id: archiveIdRef.current,
+      title: firstUserMessage.length > 36 ? `${firstUserMessage.slice(0, 36)}…` : firstUserMessage,
+      createdAt: current?.createdAt || now,
+      updatedAt: now,
+      messages: roundMessages,
+    };
+    setArchives(upsertChatArchive(nextArchive));
   };
 
   const requestReview = async (question?: string) => {
@@ -272,6 +324,7 @@ export default function Home() {
       if (data.debug) setDebugInfo(data.debug);
       const next = [...baseHistory, { role: "assistant", content: reply } satisfies ChatMessage];
       updateMessages(next);
+      saveRound(userText, reply);
       setReviewOpen(false);
       setReview(null);
       setReviewTurns([]);
@@ -372,11 +425,11 @@ export default function Home() {
       <main className="min-h-[100dvh] bg-[#141313] px-5 py-6 text-[#f4efeb] sm:px-8">
         <div className="mx-auto flex min-h-[calc(100dvh-3rem)] max-w-5xl flex-col">
           <header className="flex items-center justify-between border-b border-white/10 pb-5">
-            <div className="flex items-center gap-3"><Avatar small gender={characterGender} /><div><p className="text-sm font-medium">{characterName}</p><p className="text-xs text-[#9f9795]">你的伴侣</p></div></div>
-            <span className="text-xs tracking-[0.18em] text-[#9f9795]">VOICE / 01</span>
+            <div className="flex items-center gap-3"><Avatar small /><div><p className="text-sm font-medium">{characterName}</p><p className="text-xs text-[#9f9795]">你的伴侣</p></div></div>
+            <button type="button" onClick={() => { setSelectedArchiveId(null); setHistoryOpen(true); }} className="text-xs text-[#9f9795] transition hover:text-[#f4efeb]">历史记录</button>
           </header>
           <section className="grid flex-1 items-center gap-12 py-14 lg:grid-cols-[.85fr_1.15fr] lg:gap-24">
-            <div className="relative flex justify-center lg:justify-start"><div className="absolute top-10 h-64 w-64 rounded-full bg-[#e98972]/10 blur-3xl" /><div className="relative"><Avatar gender={characterGender} /></div></div>
+            <div className="relative flex justify-center lg:justify-start"><div className="absolute top-10 h-64 w-64 rounded-full bg-[#e98972]/10 blur-3xl" /><div className="relative"><Avatar /></div></div>
             <div className="max-w-xl">
               <p className="mb-5 text-sm tracking-[0.16em] text-[#e98972]">一场只用声音发生的关系</p>
               <h1 className="max-w-lg text-4xl font-medium leading-[1.08] tracking-[-0.045em] sm:text-6xl">有些话，面对面反而说不出来。</h1>
@@ -389,8 +442,9 @@ export default function Home() {
               {notice && <p role="alert" className="mt-4 text-sm text-[#f6a08b]">{notice}</p>}
             </div>
           </section>
-          <p className="border-t border-white/10 pt-4 text-xs leading-5 text-[#746c6a]">当前版本建议使用 Chrome 浏览器 · 对话只保存在本次页面会话中</p>
+          <p className="border-t border-white/10 pt-4 text-xs leading-5 text-[#746c6a]">当前版本建议使用 Chrome 浏览器 · 对话记录只保存在本机浏览器</p>
         </div>
+        {historyOpen && <ChatHistoryPanel archives={archives} selectedArchiveId={selectedArchiveId} onSelect={setSelectedArchiveId} onBack={() => setSelectedArchiveId(null)} onClose={() => setHistoryOpen(false)} />}
       </main>
     );
   }
@@ -399,13 +453,13 @@ export default function Home() {
     <main className="min-h-[100dvh] bg-[#141313] text-[#f4efeb]">
       <div className="mx-auto flex min-h-[100dvh] max-w-3xl flex-col px-5 pb-6 pt-5 sm:px-8">
         <header className="flex items-center justify-between border-b border-white/10 pb-4">
-          <div className="flex items-center gap-3"><Avatar small gender={characterGender} /><div><p className="text-sm font-medium">{characterName}</p><p className="text-xs text-[#9f9795]">你的伴侣</p></div></div>
-          <button type="button" onClick={resetConversation} className="text-xs text-[#9f9795] transition hover:text-[#f4efeb]">重新开始</button>
+          <div className="flex items-center gap-3"><Avatar small /><div><p className="text-sm font-medium">{characterName}</p><p className="text-xs text-[#9f9795]">你的伴侣</p></div></div>
+          <div className="flex items-center gap-4"><button type="button" onClick={() => { setSelectedArchiveId(null); setHistoryOpen(true); }} className="text-xs text-[#9f9795] transition hover:text-[#f4efeb]">历史记录</button><button type="button" onClick={resetConversation} className="text-xs text-[#9f9795] transition hover:text-[#f4efeb]">重新开始</button></div>
         </header>
         <section className="flex flex-1 flex-col items-center pt-11 sm:pt-14">
-          <div className="flex flex-col items-center"><div className={`relative rounded-full ${status === "listening" ? "breathing" : ""}`}><Avatar gender={characterGender} /></div><p className="mt-6 text-sm text-[#d1c7c4]">{STATUS_COPY[status].replace("小满", characterName)}</p>{status === "listening" && interimText && <p className="mt-3 max-w-xs text-center text-xs leading-5 text-[#a9a09e]">“{interimText}”</p>}<div className="mt-3 h-8">{status === "speaking" ? <Wave /> : status === "thinking" ? <div className="flex h-8 items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:120ms]" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:240ms]" /></div> : <span className="text-xs text-[#756d6b]">{scenario.shortTitle}</span>}</div></div>
+          <div className="flex flex-col items-center"><div className={`relative rounded-full ${status === "listening" ? "breathing" : ""}`}><Avatar /></div><p className="mt-6 text-sm text-[#d1c7c4]">{STATUS_COPY[status].replace("小满", characterName)}</p>{status === "listening" && interimText && <p className="mt-3 max-w-xs text-center text-xs leading-5 text-[#a9a09e]">“{interimText}”</p>}<div className="mt-3 h-8">{status === "speaking" ? <Wave /> : status === "thinking" ? <div className="flex h-8 items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:120ms]" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:240ms]" /></div> : <span className="text-xs text-[#756d6b]">{scenario.shortTitle}</span>}</div></div>
           <div className="mt-10 w-full max-w-xl space-y-4" aria-live="polite">
-            {visibleMessages.map((message, index) => <div key={`${message.role}-${index}-${message.content.slice(0, 8)}`} className={`flex items-start gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>{message.role === "assistant" && <Avatar small gender={characterGender} />}<div className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === "user" ? "rounded-br-md bg-[#e98972] text-[#241615]" : "rounded-bl-md bg-[#211e1d] text-[#ded4d1]"}`}><span className="mb-1 block text-[10px] tracking-[0.12em] opacity-50">{message.role === "user" ? "我" : characterName}</span>{message.content}</div></div>)}
+            {visibleMessages.map((message, index) => <div key={`${message.role}-${index}-${message.content.slice(0, 8)}`} className={`flex items-start gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>{message.role === "assistant" && <Avatar small />}<div className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === "user" ? "rounded-br-md bg-[#e98972] text-[#241615]" : "rounded-bl-md bg-[#211e1d] text-[#ded4d1]"}`}><span className="mb-1 block text-[10px] tracking-[0.12em] opacity-50">{message.role === "user" ? "我" : characterName}</span>{message.content}</div></div>)}
           </div>
           {hasUserTurn && status !== "thinking" && <div className="mt-7 w-full max-w-xl"><button type="button" onClick={openReview} aria-expanded={reviewOpen} className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-[#1b1818] px-4 py-3 text-left transition hover:border-[#e98972]/40 hover:bg-[#211e1d] active:scale-[.99]"><span><span className="block text-sm text-[#f4efeb]">情绪复盘</span><span className="mt-1 block text-xs text-[#817876]">看看刚刚真正发生了什么</span></span><span className="text-lg text-[#e98972]">{reviewOpen ? "⌃" : "→"}</span></button>{reviewOpen && <EmotionReviewPanel review={review} turns={reviewTurns} question={reviewQuestion} loading={reviewLoading} error={reviewError} onQuestionChange={setReviewQuestion} onContinue={() => void requestReview(reviewQuestion)} onRetry={() => void requestReview()} onClose={() => setReviewOpen(false)} />}</div>}
         </section>
@@ -426,6 +480,7 @@ export default function Home() {
           {debugEnabled && ttsDebug && <details open className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-xs text-[#b7adab]"><summary className="cursor-pointer text-[#e98972]">TTS Debug</summary><div className="mt-3 grid gap-2 sm:grid-cols-2"><p>Provider：{ttsDebug.provider === "volcengine" ? "Doubao / 火山引擎" : "Browser SpeechSynthesis fallback"}</p><p>Voice：{ttsDebug.voice}</p><p>Emotion：{ttsDebug.emotion || "neutral"}</p><p>Intensity：{ttsDebug.intensity ?? "-"}</p><p>Streaming：{ttsDebug.streaming ? "yes" : "no"}</p><p>首包延迟：{ttsDebug.firstByteLatencyMs == null ? "-" : `${ttsDebug.firstByteLatencyMs} ms`}</p><p>总耗时：{ttsDebug.totalLatencyMs == null ? "播放中" : `${ttsDebug.totalLatencyMs} ms`}</p>{ttsDebug.fallbackReason && <p className="sm:col-span-2 text-[#f6a08b]">Fallback：{ttsDebug.fallbackReason}</p>}</div></details>}
           {debugEnabled && debugInfo && <details open className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-xs text-[#b7adab]"><summary className="cursor-pointer text-[#e98972]">Conflict Engine Debug</summary><div className="mt-3 grid gap-2 sm:grid-cols-2"><p>User Strategy：{debugInfo.userStrategy.join(" + ")}</p><p>Confidence：{debugInfo.confidence}</p><p>Intensity：{debugInfo.emotion.conflictIntensity}/5</p><p>Selected：{debugInfo.selectedStrategy.primary}{debugInfo.selectedStrategy.secondary.length ? ` + ${debugInfo.selectedStrategy.secondary.join(" + ")}` : ""}</p><p className="sm:col-span-2">Emotion：anger {debugInfo.emotion.anger} · hurt {debugInfo.emotion.hurt} · trust {debugInfo.emotion.trust} · connection {debugInfo.emotion.connection}</p><p className="sm:col-span-2">Retrieved：{debugInfo.retrievedEpisodeIds.join(", ")}</p><p className="sm:col-span-2">Validator：{debugInfo.validator.valid ? "通过" : debugInfo.validator.issues.join(", ")}</p>{debugInfo.relationship && <><p>Relationship State：{debugInfo.relationship.currentState}</p><p>Previous State：{debugInfo.relationship.previousState}</p><p>Transition Confidence：{debugInfo.relationship.stateConfidence}</p><p>State Duration：{debugInfo.relationship.stateDuration}</p><p>Conflict Locked：{debugInfo.relationship.conflictLocked ? "yes" : "no"}</p><p className="sm:col-span-2">Transition：{debugInfo.relationship.transitionReason}</p></>}{debugInfo.reflection && <><p>Reflection Depth：{debugInfo.reflection.insightDepth}/3</p><p>Mutual Understanding：{debugInfo.reflection.mutualUnderstanding}</p><p>Surface Conflict：{debugInfo.reflection.surfaceConflict || "—"}</p><p>Trigger：{debugInfo.reflection.triggerIdentified || "—"}</p><p>Underlying Need：{debugInfo.reflection.underlyingNeed || "—"}</p><p>User Contribution：{debugInfo.reflection.userContribution || "—"}</p><p>Character Contribution：{debugInfo.reflection.characterContribution || "—"}</p><p className="sm:col-span-2">Interaction Pattern：{debugInfo.reflection.interactionPattern || "—"}</p></>}{debugInfo.safety && <><p>Safety Active：{debugInfo.safety.active ? "yes" : "no"}</p><p>Risk Level：{debugInfo.safety.riskLevel}</p><p>Safety Confidence：{debugInfo.safety.confidence}</p><p className="sm:col-span-2">Safety Signals：{debugInfo.safety.signals.join(", ") || "none"}</p></>}{debugInfo.userState && <><p className="sm:col-span-2">User State：hurt {debugInfo.userState.hurt} · anger {debugInfo.userState.anger} · sadness {debugInfo.userState.sadness} · aggression {debugInfo.userState.aggression} · withdrawal {debugInfo.userState.withdrawal} · openness {debugInfo.userState.openness}</p><p className="sm:col-span-2">Intent：{debugInfo.userState.intent.join(" + ")} · Trend：{debugInfo.userState.trend}</p><p>Voice Emotion：{debugInfo.userState.voiceSignals}</p><p>Visual Emotion：{debugInfo.userState.visualSignals}</p></>}</div></details>}
         </footer>
+        {historyOpen && <ChatHistoryPanel archives={archives} selectedArchiveId={selectedArchiveId} onSelect={setSelectedArchiveId} onBack={() => setSelectedArchiveId(null)} onClose={() => setHistoryOpen(false)} />}
       </div>
     </main>
   );

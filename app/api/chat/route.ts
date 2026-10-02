@@ -145,7 +145,7 @@ export async function POST(request: Request) {
     const safeValidation = { valid: true, issues: [] as string[] };
     const safeVoice = { emotion: "calm" as const, intensity: earlySafety.riskLevel === "CRITICAL" ? 0.18 : 0.24 };
     const debug = debugForRelationship(relationship, classification, safeStrategy, safeValidation);
-    return NextResponse.json({ text: safetyResponse({ name: body.characterGender === "male" ? "死鬼" : "臭娘们", riskLevel: earlySafety.riskLevel }), reply: safetyResponse({ name: body.characterGender === "male" ? "死鬼" : "臭娘们", riskLevel: earlySafety.riskLevel }), mode: "safety", voice: safeVoice, ...(debugRequested ? { debug } : {}) }, { headers: corsHeaders() });
+    return NextResponse.json({ text: safetyResponse({ name: "Ta", riskLevel: earlySafety.riskLevel }), reply: safetyResponse({ name: "Ta", riskLevel: earlySafety.riskLevel }), mode: "safety", voice: safeVoice, ...(debugRequested ? { debug } : {}) }, { headers: corsHeaders() });
   }
   const scene = resolveScene({ scenarioId: body.scenarioId, sceneContext: body.sceneContext });
   const previousState = history.length ? replayUserHistory(history, "Pursuer") : createInitialState();
@@ -159,7 +159,7 @@ export async function POST(request: Request) {
   const voice = relationship.currentState === "CONFLICT" ? voiceCue(strategy, effectiveState) : ttsForRelationship(relationship);
   const retrieved = retrieveSimilarEpisodes({ scene, archetype: "Pursuer", labels: classification.labels, intensity: state.conflictIntensity, currentState: relationship.currentState, intent: relationship.userState.intent, interactionPattern: relationship.reflection.interactionPattern, limit: 3 });
   const characterGender = body.characterGender === "male" ? "male" : "female";
-  const characterName = characterGender === "male" ? "死鬼" : "臭娘们";
+  const characterName = "Ta";
   const prompt = buildConflictPrompt({ scene, state: effectiveState, classification, strategy, retrieved, history, userMessage, characterGender, characterName, relationship });
   const apiKey = process.env.DEEPSEEK_API_KEY;
   let reply = "";
