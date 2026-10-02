@@ -199,6 +199,7 @@ export default function Home() {
   const endTimerRef = useRef<number | null>(null);
   const utteranceStartRef = useRef<number | null>(null);
   const lastVoiceAtRef = useRef<number | null>(null);
+  const lastAsrResultAtRef = useRef<number | null>(null);
   const lastFinalAtRef = useRef<number | null>(null);
   const asrSpeechActiveRef = useRef(false);
   const asrReadyTimerRef = useRef<number | null>(null);
@@ -293,6 +294,8 @@ export default function Home() {
     accumulatorRef.current.reset();
     asrRef.current.stop();
     utteranceStartRef.current = null;
+    lastVoiceAtRef.current = null;
+    lastAsrResultAtRef.current = null;
     lastFinalAtRef.current = null;
     asrSpeechActiveRef.current = false;
     if (asrReadyTimerRef.current !== null) window.clearTimeout(asrReadyTimerRef.current);
@@ -466,6 +469,7 @@ export default function Home() {
     setInterimText("");
     utteranceStartRef.current = null;
     lastVoiceAtRef.current = null;
+    lastAsrResultAtRef.current = null;
     lastFinalAtRef.current = null;
     setRealtimeState("FINALIZING_USER_TURN");
     const turnId = `turn-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -479,13 +483,15 @@ export default function Home() {
     const check = () => {
       const snapshot = accumulatorRef.current.snapshot();
       const now = Date.now();
-      const lastVoice = lastVoiceAtRef.current || lastFinalAtRef.current || now;
       const currentText = [snapshot.committedTranscript, snapshot.interimTranscript].filter(Boolean).join("");
-      const vadStillActive = now - lastVoice < 180 && asrSpeechActiveRef.current;
+      const lastAsrResult = lastAsrResultAtRef.current || lastFinalAtRef.current || now;
+      const asrResultFresh = lastAsrResultAtRef.current !== null && now - lastAsrResultAtRef.current < 700;
+      const lastVoice = asrResultFresh ? Math.max(lastAsrResult, lastVoiceAtRef.current || 0) : lastAsrResult;
+      const vadStillActive = asrResultFresh && now - lastVoice < 180 && asrSpeechActiveRef.current;
       const decision = detectEndOfTurn({ silenceDuration: now - lastVoice, vadActive: vadStillActive, interimTranscript: currentText, lastFinalSegmentTime: lastFinalAtRef.current, semanticCompleteness: semanticCompleteness(currentText), utteranceDuration: now - (utteranceStartRef.current || lastFinalAtRef.current || now), now });
       setEndOfTurnConfidence(decision.confidence);
       if (decision.shouldFinalize) finalizeCurrentTurn();
-      else if (conversationActiveRef.current && !interruptModeRef.current) endTimerRef.current = window.setTimeout(check, 180);
+      else if (conversationActiveRef.current) endTimerRef.current = window.setTimeout(check, 180);
     };
     endTimerRef.current = window.setTimeout(check, 180);
   };
@@ -502,7 +508,10 @@ export default function Home() {
       setNotice("当前浏览器不支持网页语音识别，已切换为文字对话。微信内置浏览器请用文字发送，或在系统浏览器打开。");
       return;
     }
-    if (!interruptOnly) setStatus("listening");
+    if (!interruptOnly) {
+      interruptModeRef.current = false;
+      setStatus("listening");
+    }
     if (asrReadyTimerRef.current !== null) window.clearTimeout(asrReadyTimerRef.current);
     asrReadyTimerRef.current = window.setTimeout(() => {
       if (conversationActiveRef.current && !listeningReady && !interruptOnly) {
@@ -515,16 +524,17 @@ export default function Home() {
     asrRef.current.start((text, isFinal) => {
       const resultAt = Date.now();
       lastVoiceAtRef.current = resultAt;
+      lastAsrResultAtRef.current = resultAt;
       setMicHealth((current) => ({ ...current, asrAlive: true, lastAsrResultAt: Date.now() }));
       asrSpeechActiveRef.current = !isFinal;
-      if (interruptOnly || interruptModeRef.current) {
+      if (interruptOnly) {
         // 当前版本不允许用户打断 AI；播放期间的旧 ASR 回调直接丢弃。
         return;
       }
       if (realtimeState === "FINALIZING_USER_TURN" || realtimeState === "AI_GENERATING") return;
       const snapshot = accumulatorRef.current.accept(text, isFinal);
       setInterimText([snapshot.committedTranscript, snapshot.interimTranscript].filter(Boolean).join(""));
-      if (snapshot.committedTranscript && utteranceStartRef.current == null) utteranceStartRef.current = Date.now();
+      if ((snapshot.committedTranscript || snapshot.interimTranscript) && utteranceStartRef.current == null) utteranceStartRef.current = resultAt;
       if (isFinal) lastFinalAtRef.current = Date.now();
       setRealtimeState(isFinal ? "POSSIBLE_END" : "USER_SPEAKING");
       scheduleEndOfTurn();
