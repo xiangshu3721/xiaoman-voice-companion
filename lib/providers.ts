@@ -129,6 +129,7 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
   private active = false;
   private restartTimer: number | null = null;
   private retries = 0;
+  private recognitionToken = 0;
   private callbacks: {
     onResult: (text: string, isFinal: boolean) => void;
     onError: (message: string) => void;
@@ -152,6 +153,12 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
       return;
     }
 
+    if (this.restartTimer !== null) {
+      window.clearTimeout(this.restartTimer);
+      this.restartTimer = null;
+    }
+    this.recognition?.stop();
+    this.recognition = null;
     this.active = true;
     this.retries = 0;
     this.callbacks = { onResult, onError, onEnd, ...options };
@@ -161,6 +168,8 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
   private startRecognition(Recognition: SpeechRecognitionConstructor) {
     if (!this.active || !this.callbacks) return;
     const recognition = new Recognition();
+    const token = ++this.recognitionToken;
+    const isCurrent = () => token === this.recognitionToken && this.recognition === recognition;
     this.recognition = recognition;
     recognition.lang = "zh-CN";
     recognition.continuous = true;
@@ -175,14 +184,15 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
       }
       const trimmed = text.trim();
       if (trimmed) this.retries = 0;
-      if (trimmed) this.callbacks?.onResult(trimmed, isFinal);
+      if (trimmed && isCurrent()) this.callbacks?.onResult(trimmed, isFinal);
     };
     const recognitionEvents = recognition as SpeechRecognition & { onstart?: () => void; onaudiostart?: () => void; onspeechstart?: () => void; onspeechend?: () => void };
-    recognitionEvents.onstart = () => this.callbacks?.onReady?.();
-    recognitionEvents.onaudiostart = () => this.callbacks?.onActivity?.("audiostart");
-    recognitionEvents.onspeechstart = () => this.callbacks?.onActivity?.("speechstart");
-    recognitionEvents.onspeechend = () => this.callbacks?.onActivity?.("speechend");
+    recognitionEvents.onstart = () => { if (isCurrent()) this.callbacks?.onReady?.(); };
+    recognitionEvents.onaudiostart = () => { if (isCurrent()) this.callbacks?.onActivity?.("audiostart"); };
+    recognitionEvents.onspeechstart = () => { if (isCurrent()) this.callbacks?.onActivity?.("speechstart"); };
+    recognitionEvents.onspeechend = () => { if (isCurrent()) this.callbacks?.onActivity?.("speechend"); };
     recognition.onend = () => {
+      if (!isCurrent()) return;
       if (!this.active) {
         this.callbacks?.onEnd();
         return;
@@ -191,6 +201,7 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
       this.scheduleRestart(Recognition);
     };
     recognition.onerror = (event) => {
+      if (!isCurrent()) return;
       if (event.error === "not-allowed" || event.error === "service-not-allowed") {
         this.active = false;
         this.callbacks?.onError("麦克风权限被拒绝了，请在浏览器地址栏重新允许麦克风。");
@@ -228,6 +239,7 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
 
   stop() {
     this.active = false;
+    this.recognitionToken += 1;
     if (this.restartTimer !== null) {
       window.clearTimeout(this.restartTimer);
       this.restartTimer = null;
@@ -310,6 +322,10 @@ function ttsDebugFields(request: TTSRequest, fallbackUsed = request.fallbackUsed
   };
 }
 
+function isMobileBrowser() {
+  return typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod|MicroMessenger/i.test(navigator.userAgent);
+}
+
 export class DoubaoTTSProvider implements TTSProvider {
   private fallback = new BrowserSpeechSynthesisProvider();
   private audio: HTMLAudioElement | null = null;
@@ -364,14 +380,16 @@ export class DoubaoTTSProvider implements TTSProvider {
     const startedAt = performance.now();
     const controller = new AbortController();
     this.abortController = controller;
+    const requestTimeout = window.setTimeout(() => controller.abort(), 18000);
     callbacks.onMetrics?.({ provider: "volcengine", voice: request.voiceId || "volcengine-default", emotion: request.emotion, intensity: request.intensity, streaming: false, ...ttsDebugFields(request) });
-    fetch(apiUrl("/api/tts"), {
+    fetch(`${apiUrl("/api/tts")}${isMobileBrowser() ? "?stream=false" : ""}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
       signal: controller.signal,
     }).then(async (response) => {
-      if (generation !== this.requestGeneration || controller.signal.aborted) return;
+      if (generation !== this.requestGeneration) return;
+      if (controller.signal.aborted) throw new Error("火山引擎 TTS 请求超时");
       if (!response.ok) throw new Error(await response.text() || `TTS request failed: ${response.status}`);
       const voice = response.headers.get("X-TTS-Voice") || request.voiceId || "volcengine-default";
       if (response.headers.get("X-TTS-Streaming") === "true" && response.body) {
@@ -382,9 +400,9 @@ export class DoubaoTTSProvider implements TTSProvider {
       if (!audioBlob.size) throw new Error("火山引擎返回了空音频");
       await this.playBlob(audioBlob, request, callbacks, startedAt, voice, generation);
     }).catch((error: unknown) => {
-      if (generation !== this.requestGeneration || controller.signal.aborted) return;
-      this.fallbackWithReason(request, callbacks, error instanceof Error ? error.message : "火山引擎 TTS 失败");
-    });
+      if (generation !== this.requestGeneration) return;
+      this.fallbackWithReason(request, callbacks, controller.signal.aborted ? "火山引擎 TTS 请求超时" : error instanceof Error ? error.message : "火山引擎 TTS 失败");
+    }).finally(() => window.clearTimeout(requestTimeout));
   }
 
   private fallbackWithReason(request: TTSRequest, callbacks: TTSCallbacks, reason: string) {
@@ -393,6 +411,7 @@ export class DoubaoTTSProvider implements TTSProvider {
   }
 
   private playBlob(blob: Blob, request: TTSRequest, callbacks: TTSCallbacks, startedAt: number, voice: string, generation: number) {
+    if (isMobileBrowser()) return this.playWithHtmlAudio(blob, request, callbacks, startedAt, voice, generation);
     if (this.audioContext) {
       return this.playWithWebAudio(blob, request, callbacks, startedAt, voice, generation).catch(() => {
         if (generation !== this.requestGeneration) return;
@@ -438,6 +457,15 @@ export class DoubaoTTSProvider implements TTSProvider {
     };
     audio.onended = finish;
     audio.onerror = () => { if (!settled) settled = true; };
+    const waitForPlayback = () => new Promise<void>((resolve, reject) => {
+      const startedWaiting = performance.now();
+      const poll = () => {
+        if (audio.ended || audio.currentTime > 0.05) { resolve(); return; }
+        if (performance.now() - startedWaiting > 5000) { reject(new Error("流式音频没有真正开始播放")); return; }
+        window.setTimeout(poll, 120);
+      };
+      poll();
+    });
     try {
       let first = await reader.read();
       if (first.done || !first.value?.byteLength) throw new Error("火山引擎返回了空音频");
@@ -464,6 +492,7 @@ export class DoubaoTTSProvider implements TTSProvider {
           firstChunk = false;
           callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: true, firstByteLatencyMs: Math.round(performance.now() - startedAt), ...ttsDebugFields(request) });
           await audio.play();
+          await waitForPlayback();
         }
         first = await reader.read();
       }
@@ -563,7 +592,7 @@ export class DoubaoTTSProvider implements TTSProvider {
         settled = true;
         this.cleanupAudio();
         reject(new Error("移动浏览器没有真正开始播放音频"));
-      }, 8000);
+      }, isMobileBrowser() ? 4500 : 8000);
     });
   }
 

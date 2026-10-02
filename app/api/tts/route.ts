@@ -59,6 +59,7 @@ function decodeChunk(data: string) {
 
 export async function POST(request: Request) {
   const body = await request.json() as TTSRequest;
+  const preferStreaming = new URL(request.url).searchParams.get("stream") !== "false";
   const text = body.text?.trim();
   if (!text) return NextResponse.json({ error: "TTS text is required" }, { status: 400, headers: corsHeaders() });
   if (text.length > 500) return NextResponse.json({ error: "TTS text is too long" }, { status: 400, headers: corsHeaders() });
@@ -116,7 +117,7 @@ export async function POST(request: Request) {
   }
 
   const upstreamContentType = upstream.headers.get("content-type") || "";
-  if (upstreamContentType.startsWith("audio/")) {
+  if (upstreamContentType.startsWith("audio/") && preferStreaming) {
     return new Response(upstream.body, {
       status: 200,
       headers: {
@@ -134,7 +135,7 @@ export async function POST(request: Request) {
     });
   }
 
-  if (upstreamContentType.includes("text/plain") || upstreamContentType.includes("json")) {
+  if (preferStreaming && (upstreamContentType.includes("text/plain") || upstreamContentType.includes("json"))) {
     return new Response(createAudioStream(upstream.body), {
       status: 200,
       headers: {

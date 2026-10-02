@@ -200,6 +200,9 @@ export default function Home() {
   const utteranceStartRef = useRef<number | null>(null);
   const lastVoiceAtRef = useRef<number | null>(null);
   const lastFinalAtRef = useRef<number | null>(null);
+  const asrSpeechActiveRef = useRef(false);
+  const asrReadyTimerRef = useRef<number | null>(null);
+  const ttsGuardRef = useRef<number | null>(null);
   const interruptModeRef = useRef(false);
   const generationRef = useRef(0);
   const processedTurnIdsRef = useRef(new Set<string>());
@@ -257,6 +260,7 @@ export default function Home() {
         setMicHealth((current) => ({ ...current, permissionGranted: true, trackState: stream.getAudioTracks()[0]?.readyState || "live", trackMuted: stream.getAudioTracks()[0]?.muted || false }));
       } catch {
         nextMicrophoneState = "denied";
+        setMicHealth((current) => ({ ...current, permissionGranted: false, trackState: "denied", trackMuted: false }));
       }
     }
     setMicrophoneState(nextMicrophoneState);
@@ -290,6 +294,9 @@ export default function Home() {
     asrRef.current.stop();
     utteranceStartRef.current = null;
     lastFinalAtRef.current = null;
+    asrSpeechActiveRef.current = false;
+    if (asrReadyTimerRef.current !== null) window.clearTimeout(asrReadyTimerRef.current);
+    if (ttsGuardRef.current !== null) window.clearTimeout(ttsGuardRef.current);
     setRealtimeState("IDLE");
     setListeningReady(false);
     setStatus("idle");
@@ -409,14 +416,22 @@ export default function Home() {
           startListening(true);
         },
         onProgress: ({ spokenText }) => { spokenTextRef.current = spokenText; setLatestSpokenText(spokenText); },
-        onEnd: () => { interruptModeRef.current = false; setRealtimeState("LISTENING"); resumeListening(); },
+        onEnd: () => { if (ttsGuardRef.current !== null) window.clearTimeout(ttsGuardRef.current); interruptModeRef.current = false; setRealtimeState("LISTENING"); resumeListening(); },
         onError: (message) => {
+          if (ttsGuardRef.current !== null) window.clearTimeout(ttsGuardRef.current);
           interruptModeRef.current = false;
           setNotice(message);
           resumeListening();
         },
         onMetrics: (metrics) => setTtsDebug(metrics),
       });
+      if (ttsGuardRef.current !== null) window.clearTimeout(ttsGuardRef.current);
+      ttsGuardRef.current = window.setTimeout(() => {
+        ttsRef.current.stop();
+        interruptModeRef.current = false;
+        setNotice("语音播放超时，已恢复收音；你可以继续说。 ");
+        resumeListening();
+      }, 18000);
     } catch {
       setNotice("连接出了点问题，重新试试？");
       if (conversationActiveRef.current) { interruptModeRef.current = false; setRealtimeState("RECOVERING_ASR"); resumeListening(); }
@@ -459,8 +474,9 @@ export default function Home() {
     const check = () => {
       const snapshot = accumulatorRef.current.snapshot();
       const now = Date.now();
-      const lastVoice = lastVoiceAtRef.current || now;
-      const decision = detectEndOfTurn({ silenceDuration: now - lastVoice, vadActive: now - lastVoice < 180, interimTranscript: [snapshot.committedTranscript, snapshot.interimTranscript].filter(Boolean).join(""), lastFinalSegmentTime: lastFinalAtRef.current, semanticCompleteness: semanticCompleteness(snapshot.committedTranscript), utteranceDuration: now - (utteranceStartRef.current || now), now });
+      const lastVoice = lastVoiceAtRef.current || lastFinalAtRef.current || now;
+      const vadStillActive = now - lastVoice < 180 && asrSpeechActiveRef.current;
+      const decision = detectEndOfTurn({ silenceDuration: now - lastVoice, vadActive: vadStillActive, interimTranscript: [snapshot.committedTranscript, snapshot.interimTranscript].filter(Boolean).join(""), lastFinalSegmentTime: lastFinalAtRef.current, semanticCompleteness: semanticCompleteness(snapshot.committedTranscript), utteranceDuration: now - (utteranceStartRef.current || lastFinalAtRef.current || now), now });
       setEndOfTurnConfidence(decision.confidence);
       if (decision.shouldFinalize) finalizeCurrentTurn();
       else if (conversationActiveRef.current && !interruptModeRef.current) endTimerRef.current = window.setTimeout(check, 180);
@@ -481,8 +497,18 @@ export default function Home() {
       return;
     }
     if (!interruptOnly) setStatus("listening");
+    if (asrReadyTimerRef.current !== null) window.clearTimeout(asrReadyTimerRef.current);
+    asrReadyTimerRef.current = window.setTimeout(() => {
+      if (conversationActiveRef.current && !listeningReady && !interruptOnly) {
+        asrRef.current.stop();
+        setRealtimeState("RECOVERING_ASR");
+        setNotice("语音识别还没准备好，正在重新连接……");
+        window.setTimeout(() => { if (conversationActiveRef.current) startListening(false); }, 250);
+      }
+    }, 2800);
     asrRef.current.start((text, isFinal) => {
       setMicHealth((current) => ({ ...current, asrAlive: true, lastAsrResultAt: Date.now() }));
+      asrSpeechActiveRef.current = !isFinal;
       if (interruptOnly || interruptModeRef.current) {
         if (text.trim() && lastVoiceAtRef.current && Date.now() - lastVoiceAtRef.current < 900 && !spokenTextRef.current.includes(text.trim())) {
           setRealtimeState("BARGE_IN_DETECTED");
@@ -503,25 +529,29 @@ export default function Home() {
       scheduleEndOfTurn();
     }, (message) => {
       if (/权限|麦克风/.test(message)) {
-        conversationActiveRef.current = false;
-        setConversationActive(false);
-        setNotice(message);
-        setStatus("idle");
+        setVoiceInputSupported(false);
+        setNotice(microphoneState === "granted" ? "麦克风已授权，但此浏览器的语音识别服务没有启动，已切换为文字输入。" : message);
         setRealtimeState("ERROR");
+        setStatus("idle");
       } else {
         setRealtimeState("RECOVERING_ASR");
         setNotice("语音识别暂时中断，正在自动恢复……");
+        window.setTimeout(() => { if (conversationActiveRef.current) resumeListening(); }, 260);
       }
       setInterimText("");
     }, () => {
+      asrSpeechActiveRef.current = false;
       setMicHealth((current) => ({ ...current, asrAlive: false }));
       if (!conversationActiveRef.current) setStatus((current) => current === "listening" ? "idle" : current);
     }, { onReady: () => {
+      if (asrReadyTimerRef.current !== null) window.clearTimeout(asrReadyTimerRef.current);
       setListeningReady(true);
       setRealtimeState(interruptOnly ? "AI_SPEAKING" : "LISTENING");
       setMicHealth((current) => ({ ...current, asrAlive: true }));
     }, onActivity: (event) => {
       setMicHealth((current) => ({ ...current, lastAsrResultAt: Date.now() }));
+      if (event === "speechstart") asrSpeechActiveRef.current = true;
+      if (event === "speechend") asrSpeechActiveRef.current = false;
       if (event === "end") setAsrRestartCount((count) => count + 1);
     } });
   };
@@ -548,7 +578,7 @@ export default function Home() {
         if (!interruptModeRef.current) setRealtimeState((current) => current === "LISTENING" || current === "POSSIBLE_END" ? "USER_SPEAKING" : current);
       }
       setMicHealth((current) => ({ ...current, trackState: streamRef.current?.getAudioTracks()[0]?.readyState || "ended", trackMuted: streamRef.current?.getAudioTracks()[0]?.muted || false, audioContextState: "running", vadAlive: true, lastVoiceActivityAt: update.active ? now : current.lastVoiceActivityAt, noiseFloor: Number(update.noiseFloor.toFixed(4)), vadThreshold: Number(update.threshold.toFixed(4)) }));
-    });
+    }).then((context) => { if (context) setMicHealth((current) => ({ ...current, audioContextState: context.state })); });
     resumeListening();
   };
 
@@ -612,7 +642,7 @@ export default function Home() {
           <div className="flex items-center gap-4"><button type="button" onClick={() => { setSelectedArchiveId(null); setHistoryOpen(true); }} className="text-xs text-[#9f9795] transition hover:text-[#f4efeb]">历史记录</button><button type="button" onClick={resetConversation} className="text-xs text-[#9f9795] transition hover:text-[#f4efeb]">重新开始</button></div>
         </header>
         <section className="flex flex-1 flex-col items-center pt-11 sm:pt-14">
-          <div className="flex flex-col items-center"><div className={`relative rounded-full ${status === "listening" && listeningReady ? "breathing" : ""}`}><Avatar gender={characterGender} /></div><p className="mt-6 text-sm text-[#d1c7c4]">{realtimeState === "PREPARING_MIC" ? "正在准备麦克风……" : realtimeState === "RECOVERING_ASR" ? "刚刚没听清，正在恢复……" : STATUS_COPY[status].replace("小满", characterName)}</p>{status === "listening" && interimText && <p className="mt-3 max-w-xs text-center text-xs leading-5 text-[#a9a09e]">“{interimText}”</p>}<div className="mt-3 h-8">{status === "speaking" ? <Wave /> : status === "thinking" ? <div className="flex h-8 items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:120ms]" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:240ms]" /></div> : <span className="text-xs text-[#756d6b]">{scenario.shortTitle}</span>}</div></div>
+          <div className="flex flex-col items-center"><div className={`relative rounded-full ${status === "listening" && listeningReady ? "breathing" : ""}`}><Avatar gender={characterGender} /></div><p className="mt-6 text-sm text-[#d1c7c4]">{realtimeState === "PREPARING_MIC" ? "正在准备麦克风……" : realtimeState === "RECOVERING_ASR" ? "刚刚没听清，正在恢复……" : STATUS_COPY[status].replace("小满", characterName)}</p><p className="mt-2 text-[11px] text-[#756d6b]">麦克风：{microphoneState === "granted" ? "已授权" : microphoneState === "denied" ? "未授权" : "检测中"}{micHealth.trackMuted ? "（设备静音）" : ""}</p>{status === "listening" && interimText && <p className="mt-3 max-w-xs text-center text-xs leading-5 text-[#a9a09e]">“{interimText}”</p>}<div className="mt-3 h-8">{status === "speaking" ? <Wave /> : status === "thinking" ? <div className="flex h-8 items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:120ms]" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:240ms]" /></div> : <span className="text-xs text-[#756d6b]">{scenario.shortTitle}</span>}</div></div>
           <div className="mt-10 w-full max-w-xl space-y-4" aria-live="polite">
             {visibleMessages.map((message, index) => <div key={`${message.role}-${index}-${message.content.slice(0, 8)}`} className={`flex items-start gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>{message.role === "assistant" && <Avatar small gender={characterGender} />}<div className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === "user" ? "rounded-br-md bg-[#e98972] text-[#241615]" : "rounded-bl-md bg-[#211e1d] text-[#ded4d1]"}`}><span className="mb-1 block text-[10px] tracking-[0.12em] opacity-50">{message.role === "user" ? "我" : characterName}</span>{message.content}</div></div>)}
           </div>
