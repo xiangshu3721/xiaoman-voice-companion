@@ -48,6 +48,8 @@ export type TTSCallbacks = {
   onEnd: () => void;
   onError: (message: string) => void;
   onMetrics?: (metrics: TTSMetrics) => void;
+  onStart?: () => void;
+  onProgress?: (progress: { spokenRatio: number; spokenText: string }) => void;
 };
 
 export type ScenarioId = "late-home" | "no-reply" | "forgotten" | "free";
@@ -92,7 +94,7 @@ export interface LLMProvider {
 
 export interface ASRProvider {
   isSupported(): boolean;
-  start(onResult: (text: string, isFinal: boolean) => void, onError: (message: string) => void, onEnd: () => void): void;
+  start(onResult: (text: string, isFinal: boolean) => void, onError: (message: string) => void, onEnd: () => void, options?: { onReady?: () => void; onActivity?: (event: string) => void }): void;
   stop(): void;
 }
 
@@ -131,13 +133,15 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
     onResult: (text: string, isFinal: boolean) => void;
     onError: (message: string) => void;
     onEnd: () => void;
+    onReady?: () => void;
+    onActivity?: (event: string) => void;
   } | null = null;
 
   isSupported() {
     return typeof window !== "undefined" && Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
   }
 
-  start(onResult: (text: string, isFinal: boolean) => void, onError: (message: string) => void, onEnd: () => void) {
+  start(onResult: (text: string, isFinal: boolean) => void, onError: (message: string) => void, onEnd: () => void, options?: { onReady?: () => void; onActivity?: (event: string) => void }) {
     if (!this.isSupported()) {
       onError("当前浏览器不支持语音识别，建议使用 Chrome。");
       return;
@@ -150,7 +154,7 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
 
     this.active = true;
     this.retries = 0;
-    this.callbacks = { onResult, onError, onEnd };
+    this.callbacks = { onResult, onError, onEnd, ...options };
     this.startRecognition(Recognition);
   }
 
@@ -159,21 +163,32 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
     const recognition = new Recognition();
     this.recognition = recognition;
     recognition.lang = "zh-CN";
-    // 以“每句话一段”的方式识别，浏览器兼容性比 continuous=true 更好。
-    // 页面会在 AI 播放结束后自动重新 start，因此用户体验仍然是连续对话。
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
     recognition.onresult = (event) => {
       let text = "";
       let isFinal = false;
       for (let index = event.resultIndex; index < event.results.length; index += 1) {
-        text += event.results[index][0].transcript;
-        isFinal = isFinal || event.results[index].isFinal;
+        text = event.results[index][0].transcript;
+        isFinal = event.results[index].isFinal;
       }
       const trimmed = text.trim();
       if (trimmed) this.retries = 0;
       if (trimmed) this.callbacks?.onResult(trimmed, isFinal);
+    };
+    const recognitionEvents = recognition as SpeechRecognition & { onstart?: () => void; onaudiostart?: () => void; onspeechstart?: () => void; onspeechend?: () => void };
+    recognitionEvents.onstart = () => this.callbacks?.onReady?.();
+    recognitionEvents.onaudiostart = () => this.callbacks?.onActivity?.("audiostart");
+    recognitionEvents.onspeechstart = () => this.callbacks?.onActivity?.("speechstart");
+    recognitionEvents.onspeechend = () => this.callbacks?.onActivity?.("speechend");
+    recognition.onend = () => {
+      if (!this.active) {
+        this.callbacks?.onEnd();
+        return;
+      }
+      this.callbacks?.onActivity?.("end");
+      this.scheduleRestart(Recognition);
     };
     recognition.onerror = (event) => {
       if (event.error === "not-allowed" || event.error === "service-not-allowed") {
@@ -189,13 +204,6 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
         this.callbacks?.onError("语音识别连接不稳定，再试一次？");
       }
     };
-    recognition.onend = () => {
-      if (!this.active) {
-        this.callbacks?.onEnd();
-        return;
-      }
-      this.scheduleRestart(Recognition);
-    };
     try {
       recognition.start();
     } catch {
@@ -206,9 +214,9 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
   private scheduleRestart(Recognition: SpeechRecognitionConstructor) {
     if (!this.active || !this.callbacks || this.restartTimer !== null) return;
     this.retries += 1;
-    if (this.retries > 20) {
+    if (this.retries > 3) {
       this.active = false;
-      this.callbacks.onError("当前浏览器没有返回语音信号，请使用 Chrome 并重新允许麦克风。");
+      this.callbacks.onError("语音识别连续中断了，请停一下后再试。");
       this.callbacks.onEnd();
       return;
     }
@@ -247,8 +255,11 @@ export class BrowserSpeechSynthesisProvider implements TTSProvider {
     utterance.rate = profile.rate;
     utterance.pitch = profile.pitch;
     utterance.volume = profile.volume;
+    callbacks.onStart?.();
+    callbacks.onProgress?.({ spokenRatio: 0, spokenText: "" });
     callbacks.onMetrics?.({ provider: "browser", voice: preferred?.name || chineseVoices[0]?.name || "browser-default", emotion, intensity, streaming: false });
     utterance.onend = () => {
+      callbacks.onProgress?.({ spokenRatio: 1, spokenText: request.text });
       callbacks.onMetrics?.({ provider: "browser", voice: preferred?.name || chineseVoices[0]?.name || "browser-default", emotion, intensity, streaming: false, totalLatencyMs: Math.round(performance.now() - startedAt) });
       callbacks.onEnd();
     };
@@ -402,6 +413,11 @@ export class DoubaoTTSProvider implements TTSProvider {
     audio.setAttribute("playsinline", "true");
     audio.preload = "auto";
     audio.src = this.objectUrl;
+    callbacks.onStart?.();
+    audio.ontimeupdate = () => {
+      const ratio = audio.duration > 0 ? Math.min(1, audio.currentTime / audio.duration) : 0;
+      callbacks.onProgress?.({ spokenRatio: ratio, spokenText: request.text.slice(0, Math.ceil(request.text.length * ratio)) });
+    };
     audio.load();
     await new Promise<void>((resolve, reject) => {
       const onOpen = () => { mediaSource.removeEventListener("sourceopen", onOpen); resolve(); };
@@ -471,10 +487,18 @@ export class DoubaoTTSProvider implements TTSProvider {
       this.audioSource = source;
       source.buffer = buffer;
       source.connect(context.destination);
+      const startedAtAudio = context.currentTime;
+      callbacks.onStart?.();
+      const progressTimer = window.setInterval(() => {
+        if (settled) { window.clearInterval(progressTimer); return; }
+        const ratio = buffer.duration > 0 ? Math.min(1, (context.currentTime - startedAtAudio) / buffer.duration) : 0;
+        callbacks.onProgress?.({ spokenRatio: ratio, spokenText: request.text.slice(0, Math.ceil(request.text.length * ratio)) });
+      }, 120);
       callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, firstByteLatencyMs: Math.round(performance.now() - startedAt), ...ttsDebugFields(request) });
       source.onended = () => {
         if (settled || generation !== this.requestGeneration) return;
         settled = true;
+        window.clearInterval(progressTimer);
         source.disconnect();
         this.audioSource = null;
         callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, totalLatencyMs: Math.round(performance.now() - startedAt), ...ttsDebugFields(request) });
@@ -506,12 +530,18 @@ export class DoubaoTTSProvider implements TTSProvider {
       audio.preload = "auto";
       audio.src = this.objectUrl;
       audio.load();
+      callbacks.onStart?.();
+      audio.ontimeupdate = () => {
+        const ratio = audio.duration > 0 ? Math.min(1, audio.currentTime / audio.duration) : 0;
+        callbacks.onProgress?.({ spokenRatio: ratio, spokenText: request.text.slice(0, Math.ceil(request.text.length * ratio)) });
+      };
       callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, firstByteLatencyMs: Math.round(performance.now() - startedAt), ...ttsDebugFields(request) });
       audio.onended = () => {
         if (settled || !isCurrent()) return;
         settled = true;
         if (watchdog !== null) window.clearTimeout(watchdog);
         this.cleanupAudio();
+        callbacks.onProgress?.({ spokenRatio: 1, spokenText: request.text });
         callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, totalLatencyMs: Math.round(performance.now() - startedAt), ...ttsDebugFields(request) });
         callbacks.onEnd();
         resolve();

@@ -256,4 +256,17 @@ export type DebugTrace = {
     voiceSignals: "UNAVAILABLE";
     visualSignals: "UNAVAILABLE";
   };
+  realtime?: {
+    userTurnId?: string;
+    generationId?: number;
+    latestUserDelta: string;
+    explicitIntents: string[];
+    inferredIntents: string[];
+    negatedIntents: string[];
+    apologyEvidence: boolean;
+    semanticDuplicateScore: number;
+    responseNoveltyScore: number;
+    addressesLatestDelta: boolean;
+    dialogueAct: string;
+  };
 };

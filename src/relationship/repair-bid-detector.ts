@@ -1,4 +1,5 @@
 import type { ChatMessage } from "@/lib/providers";
+import { analyzeUserSemantic } from "@/src/semantic/user-semantic-analyzer";
 
 export type RepairBidType =
   | "APOLOGY"
@@ -54,7 +55,8 @@ function consecutiveRepairCount(history: ChatMessage[]) {
 
 export function detectRepairBid(input: { text: string; history?: ChatMessage[] }): RepairBid {
   const clean = input.text.trim();
-  const matched = patterns.filter(({ test }) => test.test(clean));
+  const semantic = analyzeUserSemantic(clean);
+  const matched = patterns.filter(({ type, test }) => type === "APOLOGY" ? (test.test(clean) && !semantic.negatedIntents.includes("APOLOGY")) : test.test(clean));
   const types = matched.map(({ type }) => type);
   const points = Math.min(100, matched.reduce((sum, item) => sum + item.points, 0));
   const isPerfunctory = perfunctory.test(clean);

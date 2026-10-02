@@ -18,6 +18,8 @@ import { createEmotionPerformancePlan } from "@/src/emotion-performance/emotion-
 import { validatePerformance } from "@/src/emotion-performance/performance-validator";
 import { getSpeakerCapability } from "@/src/tts/speaker-registry";
 import type { EmotionPerformancePlan } from "@/src/emotion-performance/types";
+import { analyzeUserSemantic } from "@/src/semantic/user-semantic-analyzer";
+import { noveltyReport } from "@/src/realtime/response-novelty";
 
 export const maxDuration = 60;
 
@@ -36,6 +38,8 @@ type ChatRequest = {
   voiceId?: string;
   sectionId?: string;
   debug?: boolean;
+  userTurnId?: string;
+  generationId?: number;
 };
 
 function removeDuplicatedCurrentTurn(history: ChatMessage[], userMessage: string) {
@@ -58,6 +62,15 @@ function fallbackReply(relationship: ReturnType<typeof buildRelationshipSnapshot
   return relationship.dailyLifeReentryText || (relationship.currentState === "CONFLICT" ? mockReply(strategy, userMessage, history) : fallbackForRelationshipState(relationship.currentState));
 }
 
+function noveltySafeReply(userMessage: string, semantic: ReturnType<typeof analyzeUserSemantic>, relationship: ReturnType<typeof buildRelationshipSnapshot>) {
+  if (semantic.negatedIntents.includes("APOLOGY")) return "那你先别急着道歉，先把你刚才那句说清楚。你到底觉得哪儿没错？";
+  if (semantic.explicitIntents.includes("APOLOGY")) return "我听见你在道歉了。别只说这一句，你具体觉得哪儿伤到我了？";
+  if (semantic.explicitIntents.includes("AFFECTION")) return "嗯，我听见了。那你先别只哄我，刚才那件事你想怎么面对？";
+  if (/[？?]/.test(userMessage)) return `你问的这个，我不想用一句“没事”糊弄过去。${userMessage.slice(0, 24)}`;
+  if (relationship.currentState === "REFLECT") return "你先把这句话说完整，我想听你自己怎么理解刚才那一下。";
+  return "我听见你这句了。别绕开刚才那件事，你再说具体一点。";
+}
+
 function voiceCue(strategy: ReturnType<typeof selectResponseStrategy>, state: ConflictState): { emotion: NonNullable<TTSRequest["emotion"]>; intensity: number } {
   const emotion = strategy.primary === "sarcasm"
     ? "sarcastic"
@@ -74,7 +87,7 @@ function voiceCue(strategy: ReturnType<typeof selectResponseStrategy>, state: Co
   return { emotion, intensity: Math.max(0.25, Math.min(1, Number((intensityByTier + strategyBoost - repairReduction).toFixed(2)))) };
 }
 
-function debugForRelationship(relationship: ReturnType<typeof buildRelationshipSnapshot>, classification: ReturnType<typeof classifyUserMessage>, strategy: ReturnType<typeof selectResponseStrategy>, validation: { valid: boolean; issues: string[] }, memory?: MemoryGuardResult): DebugTrace {
+function debugForRelationship(relationship: ReturnType<typeof buildRelationshipSnapshot>, classification: ReturnType<typeof classifyUserMessage>, strategy: ReturnType<typeof selectResponseStrategy>, validation: { valid: boolean; issues: string[] }, memory?: MemoryGuardResult, realtime?: DebugTrace["realtime"]): DebugTrace {
   return {
     userStrategy: classification.labels,
     confidence: classification.confidence,
@@ -126,6 +139,7 @@ function debugForRelationship(relationship: ReturnType<typeof buildRelationshipS
       voiceSignals: "UNAVAILABLE",
       visualSignals: "UNAVAILABLE",
     },
+    realtime,
     topic: {
       topic: relationship.topicMemory.topic,
       status: relationship.topicMemory.status,
@@ -190,6 +204,7 @@ export async function POST(request: Request) {
   const history = removeDuplicatedCurrentTurn(fullHistory, userMessage);
   const sessionBoundary = createSessionBoundary({ history, sessionId: body.sessionId, continuePreviousScene: body.continuePreviousScene });
   const classification = classifyUserMessage(userMessage);
+  const userSemantic = analyzeUserSemantic(userMessage);
   const scene = resolveScene({ scenarioId: body.scenarioId, sceneContext: body.sceneContext });
   const earlySafety = runSafetyGate({ text: userMessage, history });
   if (earlySafety.riskLevel === "HIGH" || earlySafety.riskLevel === "CRITICAL") {
@@ -251,6 +266,23 @@ export async function POST(request: Request) {
     validation = { valid: true, issues: [], memory: validateMemoryGrounding({ reply, history, currentUserMessage: userMessage, sessionId: sessionBoundary.sessionId }) };
   }
 
+  let novelty = noveltyReport(reply, history, userMessage, userSemantic);
+  if (apiKey && mode === "deepseek" && (novelty.semanticDuplicateScore >= 0.78 || !novelty.addressesLatestDelta)) {
+    try {
+      const noveltyPrompt = { ...prompt, systemPrompt: `${prompt.systemPrompt}\n\n【本轮去重与最新意图】上一轮回复不能复用。必须直接回应用户本轮最新一句的具体词或明确意图：${userMessage}。不要再用“行，我记着/好，我记住了”这类承接。请换一种对话动作，只输出角色台词。` };
+      const alternative = await callDeepSeek(apiKey, noveltyPrompt, history, userMessage);
+      const alternativeValidation = validateGeneratedReply(alternative, relationship, history, userMessage, strategy, referenceTexts);
+      const alternativeNovelty = noveltyReport(alternative, history, userMessage, userSemantic);
+      if (alternativeValidation.valid && alternativeNovelty.semanticDuplicateScore < novelty.semanticDuplicateScore && alternativeNovelty.addressesLatestDelta) {
+        reply = alternative;
+        validation = alternativeValidation;
+        novelty = alternativeNovelty;
+      }
+    } catch (error) {
+      console.error("response novelty retry failed", error);
+    }
+  }
+
   performancePlan = createEmotionPerformancePlan({ relationship, strategy, reply, history, sectionId, speaker });
   const performanceThreshold = effectiveState.conflictIntensity >= 4 ? 75 : 65;
   const performanceCheck = validatePerformance(performancePlan, reply, speaker);
@@ -265,7 +297,26 @@ export async function POST(request: Request) {
     }
   }
 
-  const debug = debugForRelationship(relationship, classification, strategy, validation, validation.memory);
+  novelty = noveltyReport(reply, history, userMessage, userSemantic);
+  if (novelty.semanticDuplicateScore >= 0.92 || !novelty.addressesLatestDelta) {
+    reply = noveltySafeReply(userMessage, userSemantic, relationship);
+    mode = mode === "deepseek" ? "fallback" : mode;
+    validation = { valid: true, issues: [], memory: validateMemoryGrounding({ reply, history, currentUserMessage: userMessage, sessionId: sessionBoundary.sessionId, referenceTexts }) };
+    novelty = noveltyReport(reply, history, userMessage, userSemantic);
+  }
+  const debug = debugForRelationship(relationship, classification, strategy, validation, validation.memory, {
+    userTurnId: body.userTurnId,
+    generationId: body.generationId,
+    latestUserDelta: userMessage,
+    explicitIntents: userSemantic.explicitIntents,
+    inferredIntents: userSemantic.inferredIntents,
+    negatedIntents: userSemantic.negatedIntents,
+    apologyEvidence: userSemantic.explicitIntents.includes("APOLOGY") && !userSemantic.negatedIntents.includes("APOLOGY"),
+    semanticDuplicateScore: novelty.semanticDuplicateScore,
+    responseNoveltyScore: novelty.responseNoveltyScore,
+    addressesLatestDelta: novelty.addressesLatestDelta,
+    dialogueAct: novelty.dialogueAct,
+  });
   debug.retrievedEpisodeIds = retrieved.map((item) => item.episode.id);
   const finalVoice = performancePlan ? {
     ...voice,

@@ -14,6 +14,10 @@ import {
 import { apiUrl, sitePath } from "@/lib/api";
 import { readChatArchives, upsertChatArchive, type ChatArchive } from "@/lib/chat-history";
 import type { EmotionPerformancePlan } from "@/src/emotion-performance/types";
+import { AdaptiveVadMonitor } from "@/src/realtime/adaptive-vad";
+import { detectEndOfTurn, semanticCompleteness } from "@/src/realtime/end-of-turn";
+import { TranscriptAccumulator } from "@/src/realtime/transcript-accumulator";
+import type { MicHealth, RealtimeConversationState } from "@/src/realtime/types";
 
 type Status = "idle" | "listening" | "thinking" | "speaking";
 type MicrophoneState = "unknown" | "granted" | "denied" | "unavailable";
@@ -34,6 +38,7 @@ type DebugInfo = {
   repair?: { detected: boolean; type: string; strength: number; sincerity: number; momentum: number; attackMomentum: number; userSoftening: number; rejectionCount: number; conflictBudget: number; conflictPhase: string };
   topic?: { topic: string; status: string; agreement?: string; actionOwner?: string; actionDeadline?: string; newEvidence: boolean; repetitionCount: number; topicExhaustionScore: number; stuckTopic: boolean; reopenAllowed: boolean; lettingGoReadiness: number; topicShiftProbability: number; dailyLifeReentryStrategy?: string; reason: string };
   userState?: { anger: number; hurt: number; sadness: number; anxiety: number; aggression: number; withdrawal: number; openness: number; distress: number; intent: string[]; trend: string; voiceSignals: string; visualSignals: string };
+  realtime?: { userTurnId?: string; generationId?: number; latestUserDelta: string; explicitIntents: string[]; inferredIntents: string[]; negatedIntents: string[]; apologyEvidence: boolean; semanticDuplicateScore: number; responseNoveltyScore: number; addressesLatestDelta: boolean; dialogueAct: string };
 };
 
 type VoiceOption = { id: string; name: string; gender?: "female" | "male" };
@@ -176,12 +181,29 @@ export default function Home() {
   const [archives, setArchives] = useState<ChatArchive[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectedArchiveId, setSelectedArchiveId] = useState<string | null>(null);
+  const [realtimeState, setRealtimeState] = useState<RealtimeConversationState>("IDLE");
+  const [listeningReady, setListeningReady] = useState(false);
+  const [micHealth, setMicHealth] = useState<MicHealth>({ permissionGranted: false, trackState: "none", trackMuted: false, audioContextState: "unknown", vadAlive: false, asrAlive: false, lastVoiceActivityAt: null, lastAsrResultAt: null, noiseFloor: 0, vadThreshold: 0 });
+  const [endOfTurnConfidence, setEndOfTurnConfidence] = useState(0);
+  const [asrRestartCount, setAsrRestartCount] = useState(0);
+  const [latestSpokenText, setLatestSpokenText] = useState("");
   const historyRef = useRef<ChatMessage[]>([WELCOME]);
   const archiveIdRef = useRef(`conversation-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`);
   const sectionIdRef = useRef(newSectionId());
   const conversationActiveRef = useRef(false);
   const asrRef = useRef(new BrowserSpeechRecognitionProvider());
   const ttsRef = useRef(new DoubaoTTSProvider());
+  const streamRef = useRef<MediaStream | null>(null);
+  const vadRef = useRef(new AdaptiveVadMonitor());
+  const accumulatorRef = useRef(new TranscriptAccumulator());
+  const endTimerRef = useRef<number | null>(null);
+  const utteranceStartRef = useRef<number | null>(null);
+  const lastVoiceAtRef = useRef<number | null>(null);
+  const lastFinalAtRef = useRef<number | null>(null);
+  const interruptModeRef = useRef(false);
+  const generationRef = useRef(0);
+  const processedTurnIdsRef = useRef(new Set<string>());
+  const spokenTextRef = useRef("");
 
   const scenario = useMemo(() => SCENARIOS.find((item) => item.id === scenarioId) || SCENARIOS[0], [scenarioId]);
   const selectedVoice = voiceOptions.find((voice) => voice.id === selectedVoiceId);
@@ -202,6 +224,8 @@ export default function Home() {
     return () => {
       asrRef.current.stop();
       ttsRef.current.stop();
+      vadRef.current.stop();
+      streamRef.current?.getTracks().forEach((track) => track.stop());
     };
   }, []);
 
@@ -227,9 +251,10 @@ export default function Home() {
     let nextMicrophoneState: MicrophoneState = "unavailable";
     if (navigator.mediaDevices?.getUserMedia) {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach((track) => track.stop());
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+        streamRef.current = stream;
         nextMicrophoneState = "granted";
+        setMicHealth((current) => ({ ...current, permissionGranted: true, trackState: stream.getAudioTracks()[0]?.readyState || "live", trackMuted: stream.getAudioTracks()[0]?.muted || false }));
       } catch {
         nextMicrophoneState = "denied";
       }
@@ -257,6 +282,16 @@ export default function Home() {
     setConversationActive(false);
     asrRef.current.stop();
     ttsRef.current.stop();
+    vadRef.current.stop();
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    if (endTimerRef.current !== null) window.clearTimeout(endTimerRef.current);
+    accumulatorRef.current.reset();
+    asrRef.current.stop();
+    utteranceStartRef.current = null;
+    lastFinalAtRef.current = null;
+    setRealtimeState("IDLE");
+    setListeningReady(false);
     setStatus("idle");
     setNotice("");
     setInterimText("");
@@ -292,6 +327,22 @@ export default function Home() {
     setArchives(upsertChatArchive(nextArchive));
   };
 
+  const trimInterruptedAssistant = (spokenText: string) => {
+    const currentMessages = historyRef.current;
+    const last = currentMessages.at(-1);
+    if (last?.role !== "assistant") return;
+    const nextMessages = spokenText.trim()
+      ? [...currentMessages.slice(0, -1), { role: "assistant", content: spokenText.trim() } satisfies ChatMessage]
+      : currentMessages.slice(0, -1);
+    updateMessages(nextMessages);
+    const archive = readChatArchives().find((item) => item.id === archiveIdRef.current);
+    if (!archive || archive.messages.at(-1)?.role !== "assistant") return;
+    const archiveMessages = spokenText.trim()
+      ? [...archive.messages.slice(0, -1), { role: "assistant", content: spokenText.trim() } satisfies ChatMessage]
+      : archive.messages.slice(0, -1);
+    setArchives(upsertChatArchive({ ...archive, messages: archiveMessages, updatedAt: new Date().toISOString() }));
+  };
+
   const requestReview = async (question?: string) => {
     setReviewLoading(true);
     setReviewError("");
@@ -321,17 +372,22 @@ export default function Home() {
     if (!review && !reviewLoading) void requestReview();
   };
 
-  const requestReply = async (userText: string, baseHistory: ChatMessage[]) => {
+  const requestReply = async (userText: string, baseHistory: ChatMessage[], turnId = `turn-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`) => {
+    const generationId = ++generationRef.current;
+    if (processedTurnIdsRef.current.has(turnId)) return;
+    processedTurnIdsRef.current.add(turnId);
     setStatus("thinking");
+    setRealtimeState("AI_GENERATING");
     try {
       const response = await fetch(apiUrl("/api/chat"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ history: baseHistory.slice(-20), userMessage: userText, sceneContext: scenario.context, scenarioId: scenario.id, characterGender, voiceId: selectedVoiceId || undefined, sessionId: archiveIdRef.current, sectionId: sectionIdRef.current, continuePreviousScene: false, debug: debugEnabled }),
+        body: JSON.stringify({ history: baseHistory.slice(-20), userMessage: userText, sceneContext: scenario.context, scenarioId: scenario.id, characterGender, voiceId: selectedVoiceId || undefined, sessionId: archiveIdRef.current, sectionId: sectionIdRef.current, continuePreviousScene: false, debug: debugEnabled, userTurnId: turnId, generationId }),
       });
       const data = await response.json() as { text?: string; reply?: string; mode?: "mock" | "deepseek" | "fallback" | "safety"; error?: string; debug?: DebugInfo; voice?: { emotion?: TTSRequest["emotion"]; primaryEmotion?: string; emotionScale?: number; intensity?: number; speed?: number; volume?: number; sectionId?: string; contextText?: string; speechRate?: number; loudnessRate?: number; fallbackUsed?: boolean } };
       const reply = data.text || data.reply;
       if (!response.ok || !reply) throw new Error(data.error || "reply failed");
+      if (generationId !== generationRef.current) return;
       setMode(data.mode || "");
       if (data.debug) setDebugInfo(data.debug);
       const next = [...baseHistory, { role: "assistant", content: reply } satisfies ChatMessage];
@@ -343,9 +399,19 @@ export default function Home() {
       setReviewQuestion("");
       setReviewError("");
       setStatus("speaking");
+      setRealtimeState("AI_SPEAKING");
+      setLatestSpokenText("");
+      spokenTextRef.current = "";
+      interruptModeRef.current = true;
       ttsRef.current.speak({ text: reply, emotion: data.voice?.emotion, primaryEmotion: data.voice?.primaryEmotion, emotionScale: data.voice?.emotionScale, intensity: data.voice?.intensity, speed: data.voice?.speed, volume: data.voice?.volume, speechRate: data.voice?.speechRate, loudnessRate: data.voice?.loudnessRate, sectionId: data.voice?.sectionId || sectionIdRef.current, contextText: data.voice?.contextText, fallbackUsed: data.voice?.fallbackUsed, voiceId: selectedVoiceId || undefined }, {
-        onEnd: () => resumeListening(),
+        onStart: () => {
+          setRealtimeState("AI_SPEAKING");
+          startListening(true);
+        },
+        onProgress: ({ spokenText }) => { spokenTextRef.current = spokenText; setLatestSpokenText(spokenText); },
+        onEnd: () => { interruptModeRef.current = false; setRealtimeState("LISTENING"); resumeListening(); },
         onError: (message) => {
+          interruptModeRef.current = false;
           setNotice(message);
           resumeListening();
         },
@@ -353,7 +419,7 @@ export default function Home() {
       });
     } catch {
       setNotice("连接出了点问题，重新试试？");
-      if (conversationActiveRef.current) resumeListening();
+      if (conversationActiveRef.current) { interruptModeRef.current = false; setRealtimeState("RECOVERING_ASR"); resumeListening(); }
       else setStatus("idle");
     }
   };
@@ -367,10 +433,45 @@ export default function Home() {
     void requestReply(text, baseHistory);
   };
 
-  const startListening = () => {
+  const finalizeCurrentTurn = () => {
+    if (!conversationActiveRef.current || realtimeState === "FINALIZING_USER_TURN" || realtimeState === "AI_GENERATING") return;
+    const text = accumulatorRef.current.finalText();
+    if (!text) {
+      accumulatorRef.current.reset();
+      setInterimText("");
+      setNotice("刚刚没听清，再说一次？");
+      setRealtimeState("RECOVERING_ASR");
+      resumeListening();
+      return;
+    }
+    if (endTimerRef.current !== null) window.clearTimeout(endTimerRef.current);
+    accumulatorRef.current.reset();
+    setInterimText("");
+    setRealtimeState("FINALIZING_USER_TURN");
+    const turnId = `turn-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const baseHistory = [...historyRef.current, { role: "user", content: text } satisfies ChatMessage];
+    updateMessages(baseHistory);
+    void requestReply(text, baseHistory, turnId);
+  };
+
+  const scheduleEndOfTurn = () => {
+    if (endTimerRef.current !== null) window.clearTimeout(endTimerRef.current);
+    const check = () => {
+      const snapshot = accumulatorRef.current.snapshot();
+      const now = Date.now();
+      const lastVoice = lastVoiceAtRef.current || now;
+      const decision = detectEndOfTurn({ silenceDuration: now - lastVoice, vadActive: now - lastVoice < 180, interimTranscript: [snapshot.committedTranscript, snapshot.interimTranscript].filter(Boolean).join(""), lastFinalSegmentTime: lastFinalAtRef.current, semanticCompleteness: semanticCompleteness(snapshot.committedTranscript), utteranceDuration: now - (utteranceStartRef.current || now), now });
+      setEndOfTurnConfidence(decision.confidence);
+      if (decision.shouldFinalize) finalizeCurrentTurn();
+      else if (conversationActiveRef.current && !interruptModeRef.current) endTimerRef.current = window.setTimeout(check, 180);
+    };
+    endTimerRef.current = window.setTimeout(check, 180);
+  };
+
+  const startListening = (interruptOnly = false) => {
     if (!conversationActiveRef.current) return;
     setNotice("");
-    setInterimText("");
+    if (!interruptOnly) { setInterimText(""); setListeningReady(false); setRealtimeState("PREPARING_MIC"); }
     if (!asrRef.current.isSupported()) {
       conversationActiveRef.current = false;
       setConversationActive(false);
@@ -379,29 +480,56 @@ export default function Home() {
       setNotice("当前浏览器不支持网页语音识别，已切换为文字对话。微信内置浏览器请用文字发送，或在系统浏览器打开。");
       return;
     }
-    setStatus("listening");
+    if (!interruptOnly) setStatus("listening");
     asrRef.current.start((text, isFinal) => {
-      setInterimText(text);
-      if (!isFinal) return;
-      asrRef.current.stop();
-      setInterimText("");
-      if (!text) { setNotice("刚刚没听清，再说一次？"); resumeListening(); return; }
-      const baseHistory = [...historyRef.current, { role: "user", content: text } satisfies ChatMessage];
-      updateMessages(baseHistory);
-      void requestReply(text, baseHistory);
+      setMicHealth((current) => ({ ...current, asrAlive: true, lastAsrResultAt: Date.now() }));
+      if (interruptOnly || interruptModeRef.current) {
+        if (text.trim() && lastVoiceAtRef.current && Date.now() - lastVoiceAtRef.current < 900 && !spokenTextRef.current.includes(text.trim())) {
+          setRealtimeState("BARGE_IN_DETECTED");
+          setRealtimeState("INTERRUPTING_AI");
+          interruptModeRef.current = false;
+          ttsRef.current.stop();
+          trimInterruptedAssistant(spokenTextRef.current);
+          setLatestSpokenText((spoken) => spoken || "");
+          window.setTimeout(() => { if (conversationActiveRef.current) startListening(false); }, 80);
+        }
+        return;
+      }
+      const snapshot = accumulatorRef.current.accept(text, isFinal);
+      setInterimText(snapshot.interimTranscript || snapshot.committedTranscript);
+      if (snapshot.committedTranscript && utteranceStartRef.current == null) utteranceStartRef.current = Date.now();
+      if (isFinal) lastFinalAtRef.current = Date.now();
+      setRealtimeState(isFinal ? "POSSIBLE_END" : "USER_SPEAKING");
+      scheduleEndOfTurn();
     }, (message) => {
-      conversationActiveRef.current = false;
-      setConversationActive(false);
-      setNotice(message);
-      setStatus("idle");
+      if (/权限|麦克风/.test(message)) {
+        conversationActiveRef.current = false;
+        setConversationActive(false);
+        setNotice(message);
+        setStatus("idle");
+        setRealtimeState("ERROR");
+      } else {
+        setRealtimeState("RECOVERING_ASR");
+        setNotice("语音识别暂时中断，正在自动恢复……");
+      }
       setInterimText("");
     }, () => {
+      setMicHealth((current) => ({ ...current, asrAlive: false }));
       if (!conversationActiveRef.current) setStatus((current) => current === "listening" ? "idle" : current);
-    });
+    }, { onReady: () => {
+      setListeningReady(true);
+      setRealtimeState(interruptOnly ? "AI_SPEAKING" : "LISTENING");
+      setMicHealth((current) => ({ ...current, asrAlive: true }));
+    }, onActivity: (event) => {
+      setMicHealth((current) => ({ ...current, lastAsrResultAt: Date.now() }));
+      if (event === "end") setAsrRestartCount((count) => count + 1);
+    } });
   };
 
   const resumeListening = () => {
     if (!conversationActiveRef.current) return;
+    interruptModeRef.current = false;
+    setRealtimeState("PREPARING_MIC");
     setStatus("listening");
     window.setTimeout(() => {
       if (conversationActiveRef.current) startListening();
@@ -411,6 +539,16 @@ export default function Home() {
   const startVoiceConversation = () => {
     conversationActiveRef.current = true;
     setConversationActive(true);
+    setRealtimeState("PREPARING_MIC");
+    if (streamRef.current) void vadRef.current.start(streamRef.current, (update) => {
+      const now = Date.now();
+      if (update.active) {
+        lastVoiceAtRef.current = now;
+        if (utteranceStartRef.current == null) utteranceStartRef.current = now;
+        if (!interruptModeRef.current) setRealtimeState((current) => current === "LISTENING" || current === "POSSIBLE_END" ? "USER_SPEAKING" : current);
+      }
+      setMicHealth((current) => ({ ...current, trackState: streamRef.current?.getAudioTracks()[0]?.readyState || "ended", trackMuted: streamRef.current?.getAudioTracks()[0]?.muted || false, audioContextState: "running", vadAlive: true, lastVoiceActivityAt: update.active ? now : current.lastVoiceActivityAt, noiseFloor: Number(update.noiseFloor.toFixed(4)), vadThreshold: Number(update.threshold.toFixed(4)) }));
+    });
     resumeListening();
   };
 
@@ -419,6 +557,11 @@ export default function Home() {
     setConversationActive(false);
     asrRef.current.stop();
     ttsRef.current.stop();
+    vadRef.current.stop();
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    setRealtimeState("IDLE");
+    setListeningReady(false);
     setInterimText("");
     setStatus("idle");
   };
@@ -469,14 +612,16 @@ export default function Home() {
           <div className="flex items-center gap-4"><button type="button" onClick={() => { setSelectedArchiveId(null); setHistoryOpen(true); }} className="text-xs text-[#9f9795] transition hover:text-[#f4efeb]">历史记录</button><button type="button" onClick={resetConversation} className="text-xs text-[#9f9795] transition hover:text-[#f4efeb]">重新开始</button></div>
         </header>
         <section className="flex flex-1 flex-col items-center pt-11 sm:pt-14">
-          <div className="flex flex-col items-center"><div className={`relative rounded-full ${status === "listening" ? "breathing" : ""}`}><Avatar gender={characterGender} /></div><p className="mt-6 text-sm text-[#d1c7c4]">{STATUS_COPY[status].replace("小满", characterName)}</p>{status === "listening" && interimText && <p className="mt-3 max-w-xs text-center text-xs leading-5 text-[#a9a09e]">“{interimText}”</p>}<div className="mt-3 h-8">{status === "speaking" ? <Wave /> : status === "thinking" ? <div className="flex h-8 items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:120ms]" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:240ms]" /></div> : <span className="text-xs text-[#756d6b]">{scenario.shortTitle}</span>}</div></div>
+          <div className="flex flex-col items-center"><div className={`relative rounded-full ${status === "listening" && listeningReady ? "breathing" : ""}`}><Avatar gender={characterGender} /></div><p className="mt-6 text-sm text-[#d1c7c4]">{realtimeState === "PREPARING_MIC" ? "正在准备麦克风……" : realtimeState === "RECOVERING_ASR" ? "刚刚没听清，正在恢复……" : STATUS_COPY[status].replace("小满", characterName)}</p>{status === "listening" && interimText && <p className="mt-3 max-w-xs text-center text-xs leading-5 text-[#a9a09e]">“{interimText}”</p>}<div className="mt-3 h-8">{status === "speaking" ? <Wave /> : status === "thinking" ? <div className="flex h-8 items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:120ms]" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:240ms]" /></div> : <span className="text-xs text-[#756d6b]">{scenario.shortTitle}</span>}</div></div>
           <div className="mt-10 w-full max-w-xl space-y-4" aria-live="polite">
             {visibleMessages.map((message, index) => <div key={`${message.role}-${index}-${message.content.slice(0, 8)}`} className={`flex items-start gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>{message.role === "assistant" && <Avatar small gender={characterGender} />}<div className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === "user" ? "rounded-br-md bg-[#e98972] text-[#241615]" : "rounded-bl-md bg-[#211e1d] text-[#ded4d1]"}`}><span className="mb-1 block text-[10px] tracking-[0.12em] opacity-50">{message.role === "user" ? "我" : characterName}</span>{message.content}</div></div>)}
           </div>
           {hasUserTurn && status !== "thinking" && <div className="mt-7 w-full max-w-xl"><button type="button" onClick={openReview} aria-expanded={reviewOpen} className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-[#1b1818] px-4 py-3 text-left transition hover:border-[#e98972]/40 hover:bg-[#211e1d] active:scale-[.99]"><span><span className="block text-sm text-[#f4efeb]">情绪复盘</span><span className="mt-1 block text-xs text-[#817876]">看看刚刚真正发生了什么</span></span><span className="text-lg text-[#e98972]">{reviewOpen ? "⌃" : "→"}</span></button>{reviewOpen && <EmotionReviewPanel review={review} turns={reviewTurns} question={reviewQuestion} loading={reviewLoading} error={reviewError} onQuestionChange={setReviewQuestion} onContinue={() => void requestReview(reviewQuestion)} onRetry={() => void requestReview()} onClose={() => setReviewOpen(false)} />}</div>}
         </section>
-        {debugEnabled && <RepairDebug debugInfo={debugInfo} />}
-        {debugEnabled && <PerformanceDebug plan={debugInfo?.emotionPerformance || null} />}
+          {debugEnabled && <RepairDebug debugInfo={debugInfo} />}
+          {debugEnabled && <PerformanceDebug plan={debugInfo?.emotionPerformance || null} />}
+          {debugEnabled && <details open className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-xs text-[#b7adab]"><summary className="cursor-pointer text-[#e98972]">Realtime Voice Debug</summary><div className="mt-3 grid gap-2 sm:grid-cols-2"><p>REALTIME STATE：{realtimeState}</p><p>LISTENING READY：{listeningReady ? "yes" : "no"}</p><p>MIC TRACK：{micHealth.trackState}{micHealth.trackMuted ? " / muted" : ""}</p><p>AUDIO CONTEXT：{micHealth.audioContextState}</p><p>VAD：{micHealth.vadAlive ? "active" : "off"}</p><p>ASR：{micHealth.asrAlive ? "active" : "off"}</p><p>VOICE ACTIVITY：{micHealth.lastVoiceActivityAt ? new Date(micHealth.lastVoiceActivityAt).toLocaleTimeString() : "-"}</p><p>VAD THRESHOLD：{micHealth.vadThreshold || "-"}</p><p className="sm:col-span-2">COMMITTED：{interimText || "-"}</p><p>END CONFIDENCE：{endOfTurnConfidence.toFixed(2)}</p><p>ASR RESTART：{asrRestartCount}</p><p className="sm:col-span-2">ACTUALLY SPOKEN：{latestSpokenText || "-"}</p></div></details>}
+          {debugEnabled && debugInfo?.realtime && <details open className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-xs text-[#b7adab]"><summary className="cursor-pointer text-[#e98972]">Semantic / Novelty Debug</summary><div className="mt-3 grid gap-2 sm:grid-cols-2"><p className="sm:col-span-2">LATEST USER DELTA：{debugInfo.realtime.latestUserDelta}</p><p>EXPLICIT：{debugInfo.realtime.explicitIntents.join(", ") || "none"}</p><p>INFERRED：{debugInfo.realtime.inferredIntents.join(", ") || "none"}</p><p>NEGATED：{debugInfo.realtime.negatedIntents.join(", ") || "none"}</p><p>APOLOGY EVIDENCE：{debugInfo.realtime.apologyEvidence ? "yes" : "no"}</p><p>DIALOGUE ACT：{debugInfo.realtime.dialogueAct}</p><p>DUPLICATE SCORE：{debugInfo.realtime.semanticDuplicateScore}</p><p>NOVELTY SCORE：{debugInfo.realtime.responseNoveltyScore}</p><p>ADDRESSES LATEST：{debugInfo.realtime.addressesLatestDelta ? "yes" : "no"}</p></div></details>}
         <footer className="mt-8 flex flex-col items-center">
           {voiceInputSupported ? <>
             <button type="button" onClick={handleMic} aria-label={conversationActive ? "结束持续语音对话" : "开始持续语音对话"} className={`relative flex h-20 w-20 items-center justify-center rounded-full text-[#241615] shadow-2xl shadow-black/20 transition active:scale-[.96] ${conversationActive ? "breathing bg-[#f6a08b]" : "bg-[#e98972] hover:bg-[#f6a08b]"}`}><span className="mic-glyph" /></button>

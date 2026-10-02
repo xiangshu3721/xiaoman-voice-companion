@@ -1,10 +1,11 @@
 import type { BehaviorLabel, Classification } from "./types";
+import { analyzeUserSemantic } from "@/src/semantic/user-semantic-analyzer";
 
 const rules: Array<{ label: BehaviorLabel; test: RegExp }> = [
   { label: "perfunctory_apology", test: /(行行行|行了吧|行吧|随便|都怪我|都是我的错).*(错|道歉|行了)?|对不起.*(但是|行了|满意了)/ },
   { label: "genuine_apology", test: /(对不起|抱歉|我错了).*(确实|答应|没做到|没提前|应该|我的问题|过分)|确实.*(没做到|做错了)/ },
   { label: "responsibility_acceptance", test: /(是我的问题|我应该|我没做到|没做到|没提前告诉|我承认|确实是我|我不推给你)/ },
-  { label: "character_attack", test: /(无理取闹|神经|有病|矫情|作死|烦不烦|你怎么这么|没救了)/ },
+  { label: "character_attack", test: /(傻逼|废物|无理取闹|神经|有病|矫情|作死|烦不烦|你怎么这么|没救了)/ },
   { label: "relationship_threat", test: /(分手|离婚|还在一起干嘛|别过了|不如算了|你走吧)/ },
   { label: "dismissal", test: /(别闹|别这样|无理取闹|有什么大不了|小题大做|不至于|算了吧|懒得说|你至于吗|已读不回|不回消息|不回复|消失|几个小时.*没回|等了.*小时)/ },
   { label: "defense", test: /(我又不是故意|不是我|我也没办法|有什么办法|我已经说了|我都说了|我不是说过|忙|来不及)/ },
@@ -22,10 +23,19 @@ const rules: Array<{ label: BehaviorLabel; test: RegExp }> = [
 ];
 
 export function classifyUserMessage(message: string): Classification {
+  const semantic = analyzeUserSemantic(message);
   const labels: BehaviorLabel[] = [];
   for (const rule of rules) {
     if (rule.test.test(message) && !labels.includes(rule.label)) labels.push(rule.label);
   }
+  if (semantic.negatedIntents.includes("APOLOGY")) {
+    for (const label of ["genuine_apology", "perfunctory_apology", "responsibility_acceptance"] satisfies BehaviorLabel[]) {
+      const index = labels.indexOf(label);
+      if (index >= 0) labels.splice(index, 1);
+    }
+    if (!labels.includes("defense")) labels.push("defense");
+  }
+  if (semantic.explicitIntents.includes("APOLOGY") && !semantic.ambiguousIntents.includes("APOLOGY") && !labels.includes("genuine_apology")) labels.unshift("genuine_apology");
   if (!labels.length) labels.push("explanation");
   const priority: BehaviorLabel[] = ["genuine_apology", "perfunctory_apology", "character_attack", "relationship_threat", "problem_solving", "showing_vulnerability", "dismissal", "defense", "explanation"];
   const primary = priority.find((label) => labels.includes(label)) || labels[0];
