@@ -38,6 +38,7 @@ jobs:
         run: |
           test -n "$API_BASE_URL" || (echo "Repository variable NEXT_PUBLIC_API_BASE_URL is required" >&2; exit 1)
           echo "NEXT_PUBLIC_API_BASE_URL=$API_BASE_URL" >> "$GITHUB_ENV"
+          printf 'NEXT_PUBLIC_API_BASE_URL=%s\n' "$API_BASE_URL" > .env.production
           if [ "$REPOSITORY" = "$OWNER.github.io" ]; then
             echo "NEXT_PUBLIC_BASE_PATH=" >> "$GITHUB_ENV"
           else
@@ -46,6 +47,13 @@ jobs:
 
       - name: Build static site
         run: npm run build:pages
+
+      - name: Verify public API origin in bundle
+        env:
+          API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL }}
+        run: |
+          test -n "$API_BASE_URL"
+          rg -l --glob '*.js' --fixed-strings "$API_BASE_URL" out/_next/static >/dev/null || (echo "CloudBase API origin missing from Pages bundle" >&2; exit 1)
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
