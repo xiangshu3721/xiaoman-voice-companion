@@ -55,13 +55,19 @@ export default function AudioDiagnosticsPage() {
 
   const testTts = async () => {
     setRunning("tts");
-    setTtsState("REQUESTING");
-    await new Promise<void>((resolve) => {
-      let settled = false;
-      const finish = () => { if (settled) return; settled = true; resolve(); };
-      ttsRef.current.speak({ text: "这是手机音频诊断。你能听见这句话吗？", emotion: "calm", intensity: 0.45 }, { onStart: () => setChecks((current) => ({ ...current, "TTS PLAYBACK": "播放已开始" })), onEnd: finish, onError: (message) => { setChecks((current) => ({ ...current, "TTS PLAYBACK": message })); finish(); }, onStateChange: setTtsState, onMetrics: (metrics) => setTtsMetrics(metrics) });
-      window.setTimeout(() => { setChecks((current) => ({ ...current, "TTS PLAYBACK": "超过15秒未结束，可能被浏览器阻止" })); finish(); }, 15000);
-    });
+    let passed = 0;
+    for (let index = 0; index < 5; index += 1) {
+      setTtsState("REQUESTING");
+      const ok = await new Promise<boolean>((resolve) => {
+        let settled = false;
+        const timeout = window.setTimeout(() => { setChecks((current) => ({ ...current, "TTS PLAYBACK": `第${index + 1}/5次超过15秒未结束，可能被浏览器阻止` })); settled = true; resolve(false); }, 15000);
+        const finish = (success: boolean) => { if (settled) return; settled = true; window.clearTimeout(timeout); resolve(success); };
+        ttsRef.current.speak({ text: `这是手机音频诊断，第${index + 1}次。你能听见这句话吗？`, emotion: "calm", intensity: 0.45 }, { onStart: () => setChecks((current) => ({ ...current, "TTS PLAYBACK": `第${index + 1}/5次播放已开始` })), onEnd: () => finish(true), onError: (message) => { setChecks((current) => ({ ...current, "TTS PLAYBACK": message })); finish(false); }, onStateChange: setTtsState, onMetrics: (metrics) => setTtsMetrics(metrics) });
+      });
+      if (!ok) break;
+      passed += 1;
+    }
+    setChecks((current) => ({ ...current, "TTS PLAYBACK": `${passed}/5 次播放完成` }));
     setRunning("");
   };
 
