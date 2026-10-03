@@ -5,16 +5,8 @@ export type RealtimeConversationState =
 
 export type MicHealth = {
   permissionGranted: boolean;
-  secureContext?: boolean;
-  mediaDevicesAvailable?: boolean;
-  getUserMediaAvailable?: boolean;
-  permissionApiState?: PermissionState | "unavailable";
-  streamAcquired?: boolean;
   trackState: string;
   trackMuted: boolean;
-  audioLevelDetected?: boolean;
-  lastAudioLevelAt?: number | null;
-  errorCode?: string;
   audioContextState: string;
   vadAlive: boolean;
   asrAlive: boolean;

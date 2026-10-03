@@ -5,8 +5,6 @@ import { retrieveSoothing } from "@/src/relationship/soothing-retriever";
 import { retrieveReflections } from "@/src/relationship/reflection-retriever";
 import { selectReflectionStrategy } from "@/src/relationship/reflection-strategy-selector";
 import { buildGroundingContext, createSessionBoundary, type SessionBoundary } from "@/src/memory/grounding";
-import type { ASRQuality, UserTranscript } from "@/src/asr/transcript";
-import type { UserSemanticLedger } from "@/src/semantic/semantic-grounding";
 
 function formatEpisode(item: RetrievedEpisode) {
   const turns = item.episode.turns.slice(0, 6).map((turn) => `${turn.speaker === "A" ? "小满" : "伴侣"}：${turn.text}`).join("\n");
@@ -21,7 +19,7 @@ function emotionalDirection(intensity: ConflictState["conflictIntensity"], strat
   return "情绪有波动：保持自然口语，让用户听出小满在意这件事，而不是平铺直叙。";
 }
 
-export function buildConflictPrompt(input: { scene: ConflictScene; state: ConflictState; classification: Classification; strategy: StrategySelection; retrieved: RetrievedEpisode[]; history: ChatMessage[]; userMessage: string; characterGender?: "female" | "male"; characterName?: string; relationship?: RelationshipSnapshot; sessionBoundary?: SessionBoundary; referenceTexts?: string[]; transcript?: UserTranscript; asrQuality?: ASRQuality; semanticLedger?: UserSemanticLedger }) {
+export function buildConflictPrompt(input: { scene: ConflictScene; state: ConflictState; classification: Classification; strategy: StrategySelection; retrieved: RetrievedEpisode[]; history: ChatMessage[]; userMessage: string; characterGender?: "female" | "male"; characterName?: string; relationship?: RelationshipSnapshot; sessionBoundary?: SessionBoundary; referenceTexts?: string[] }) {
   const characterName = input.characterName || "小满";
   const baseSystemPrompt = (input.characterGender === "male"
     ? XIAOMAN_SYSTEM_PROMPT.replaceAll("小满", characterName).replace("一名32岁的中国女性", "一名成年中国男性")
@@ -34,26 +32,12 @@ export function buildConflictPrompt(input: { scene: ConflictScene; state: Confli
 ${characterName}当前状态：愤怒${input.state.anger}，受伤${input.state.hurt}，失望${input.state.disappointment}，焦虑${input.state.anxiety}，轻蔑${input.state.contempt}，信任${input.state.trust}，怨气${input.state.resentment}，连接感${input.state.connection}，冲突强度${input.state.conflictIntensity}/5
 本轮选择：主策略 ${input.strategy.primary}；辅助策略 ${input.strategy.secondary.join(", ") || "无"}
     情绪方向：${input.relationship?.currentState === "REFLECT" ? "冲突已经暂时收住：语速和语气放慢，清醒但不冷漠，不反问、不追责、不继续争输赢。" : input.relationship?.conflictPhase === "SOFTENING" ? "用户正在递出台阶：可以嘴硬、表达余怒和受伤，但必须停止人格攻击、羞辱、关系威胁和连续追问。" : emotionalDirection(input.state.conflictIntensity, input.strategy.primary)}
-用户最新修复信号：${input.relationship?.repairBid.types.join(" + ") || "无"}；当前轮明确道歉${input.relationship?.repairBid.explicitApology ? "是" : "否"}；当前轮明确承担${input.relationship?.repairBid.explicitOwnership ? "是" : "否"}；道歉证据${input.relationship?.repairBid.apologyEvidence?.type || "NONE"}；强度${input.relationship?.repairBid.strength.toFixed(2) || "0.00"}；真诚度${input.relationship?.repairBid.sincerityConfidence.toFixed(2) || "0.00"}；修复动量${input.relationship?.repairMomentum ?? 0}/100；攻击动量${input.relationship?.attackMomentum ?? 0}/100；冲突预算${input.relationship?.conflictBudget ?? 100}/100。
+用户最新修复信号：${input.relationship?.repairBid.types.join(" + ") || "无"}；强度${input.relationship?.repairBid.strength.toFixed(2) || "0.00"}；真诚度${input.relationship?.repairBid.sincerityConfidence.toFixed(2) || "0.00"}；修复动量${input.relationship?.repairMomentum ?? 0}/100；攻击动量${input.relationship?.attackMomentum ?? 0}/100；冲突预算${input.relationship?.conflictBudget ?? 100}/100。
 议题生命周期：${input.relationship?.topicMemory.status || "OPEN"}；议题${input.relationship?.topicMemory.topic || input.scene.unresolvedIssue}；协议${input.relationship?.topicMemory.agreement || "尚未形成"}；行动负责人${input.relationship?.topicMemory.actionOwner || "未明确"}；截止时间${input.relationship?.topicMemory.actionDeadline || "未明确"}；情绪残留${input.relationship?.topicMemory.emotionalResidue ?? 0}/100。
 议题闭合门：${input.relationship?.topicClosure.reason || "尚未判断"}；新证据${input.relationship?.topicMemory.newEvidence ? "有" : "无"}；议题重复${input.relationship?.topicMemory.repetitionCount ?? 0}次；语义耗尽${input.relationship?.topicExhaustionScore ?? 0}/100；卡住${input.relationship?.stuckTopic ? "是" : "否"}；翻篇准备度${input.relationship?.lettingGoReadiness ?? 0}/100；转场概率${Math.round((input.relationship?.topicShiftProbability || 0) * 100)}%。
 生成约束：只说${characterName}现在会说的话；1-3句，10-80个中文字；不要把所有策略都堆在一句话里；回应必须接住用户原话中的具体词并符合当前强度；不要凭空创造历史；避免和上一轮相同的开头、句式和收尾。
 关系规则：你的目标不是赢得争吵，而是模拟真实伴侣。对方明显认错、道歉、示弱、表达爱、请求和好或递出拥抱时，默认先接住这个台阶；可以还生气、嘴硬、没有完全原谅，但不要无视连续修复尝试，更不能因为过去的冲突继续自动追责。
 `;
-  const transcriptContext = input.transcript && input.semanticLedger ? `
-【ASR与当前轮语义证据，优先级高于历史和参考案例】
-RAW_ASR：${input.transcript.rawAsrText}
-CORRECTED：${input.transcript.correctedText}
-FINAL_USER_TEXT：${input.transcript.finalUserText}
-ASR质量：${input.asrQuality?.level || "UNKNOWN"} ${input.asrQuality?.score.toFixed(2) || ""}；问题：${input.asrQuality?.issues.join(", ") || "无"}
-当前轮明确表达：${input.semanticLedger.explicitIntents.join(", ") || "NOT_EXPRESSED"}
-当前轮推断意图：${input.semanticLedger.inferredIntents.join(", ") || "NOT_EXPRESSED"}
-当前轮否定表达：${input.semanticLedger.negatedIntents.join(", ") || "NONE"}
-当前轮含糊表达：${input.semanticLedger.ambiguousIntents.join(", ") || "NONE"}
-未表达且禁止补全：${input.semanticLedger.notExpressed.join(", ") || "NONE"}
-道歉证据：${input.semanticLedger.apologyEvidence.type}；原文证据：${input.semanticLedger.apologyEvidence.evidenceText || "NONE"}
-硬约束：只能依据 FINAL_USER_TEXT 说“你刚才说过/你已经道歉/你答应了”等事实；参考案例只学习语气和策略，绝不能变成用户事实。若ASR质量低或语义关键字不确定，先用一句自然的话请用户重说，不要猜。
-` : "";
   const examples = input.retrieved.map(formatEpisode).join("\n\n");
   const recent = input.history.slice(-10).map((message) => `${message.role === "user" ? "用户" : characterName}：${message.content}`).join("\n");
   const sessionBoundary = input.sessionBoundary || input.relationship?.sessionBoundary || createSessionBoundary({ history: input.history });
@@ -87,7 +71,7 @@ ${characterName}自己做得不好的地方：${reflection.characterContribution
   const reflectionExamples = reflectionLibrary ? [...reflectionLibrary.examples.map((item) => item.text), ...reflectionLibrary.patterns.map((item) => item.text)].join("\n") : "";
   const reentryContext = relationship?.dailyLifeReentryText ? `\n【生活化转场】议题暂时谈妥，优先回到日常，不要继续分析或审判。可以参考这类方向，但不要机械照抄：${relationship.dailyLifeReentryText}。当前转场类型：${relationship.dailyLifeReentryStrategy}。保留${relationship.topicMemory.emotionalResidue > 45 ? "一点余气和嘴硬" : "自然的熟悉感"}，不要假装严重问题已经解决。` : "";
   return {
-    systemPrompt: `${baseSystemPrompt}\n\n${groundingContext}\n\n${internal}\n${transcriptContext}${stateInstruction}${reflectionContext}${reentryContext}${soothing ? `\n【${relationship?.currentState}语气参考，仅学习方向，不得照抄】\n${soothing}` : ""}${reflectionExamples ? `\n【反思语气参考，仅学习方向，不得照抄】\n${reflectionExamples}` : ""}`,
+    systemPrompt: `${baseSystemPrompt}\n\n${groundingContext}\n\n${internal}\n${stateInstruction}${reflectionContext}${reentryContext}${soothing ? `\n【${relationship?.currentState}语气参考，仅学习方向，不得照抄】\n${soothing}` : ""}${reflectionExamples ? `\n【反思语气参考，仅学习方向，不得照抄】\n${reflectionExamples}` : ""}`,
     contextPrompt: `【CURRENT_SESSION_CONVERSATION｜仅为当前会话消息，不等于长期记忆】\n${recent || "暂无"}\n\n【CURRENT_USER_MESSAGE｜当前用户原话，权重最高】\n${input.userMessage}`,
   };
 }

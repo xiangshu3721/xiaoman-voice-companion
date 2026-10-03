@@ -225,9 +225,6 @@ export type DebugTrace = {
     rejectionCount: number;
     conflictBudget: number;
     conflictPhase: string;
-    explicitApology?: boolean;
-    explicitOwnership?: boolean;
-    apologyEvidence?: { detected: boolean; type: string; evidenceText?: string; source: string; confidence: number };
   };
   topic?: {
     topic: string;
@@ -266,32 +263,10 @@ export type DebugTrace = {
     explicitIntents: string[];
     inferredIntents: string[];
     negatedIntents: string[];
-    ambiguousIntents: string[];
     apologyEvidence: boolean;
     semanticDuplicateScore: number;
     responseNoveltyScore: number;
     addressesLatestDelta: boolean;
     dialogueAct: string;
   };
-  transcript?: {
-    rawAsrText: string;
-    correctedText: string;
-    finalUserText: string;
-    confidence: number | "UNKNOWN";
-    alternatives: string[];
-    uncertainSpans: Array<{ text: string; reason: string; confidence?: number }>;
-    corrections: Array<{ original: string; corrected: string; type: string; confidence: number; semanticRisk: string }>;
-    quality: { score: number; level: string; issues: string[]; sessionCount: number; semanticCriticalAmbiguity: boolean; possibleDropout: boolean };
-  };
-  semanticGrounding?: {
-    explicitIntents: string[];
-    inferredIntents: string[];
-    negatedIntents: string[];
-    ambiguousIntents: string[];
-    notExpressed: string[];
-    apologyEvidence: { detected: boolean; type: string; evidenceText?: string; source: string; confidence: number };
-    ownershipEvidence: boolean;
-    referenceDataUsedAsFact: false;
-  };
-  claimValidation?: { valid: boolean; claims: string[]; issues: string[]; regenerationCount: number };
 };
