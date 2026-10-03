@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ChunkRecovery } from "@/src/boot/chunk-recovery";
+import { BuildInfo } from "./build-info";
 
 export const metadata: Metadata = {
   title: "小满｜你的伴侣",
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="zh-CN">
-      <body><ChunkRecovery />{children}</body>
+      <body><ChunkRecovery />{children}<BuildInfo /></body>
     </html>
   );
 }

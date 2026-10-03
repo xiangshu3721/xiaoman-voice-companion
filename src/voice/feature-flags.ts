@@ -5,4 +5,5 @@ export const VOICE_FEATURES = {
   bargeIn: false,
   streamingTts: false,
   advancedEmotion: false,
+  iosVerifiedVoicePath: true,
 } as const;

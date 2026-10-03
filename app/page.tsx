@@ -28,6 +28,7 @@ import { AssistantTurnCoordinator, type AssistantTurnState, type AssistantTurnTr
 import type { VoiceJob } from "@/src/voice/voice-delivery-pipeline";
 import { mobileBootTrace } from "@/src/boot/mobile-boot-trace";
 import { VOICE_FEATURES } from "@/src/voice/feature-flags";
+import { isIOSMobileBrowser, playAudioAndWaitUntilEnded, releaseVerifiedAudioUrl, requestSeedTTS, type VerifiedVoiceEventPayload } from "@/src/voice/verified-mobile-voice-core";
 
 type Status = "idle" | "listening" | "thinking" | "preparing" | "speaking";
 type MicrophoneState = "unknown" | "requesting" | "granted" | "denied" | "unavailable" | "error";
@@ -243,6 +244,7 @@ export default function Home() {
   const voiceSessionEnabledRef = useRef(false);
   const assistantTurnStateRef = useRef<AssistantTurnState>("IDLE");
   const ttsPlaybackStateRef = useRef<TTSPlaybackState>("IDLE");
+  const aiPlaybackActiveRef = useRef(false);
 
   const markListeningReady = (value: boolean) => {
     listeningReadyRef.current = value;
@@ -278,12 +280,13 @@ export default function Home() {
   const playbackIsActive = () => {
     const assistantState = assistantTurnStateRef.current;
     const ttsState = ttsPlaybackStateRef.current;
-    return Boolean(voicePipelineRef.current.getActiveJob()) || assistantState === "TTS_GENERATING" || assistantState === "TTS_READY" || assistantState === "PLAYBACK_STARTING" || assistantState === "PLAYING" || ttsState === "REQUESTING" || ttsState === "BUFFERING" || ttsState === "READY" || ttsState === "PLAYING";
+    return aiPlaybackActiveRef.current || Boolean(voicePipelineRef.current.getActiveJob()) || assistantState === "TTS_GENERATING" || assistantState === "TTS_READY" || assistantState === "PLAYBACK_STARTING" || assistantState === "PLAYING" || ttsState === "REQUESTING" || ttsState === "BUFFERING" || ttsState === "READY" || ttsState === "PLAYING";
   };
 
   const scenario = useMemo(() => SCENARIOS.find((item) => item.id === scenarioId) || SCENARIOS[0], [scenarioId]);
   const selectedVoice = voiceOptions.find((voice) => voice.id === selectedVoiceId);
   const characterGender: CharacterGender = selectedVoice?.gender === "male" ? "male" : "female";
+  const useVerifiedIOSVoicePath = VOICE_FEATURES.iosVerifiedVoicePath && isIOSMobileBrowser();
   const characterName = "Ta";
   const listeningReady = listeningReadyRef.current;
   const visibleMessages = messages.slice(-8);
@@ -419,6 +422,7 @@ export default function Home() {
     setDebugInfo(null);
     setTtsDebug(null);
     markTtsPlaybackState("IDLE");
+    aiPlaybackActiveRef.current = false;
     assistantTurnStateRef.current = "IDLE";
     setAssistantTurnState("IDLE");
     setAssistantTurnTrace(null);
@@ -546,7 +550,7 @@ export default function Home() {
     }).then((context) => { if (context) setMicHealth((current) => ({ ...current, audioContextState: context.state })); });
   };
 
-  const postTurnRecovery = async (reason: RecoveryReason) => {
+  const postTurnRecovery = async (reason: RecoveryReason, options: { suppressPreparingUi?: boolean; skipDelay?: boolean } = {}) => {
     if (!conversationActiveRef.current) return;
     clearNormalListeningWatchdogs(`POST_TURN_RECOVERY:${reason}`);
     if (voicePipelineRef.current.getActiveJob()) {
@@ -561,7 +565,7 @@ export default function Home() {
       }
     }
     console.debug(`[VOICE] POST_TURN_RECOVERY reason=${reason}`);
-    await resumeListening({ reason });
+    await resumeListening({ reason, ...options });
   };
 
   const requestReply = async (userText: string, baseHistory: ChatMessage[], turnId = `turn-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, asrMeta?: { rawAsrText?: string; confidence?: number; alternatives?: string[]; asrSessionCount?: number; speechDurationMs?: number }) => {
@@ -612,7 +616,14 @@ export default function Home() {
         console.debug(`[VOICE] TURN_FAILED error=${error}`);
       },
     };
-    assistantTurnCoordinatorRef.current.beginTextGeneration({ assistantTurnId: turnId, generationId, sessionId: archiveIdRef.current, voiceMode: voiceModeAtRequest, callbacks: turnCallbacks });
+    if (useVerifiedIOSVoicePath && voiceModeAtRequest) {
+      assistantTurnStateRef.current = "GENERATING_TEXT";
+      setAssistantTurnState("GENERATING_TEXT");
+      setStatus("thinking");
+      setRealtimeState("AI_GENERATING");
+    } else {
+      assistantTurnCoordinatorRef.current.beginTextGeneration({ assistantTurnId: turnId, generationId, sessionId: archiveIdRef.current, voiceMode: voiceModeAtRequest, callbacks: turnCallbacks });
+    }
     try {
       const response = await fetchWithTimeout(apiUrl("/api/chat"), {
         method: "POST",
@@ -626,22 +637,87 @@ export default function Home() {
       setMode(data.mode || "");
       if (data.debug) setDebugInfo(data.debug);
       const ttsRequest: TTSRequest = { text: reply, emotion: VOICE_FEATURES.advancedEmotion ? data.voice?.emotion : undefined, primaryEmotion: VOICE_FEATURES.advancedEmotion ? data.voice?.primaryEmotion : undefined, emotionScale: VOICE_FEATURES.advancedEmotion ? data.voice?.emotionScale : undefined, intensity: VOICE_FEATURES.advancedEmotion ? data.voice?.intensity : undefined, speed: VOICE_FEATURES.advancedEmotion ? data.voice?.speed : undefined, volume: VOICE_FEATURES.advancedEmotion ? data.voice?.volume : undefined, speechRate: VOICE_FEATURES.advancedEmotion ? data.voice?.speechRate : undefined, loudnessRate: VOICE_FEATURES.advancedEmotion ? data.voice?.loudnessRate : undefined, streaming: VOICE_FEATURES.streamingTts, sectionId: data.voice?.sectionId || sectionIdRef.current, contextText: VOICE_FEATURES.advancedEmotion ? data.voice?.contextText : undefined, fallbackUsed: data.voice?.fallbackUsed, voiceId: selectedVoiceId || undefined };
+      const commitMessage = () => {
+        const next = [...baseHistory, { role: "assistant", content: reply } satisfies ChatMessage];
+        updateMessages(next);
+        saveRound(userText, reply);
+        setReviewOpen(false);
+        setReview(null);
+        setReviewTurns([]);
+        setReviewQuestion("");
+        setReviewError("");
+        setLatestSpokenText("");
+        spokenTextRef.current = "";
+      };
+      if (useVerifiedIOSVoicePath && voiceModeAtRequest) {
+        clearNormalListeningWatchdogs("IOS_VERIFIED_AI_GENERATING");
+        listeningGenerationRef.current += 1;
+        aiPlaybackActiveRef.current = true;
+        interruptModeRef.current = true;
+        asrRef.current.stop();
+        releaseMicrophoneForPlayback();
+        commitMessage();
+        const verifiedTrace: AssistantTurnTrace = { assistantTurnId: turnId, generationId, sessionId: archiveIdRef.current, state: "TEXT_READY", voiceMode: true, events: ["USER_FINAL", "AI_TEXT_READY"] };
+        const setVerifiedState = (state: AssistantTurnState, event: string) => {
+          verifiedTrace.state = state;
+          verifiedTrace.events.push(event);
+          assistantTurnStateRef.current = state;
+          setAssistantTurnState(state);
+          setAssistantTurnTrace({ ...verifiedTrace, events: [...verifiedTrace.events] });
+        };
+        setVerifiedState("TEXT_READY", "AI_TEXT_READY");
+        markTtsPlaybackState("REQUESTING");
+        setStatus("preparing");
+        setRealtimeState("AI_SPEAKING");
+        const traceVerifiedEvent = (event: VerifiedVoiceEventPayload) => {
+          const detail = event.detail ? ` detail=${event.detail}` : "";
+          console.debug(`[VOICE][IOS_VERIFIED] ${event.type}${detail}`);
+          if (event.type === "AUDIO_PLAY_CALLED") setVerifiedState("PLAYBACK_STARTING", "AUDIO_PLAY_CALLED");
+          if (event.type === "AUDIO_PLAYING" || event.type === "AUDIO_FIRST_PROGRESS") {
+            setVerifiedState("PLAYING", event.type);
+            setStatus("speaking");
+            setRealtimeState("AI_SPEAKING");
+          }
+          if (event.type === "AUDIO_ENDED") verifiedTrace.events.push("AUDIO_ENDED");
+        };
+        let audioUrl: string | null = null;
+        try {
+          audioUrl = await requestSeedTTS(reply, traceVerifiedEvent);
+          if (!audioUrl) throw new Error("TTS_AUDIO_UNAVAILABLE");
+          markTtsPlaybackState("READY");
+          setVerifiedState("TTS_READY", "TTS_READY");
+          const playbackResult = await playAudioAndWaitUntilEnded(audioUrl, { label: "IOS_VERIFIED_TTS", onEvent: traceVerifiedEvent });
+          releaseVerifiedAudioUrl(audioUrl);
+          audioUrl = null;
+          aiPlaybackActiveRef.current = false;
+          interruptModeRef.current = false;
+          if (playbackResult === "ENDED") {
+            setVerifiedState("COMPLETED", "AUDIO_ENDED");
+            markTtsPlaybackState("COMPLETED");
+            void postTurnRecovery("PLAYBACK_ENDED", { suppressPreparingUi: true, skipDelay: true });
+          } else {
+            setVerifiedState("COMPLETED_WITH_AUDIO_FAILURE", "PLAYBACK_FAILED");
+            markTtsPlaybackState("FAILED");
+            setNotice("这次语音没有正常播放，正在恢复对话。");
+            void postTurnRecovery("PLAYBACK_FAILED", { suppressPreparingUi: true, skipDelay: true });
+          }
+        } catch (error) {
+          releaseVerifiedAudioUrl(audioUrl);
+          aiPlaybackActiveRef.current = false;
+          interruptModeRef.current = false;
+          setVerifiedState("COMPLETED_WITH_AUDIO_FAILURE", "PLAYBACK_FAILED");
+          markTtsPlaybackState("FAILED");
+          setNotice("这次语音没有正常播放，正在恢复对话。");
+          console.debug(`[VOICE][IOS_VERIFIED] PLAYBACK_FAILED error=${error instanceof Error ? error.message : String(error)}`);
+          void postTurnRecovery("PLAYBACK_FAILED", { suppressPreparingUi: true, skipDelay: true });
+        }
+        return;
+      }
       assistantTurnCoordinatorRef.current.commitAssistantMessage({
         text: reply,
         voiceMode: voiceSessionEnabledRef.current,
         ttsRequest,
-        commitMessage: () => {
-          const next = [...baseHistory, { role: "assistant", content: reply } satisfies ChatMessage];
-          updateMessages(next);
-          saveRound(userText, reply);
-          setReviewOpen(false);
-          setReview(null);
-          setReviewTurns([]);
-          setReviewQuestion("");
-          setReviewError("");
-          setLatestSpokenText("");
-          spokenTextRef.current = "";
-        },
+        commitMessage,
         preparePlayback: () => {
           clearNormalListeningWatchdogs("PLAYBACK_STARTING");
           listeningGenerationRef.current += 1;
@@ -652,7 +728,15 @@ export default function Home() {
         },
       });
     } catch (error) {
-      assistantTurnCoordinatorRef.current.failText(error instanceof Error ? error.message : "reply failed");
+      if (useVerifiedIOSVoicePath && voiceModeAtRequest) {
+        aiPlaybackActiveRef.current = false;
+        interruptModeRef.current = false;
+        assistantTurnStateRef.current = "FAILED";
+        setAssistantTurnState("FAILED");
+        void postTurnRecovery("TEXT_FAILED", { suppressPreparingUi: true, skipDelay: true });
+      } else {
+        assistantTurnCoordinatorRef.current.failText(error instanceof Error ? error.message : "reply failed");
+      }
       setNotice("连接出了点问题，重新试试？");
       if (!conversationActiveRef.current) setStatus("idle");
     }
@@ -717,8 +801,12 @@ export default function Home() {
     endTimerRef.current = window.setTimeout(check, 180);
   };
 
-  const startListening = (interruptOnly = false) => {
+  const startListening = (interruptOnly = false, options: { preserveListeningUi?: boolean } = {}) => {
     if (!conversationActiveRef.current) return;
+    if (aiPlaybackActiveRef.current) {
+      console.debug("[VOICE] ILLEGAL_START_LISTENING_DURING_AI_PLAYBACK");
+      return;
+    }
     if (!interruptOnly && playbackIsActive()) {
       console.debug(`[VOICE] ILLEGAL_START_LISTENING_DURING_PLAYBACK assistantState=${assistantTurnStateRef.current} ttsState=${ttsPlaybackStateRef.current}`);
       return;
@@ -728,7 +816,7 @@ export default function Home() {
     console.debug(`[VOICE] ASR_INIT generation=${generation}`);
     mobileBootTrace.mark("ASR_INIT_START");
     setNotice("");
-    if (!interruptOnly) { setInterimText(""); markListeningReady(false); setRealtimeState("PREPARING_MIC"); }
+    if (!interruptOnly) { setInterimText(""); markListeningReady(false); if (!options.preserveListeningUi) setRealtimeState("PREPARING_MIC"); }
     if (!asrRef.current.isSupported()) {
       conversationActiveRef.current = false;
       setConversationActive(false);
@@ -820,8 +908,12 @@ export default function Home() {
     }
   };
 
-  const resumeListening = async ({ reason }: { reason: RecoveryReason }) => {
+  const resumeListening = async ({ reason, suppressPreparingUi = false, skipDelay = false }: { reason: RecoveryReason; suppressPreparingUi?: boolean; skipDelay?: boolean }) => {
     if (!conversationActiveRef.current) return;
+    if (aiPlaybackActiveRef.current) {
+      console.debug(`[VOICE] ILLEGAL_RESUME_LISTENING_DURING_AI_PLAYBACK reason=${reason}`);
+      return;
+    }
     if (playbackIsActive()) {
       console.debug(`[VOICE] ILLEGAL_RESUME_LISTENING_DURING_PLAYBACK reason=${reason} assistantState=${assistantTurnStateRef.current} ttsState=${ttsPlaybackStateRef.current}`);
       return;
@@ -830,7 +922,8 @@ export default function Home() {
     clearResumeListeningTimer(`SCHEDULE:${reason}`);
     const listeningGeneration = ++listeningGenerationRef.current;
     interruptModeRef.current = false;
-    setRealtimeState("PREPARING_MIC");
+    if (!suppressPreparingUi) setRealtimeState("PREPARING_MIC");
+    else setRealtimeState("LISTENING");
     setStatus("listening");
     const ready = await audioSessionRef.current.prepareForListening(acquireMicrophoneForListening);
     if (!ready || !conversationActiveRef.current || listeningGeneration !== listeningGenerationRef.current || playbackIsActive()) {
@@ -839,6 +932,10 @@ export default function Home() {
     }
     if (audioSessionRef.current.usesSmartHalfDuplex()) ttsProviderRef.current.setAudioSessionType("play-and-record");
     startVadMonitoring();
+    if (skipDelay) {
+      startListening(false, { preserveListeningUi: suppressPreparingUi });
+      return;
+    }
     console.debug(`[VOICE] RESUME_LISTENING_SCHEDULED reason=${reason} generation=${listeningGeneration}`);
     resumeListeningTimerRef.current = window.setTimeout(() => {
       resumeListeningTimerRef.current = null;
@@ -877,6 +974,7 @@ export default function Home() {
     assistantTurnStateRef.current = "IDLE";
     setAssistantTurnState("IDLE");
     markTtsPlaybackState("IDLE");
+    aiPlaybackActiveRef.current = false;
     setInterimText("");
     setStatus("idle");
   };

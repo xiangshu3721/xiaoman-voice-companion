@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { apiUrl, sitePath } from "@/lib/api";
+import { BuildInfo } from "@/app/build-info";
+import { playAudioAndWaitUntilEnded, releaseVerifiedAudioUrl, requestSeedTTS, type VerifiedVoiceEventPayload } from "@/src/voice/verified-mobile-voice-core";
 
-const BUILD_SHA = process.env.NEXT_PUBLIC_BUILD_SHA || "LOCAL/UNSET";
+const BUILD_SHA = process.env.NEXT_PUBLIC_GIT_SHA || process.env.NEXT_PUBLIC_BUILD_SHA || "LOCAL/UNSET";
 const BUILD_TIME = process.env.NEXT_PUBLIC_BUILD_TIME || "LOCAL/UNSET";
 const LOCAL_AUDIO = "/voice-tests/zh_female_meilinvyou_saturn_bigtts-softening.mp3";
 const TTS_TEXT = "你好，这是AI声音测试。";
@@ -41,9 +43,6 @@ export default function VoiceDebugPage() {
   const streamRef = useRef<MediaStream | null>(null);
   const analyserContextRef = useRef<AudioContext | null>(null);
   const meterTimerRef = useRef<number | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const playbackTimerRef = useRef<number | null>(null);
-  const objectUrlRef = useRef<string | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const heartbeatRef = useRef<number | null>(null);
   const noInputTimerRef = useRef<number | null>(null);
@@ -59,17 +58,6 @@ export default function VoiceDebugPage() {
     const value = `online=${navigator.onLine} · effectiveType=${connection?.effectiveType || "-"} · rtt=${connection?.rtt ?? "-"}ms`;
     setNetwork(value);
     trace("NETWORK", "NETWORK_SNAPSHOT", "INFO", value);
-  };
-
-  const getAudio = () => {
-    if (!audioRef.current) {
-      const element = new Audio();
-      element.preload = "auto";
-      element.setAttribute("playsinline", "true");
-      element.setAttribute("webkit-playsinline", "true");
-      audioRef.current = element;
-    }
-    return audioRef.current;
   };
 
   const stopMic = () => {
@@ -253,40 +241,27 @@ export default function VoiceDebugPage() {
     else window.setTimeout(() => setRunning(""), 12000);
   };
 
-  const playSource = async (source: string, label: string) => {
-    const audioElement = getAudio();
-    if (playbackTimerRef.current !== null) window.clearInterval(playbackTimerRef.current);
-    audioElement.pause();
-    audioElement.currentTime = 0;
-    audioElement.muted = false;
-    audioElement.volume = 1;
-    audioElement.src = source;
-    audioElement.load();
-    trace("PLAYBACK", "AUDIO_LOAD_START", "INFO", label);
-    const finished = new Promise<void>((resolve) => {
-      const timeout = window.setTimeout(() => { trace("PLAYBACK", "AUDIO_TIMEOUT", "ERROR", label); resolve(); }, 12000);
-      audioElement.onloadedmetadata = () => trace("PLAYBACK", "AUDIO_LOADED_METADATA", "OK", `${label} duration=${audioElement.duration}`);
-      audioElement.oncanplay = () => trace("PLAYBACK", "AUDIO_CANPLAY", "OK", `${label} readyState=${audioElement.readyState}`);
-      audioElement.onplaying = () => { setPlayback((current) => ({ ...current, playing: "yes" })); trace("PLAYBACK", "AUDIO_PLAYING", "OK", label); };
-      audioElement.ontimeupdate = () => { setPlayback((current) => ({ ...current, currentTime: audioElement.currentTime })); trace("PLAYBACK", "AUDIO_CURRENT_TIME", "INFO", `${label} ${audioElement.currentTime.toFixed(2)}s`); };
-      audioElement.onended = () => { window.clearTimeout(timeout); setPlayback((current) => ({ ...current, ended: "yes", currentTime: audioElement.currentTime })); trace("PLAYBACK", "AUDIO_ENDED", "OK", `${label} ${audioElement.currentTime.toFixed(2)}s`); resolve(); };
-      audioElement.onerror = () => { window.clearTimeout(timeout); const error = "HTMLAudioElement error"; setPlayback((current) => ({ ...current, error })); trace("PLAYBACK", "AUDIO_ERROR", "ERROR", `${label} ${error}`); resolve(); };
-    });
-    trace("PLAYBACK", "AUDIO_PLAY_CALLED", "INFO", `${label} volume=${audioElement.volume} muted=${audioElement.muted}`);
-    setPlayback((current) => ({ ...current, playCalled: "yes", playResolved: "pending", playing: "no", ended: "no", currentTime: 0, error: "" }));
-    try {
-      await audioElement.play();
-      setPlayback((current) => ({ ...current, playResolved: "yes" }));
-      trace("PLAYBACK", "AUDIO_PLAY_RESOLVED", "OK", label);
-    } catch (error) {
-      const detail = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
-      setPlayback((current) => ({ ...current, playResolved: "no", error: detail }));
-      trace("PLAYBACK", "AUDIO_PLAY_REJECTED", "ERROR", `${label} ${detail}`);
+  const onVerifiedVoiceEvent = (label: string, event: VerifiedVoiceEventPayload) => {
+    const status = event.type === "AUDIO_ERROR" || event.type === "AUDIO_PLAY_REJECTED" || event.type === "AUDIO_TIMEOUT" ? "ERROR" : event.type === "AUDIO_FIRST_PROGRESS" ? "INFO" : "OK";
+    trace("PLAYBACK", event.type, status, `${label} ${event.detail || ""}`.trim());
+    if (event.type === "AUDIO_PLAY_CALLED") setPlayback((current) => ({ ...current, playCalled: "yes", playResolved: "pending", playing: "no", ended: "no", currentTime: 0, error: "" }));
+    if (event.type === "AUDIO_PLAY_RESOLVED") setPlayback((current) => ({ ...current, playResolved: "yes" }));
+    if (event.type === "AUDIO_PLAY_REJECTED" || event.type === "AUDIO_ERROR" || event.type === "AUDIO_TIMEOUT") setPlayback((current) => ({ ...current, playResolved: "no", error: event.detail || event.type }));
+    if (event.type === "AUDIO_PLAYING") setPlayback((current) => ({ ...current, playing: "yes" }));
+    if (event.type === "AUDIO_FIRST_PROGRESS") {
+      const match = event.detail?.match(/currentTime=([0-9.]+)/);
+      setPlayback((current) => ({ ...current, currentTime: match ? Number(match[1]) : current.currentTime }));
     }
-    playbackTimerRef.current = window.setInterval(() => setPlayback((current) => ({ ...current, currentTime: audioElement.currentTime })), 250);
-    await finished;
-    if (playbackTimerRef.current !== null) window.clearInterval(playbackTimerRef.current);
-    playbackTimerRef.current = null;
+    if (event.type === "AUDIO_ENDED") {
+      const match = event.detail?.match(/currentTime=([0-9.]+)/);
+      setPlayback((current) => ({ ...current, ended: "yes", currentTime: match ? Number(match[1]) : current.currentTime }));
+    }
+  };
+
+  const playSource = async (source: string, label: string) => {
+    const result = await playAudioAndWaitUntilEnded(source, { label, timeoutMs: 12000, onEvent: (event) => onVerifiedVoiceEvent(label, event) });
+    if (result === "FAILED") setPlayback((current) => ({ ...current, ended: "no" }));
+    return result;
   };
 
   const testLocalAudio = async () => {
@@ -299,34 +274,14 @@ export default function VoiceDebugPage() {
 
   const requestTtsAudio = async (label: string) => {
     setNetworkSnapshot();
-    const startedAt = performance.now();
-    trace("TTS", "TTS_REQUEST_START", "INFO", `${label} ${TTS_TEXT}`);
     setAudio((current) => ({ ...current, lastRequest: "sent", lastResponse: "pending", audioBytes: "-" }));
-    try {
-      const response = await fetch(`${apiUrl("/api/tts")}?stream=false`, { method: "POST", headers: { "Content-Type": "application/json", "X-TTS-Stream": "false" }, body: JSON.stringify({ text: TTS_TEXT, streaming: false }) });
-      trace("TTS", "TTS_RESPONSE", response.ok ? "OK" : "ERROR", `HTTP_STATUS=${response.status} latency=${Math.round(performance.now() - startedAt)}ms`);
-      setAudio((current) => ({ ...current, lastResponse: String(response.status) }));
-      if (!response.ok) {
-        const detail = await response.text().catch(() => "TTS request failed");
-        trace("TTS", "TTS_ERROR", "ERROR", detail.slice(0, 300));
-        return null;
-      }
-      const mime = response.headers.get("content-type") || "";
-      const blob = await response.blob();
-      setAudio((current) => ({ ...current, audioBytes: String(blob.size) }));
-      trace("TTS", "TTS_AUDIO_BYTES", blob.size > 0 ? "OK" : "ERROR", `${blob.size}`);
-      trace("TTS", "TTS_MIME", "INFO", mime || blob.type || "unknown");
-      if (!blob.size) return null;
-      const url = URL.createObjectURL(blob);
-      objectUrlRef.current = url;
-      trace("TTS", "AUDIO_URL_CREATED", "OK", "blob URL created");
-      return url;
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
-      trace("NETWORK", "TTS_NETWORK_ERROR", "ERROR", `${detail} latency=${Math.round(performance.now() - startedAt)}ms`);
-      setAudio((current) => ({ ...current, lastResponse: "NETWORK_ERROR" }));
-      return null;
-    }
+    const url = await requestSeedTTS(TTS_TEXT, (event) => {
+      const status = event.type === "AUDIO_ERROR" ? "ERROR" : event.type === "TTS_RESPONSE" && event.detail?.includes("HTTP_STATUS=2") ? "OK" : "INFO";
+      trace("TTS", event.type, status, `${label} ${event.detail || ""}`.trim());
+      if (event.type === "TTS_RESPONSE") setAudio((current) => ({ ...current, lastResponse: event.detail?.match(/HTTP_STATUS=(\d+)/)?.[1] || "-" }));
+      if (event.type === "AUDIO_URL_CREATED") setAudio((current) => ({ ...current, audioBytes: event.detail?.match(/bytes=(\d+)/)?.[1] || "-" }));
+    });
+    return url;
   };
 
   const testTts = async () => {
@@ -334,7 +289,7 @@ export default function VoiceDebugPage() {
     trace("VOICE", "VOICE_START_CLICK", "OK", "D 测试AI声音");
     void ensureAudioContext();
     const url = await requestTtsAudio("D");
-    if (url) await playSource(url, "SEED_TTS");
+    if (url) { await playSource(url, "SEED_TTS"); releaseVerifiedAudioUrl(url); }
     setRunning("");
   };
 
@@ -365,6 +320,7 @@ export default function VoiceDebugPage() {
       const url = await requestTtsAudio("E");
       if (!url) throw new Error("TTS did not return audio");
       await playSource(url, "FULL_CONVERSATION_TTS");
+      releaseVerifiedAudioUrl(url);
       trace("VOICE", "FULL_CONVERSATION_DONE", "OK");
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
@@ -425,8 +381,6 @@ export default function VoiceDebugPage() {
     return () => {
       stopAsr();
       stopMic();
-      audioRef.current?.pause();
-      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
       void analyserContextRef.current?.close();
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
@@ -439,7 +393,7 @@ export default function VoiceDebugPage() {
 
   const statusText = running ? `正在执行：${running}` : "等待你选择一个测试";
 
-  return <main className="min-h-[100dvh] bg-[#141313] px-5 py-8 text-[#f4efeb] sm:px-8"><div className="mx-auto max-w-6xl"><a href={sitePath("/")} className="text-xs text-[#e98972]">← 返回对话</a><header className="mt-5 border-b border-white/10 pb-6"><p className="text-[10px] tracking-[0.16em] text-[#e98972]">MOBILE VOICE FORENSICS · OBSERVE FIRST</p><h1 className="mt-2 text-3xl font-medium tracking-[-0.04em]">Voice Debug</h1><p className="mt-3 max-w-3xl text-sm leading-6 text-[#a9a09e]">只记录真实事件，不改变正式 Voice 行为。A/B/C/D/E 分开执行；请在 iPhone 上按顺序测试并复制报告。</p><div className="mt-4 grid gap-2 text-xs text-[#d6cbc8] sm:grid-cols-3"><p>BUILD VERSION：<Result value="voice-debug" /></p><p>GIT COMMIT SHA：<Result value={BUILD_SHA} /></p><p>BUILD TIME：<Result value={BUILD_TIME} /></p></div><p className="mt-3 text-xs text-[#f6a08b]">{statusText}</p></header>
+  return <main className="min-h-[100dvh] bg-[#141313] px-5 py-8 text-[#f4efeb] sm:px-8"><div className="mx-auto max-w-6xl"><a href={sitePath("/")} className="text-xs text-[#e98972]">← 返回对话</a><header className="mt-5 border-b border-white/10 pb-6"><p className="text-[10px] tracking-[0.16em] text-[#e98972]">MOBILE VOICE FORENSICS · OBSERVE FIRST</p><h1 className="mt-2 text-3xl font-medium tracking-[-0.04em]">Voice Debug</h1><p className="mt-3 max-w-3xl text-sm leading-6 text-[#a9a09e]">只记录真实事件，不改变正式 Voice 行为。A/B/C/D/E 分开执行；请在 iPhone 上按顺序测试并复制报告。</p><BuildInfo debug expose={false} /><p className="mt-3 text-xs text-[#f6a08b]">{statusText}</p></header>
     <section className="mt-6 rounded-3xl border border-[#e98972]/30 bg-[#1b1818] p-5"><h2 className="text-lg">PREPARING_MIC_STATE_SOURCE</h2><div className="mt-4 grid gap-2 text-xs leading-5 text-[#c7bdb9] sm:grid-cols-2"><p>文件：<Result value="app/page.tsx:636, 723, 741" /></p><p>变量：<Result value="realtimeState" /></p><p>进入条件：<Result value="startListening / resumeListening / startVoiceConversation" /></p><p>退出条件：<Result value="ASR onstart → LISTENING；超时/错误 → RECOVERING_ASR 或 ERROR" /></p><p className="sm:col-span-2">当前等待链：<Result value="AudioSessionManager.prepareForListening → 160ms → SpeechRecognition.start() → onstart" /></p></div></section>
     <section className="mt-6 grid gap-4 md:grid-cols-2"><article className="rounded-3xl border border-white/10 bg-[#1b1818] p-5"><h2 className="text-lg">A · 测试麦克风</h2><p className="mt-2 text-xs leading-5 text-[#9f9795]">真实 getUserMedia + track + AnalyserNode。说话时 MIC LEVEL 应变化。</p><div className="mt-4 h-3 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-[#e98972] transition-all" style={{ width: `${mic.level}%` }} /></div><div className="mt-4 grid gap-2 text-xs sm:grid-cols-2"><p>permission：<Result value={mic.permission} /></p><p>getUserMedia：<Result value={mic.getUserMedia} /></p><p>stream：<Result value={mic.stream} /></p><p>track：<Result value={mic.track} /></p><p>muted：<Result value={mic.muted} /></p><p>MIC LEVEL：<Result value={`${mic.level}/100`} /></p><p className="sm:col-span-2">error：<Result value={mic.error} /></p></div><button type="button" onClick={() => void testMic()} disabled={Boolean(running)} className="mt-5 rounded-full bg-[#e98972] px-4 py-2 text-sm text-[#241615] disabled:opacity-40">A 测试麦克风</button><button type="button" onClick={stopMic} className="ml-2 rounded-full border border-white/15 px-4 py-2 text-sm">释放</button></article>
       <article className="rounded-3xl border border-white/10 bg-[#1b1818] p-5"><h2 className="text-lg">B · 测试语音识别</h2><p className="mt-2 text-xs leading-5 text-[#9f9795]">独立创建原生 SpeechRecognition，完整记录 onstart/onresult/onend/onerror 及所有音频事件。</p><div className="mt-4 grid gap-2 text-xs sm:grid-cols-2"><p>available：<Result value={asr.available} /></p><p>constructor：<Result value={asr.constructor} /></p><p>startCalled：<Result value={asr.startCalled} /></p><p>started：<Result value={asr.started} /></p><p>speechDetected：<Result value={asr.speechDetected} /></p><p>resultReceived：<Result value={asr.resultReceived} /></p><p>ended：<Result value={asr.ended} /></p><p>lastError：<Result value={asr.lastError} /></p><p className="sm:col-span-2">transcript：<Result value={asr.transcript} /></p></div><button type="button" onClick={testAsr} disabled={Boolean(running)} className="mt-5 rounded-full bg-[#e98972] px-4 py-2 text-sm text-[#241615] disabled:opacity-40">B 测试语音识别</button><button type="button" onClick={stopAsr} className="ml-2 rounded-full border border-white/15 px-4 py-2 text-sm">停止 ASR</button></article>
