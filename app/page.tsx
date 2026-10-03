@@ -201,7 +201,7 @@ export default function Home() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectedArchiveId, setSelectedArchiveId] = useState<string | null>(null);
   const [realtimeState, setRealtimeState] = useState<RealtimeConversationState>("IDLE");
-  const [listeningReady, setListeningReady] = useState(false);
+  const [, setListeningReady] = useState(false);
   const [micHealth, setMicHealth] = useState<MicHealth>({ permissionGranted: false, trackState: "none", trackMuted: false, audioContextState: "unknown", vadAlive: false, asrAlive: false, lastVoiceActivityAt: null, lastAsrResultAt: null, noiseFloor: 0, vadThreshold: 0 });
   const [endOfTurnConfidence, setEndOfTurnConfidence] = useState(0);
   const [asrRestartCount, setAsrRestartCount] = useState(0);
@@ -227,6 +227,8 @@ export default function Home() {
   const lastFinalAtRef = useRef<number | null>(null);
   const asrSpeechActiveRef = useRef(false);
   const asrReadyTimerRef = useRef<number | null>(null);
+  const listeningReadyRef = useRef(false);
+  const asrGenerationRef = useRef(0);
   const asrStallTimerRef = useRef<number | null>(null);
   const finalizeGenerationRef = useRef(0);
   const interruptModeRef = useRef(false);
@@ -236,10 +238,23 @@ export default function Home() {
   const vadStreamRef = useRef<MediaStream | null>(null);
   const voiceSessionEnabledRef = useRef(false);
 
+  const markListeningReady = (value: boolean) => {
+    listeningReadyRef.current = value;
+    setListeningReady(value);
+  };
+
+  const clearAsrReadyWatchdog = (reason: string) => {
+    if (asrReadyTimerRef.current === null) return;
+    window.clearTimeout(asrReadyTimerRef.current);
+    asrReadyTimerRef.current = null;
+    console.debug(`[VOICE] ASR_WATCHDOG_CLEARED reason=${reason}`);
+  };
+
   const scenario = useMemo(() => SCENARIOS.find((item) => item.id === scenarioId) || SCENARIOS[0], [scenarioId]);
   const selectedVoice = voiceOptions.find((voice) => voice.id === selectedVoiceId);
   const characterGender: CharacterGender = selectedVoice?.gender === "male" ? "male" : "female";
   const characterName = "Ta";
+  const listeningReady = listeningReadyRef.current;
   const visibleMessages = messages.slice(-8);
   const hasUserTurn = messages.some((message) => message.role === "user");
 
@@ -275,6 +290,8 @@ export default function Home() {
       vadStreamRef.current = null;
       streamRef.current?.getTracks().forEach((track) => track.stop());
       if (asrStallTimerRef.current !== null) window.clearInterval(asrStallTimerRef.current);
+      clearAsrReadyWatchdog("CLEANUP");
+      asrGenerationRef.current += 1;
     };
   }, []);
 
@@ -359,9 +376,10 @@ export default function Home() {
     lastAsrResultAtRef.current = null;
     lastFinalAtRef.current = null;
     asrSpeechActiveRef.current = false;
-    if (asrReadyTimerRef.current !== null) window.clearTimeout(asrReadyTimerRef.current);
+    clearAsrReadyWatchdog("SESSION_RESET");
+    asrGenerationRef.current += 1;
     setRealtimeState("IDLE");
-    setListeningReady(false);
+    markListeningReady(false);
     setStatus("idle");
     setNotice("");
     setInterimText("");
@@ -631,9 +649,12 @@ export default function Home() {
 
   const startListening = (interruptOnly = false) => {
     if (!conversationActiveRef.current) return;
+    clearAsrReadyWatchdog("NEW_ASR");
+    const generation = ++asrGenerationRef.current;
+    console.debug(`[VOICE] ASR_INIT generation=${generation}`);
     mobileBootTrace.mark("ASR_INIT_START");
     setNotice("");
-    if (!interruptOnly) { setInterimText(""); setListeningReady(false); setRealtimeState("PREPARING_MIC"); }
+    if (!interruptOnly) { setInterimText(""); markListeningReady(false); setRealtimeState("PREPARING_MIC"); }
     if (!asrRef.current.isSupported()) {
       conversationActiveRef.current = false;
       setConversationActive(false);
@@ -646,15 +667,17 @@ export default function Home() {
       interruptModeRef.current = false;
       setStatus("listening");
     }
-    if (asrReadyTimerRef.current !== null) window.clearTimeout(asrReadyTimerRef.current);
     asrReadyTimerRef.current = window.setTimeout(() => {
-      if (conversationActiveRef.current && !listeningReady && !interruptOnly) {
-        asrRef.current.stop();
-        setRealtimeState("RECOVERING_ASR");
-        setNotice("语音识别还没准备好，正在重新连接……");
-        window.setTimeout(() => { if (conversationActiveRef.current) startListening(false); }, 250);
-      }
+      const isCurrentGeneration = generation === asrGenerationRef.current;
+      if (isCurrentGeneration) asrReadyTimerRef.current = null;
+      console.debug(`[VOICE] ASR_WATCHDOG_FIRED watchdogGeneration=${generation} currentGeneration=${asrGenerationRef.current} listeningReadyRef.current=${listeningReadyRef.current}`);
+      if (!isCurrentGeneration || listeningReadyRef.current || !conversationActiveRef.current || interruptOnly) return;
+      asrRef.current.stop();
+      setRealtimeState("RECOVERING_ASR");
+      setNotice("语音识别还没准备好，正在重新连接……");
+      window.setTimeout(() => { if (conversationActiveRef.current) startListening(false); }, 250);
     }, 2800);
+    console.debug(`[VOICE] ASR_WATCHDOG_ARMED generation=${generation}`);
     asrRef.current.start((text, isFinal) => {
       const resultAt = Date.now();
       finalizeGenerationRef.current += 1;
@@ -687,9 +710,12 @@ export default function Home() {
       setMicHealth((current) => ({ ...current, asrAlive: false }));
       if (!conversationActiveRef.current) setStatus((current) => current === "listening" ? "idle" : current);
     }, { onReady: () => {
+      console.debug(`[VOICE] ASR_NATIVE_ONSTART generation=${generation}`);
+      console.debug(`[VOICE] ASR_PROVIDER_ONREADY generation=${generation}`);
+      if (generation !== asrGenerationRef.current) return;
       mobileBootTrace.mark("ASR_READY");
-      if (asrReadyTimerRef.current !== null) window.clearTimeout(asrReadyTimerRef.current);
-      setListeningReady(true);
+      clearAsrReadyWatchdog("ON_READY");
+      markListeningReady(true);
       setRealtimeState(interruptOnly ? "AI_SPEAKING" : "LISTENING");
       setMicHealth((current) => ({ ...current, asrAlive: true }));
     }, onActivity: (event) => {
@@ -756,8 +782,10 @@ export default function Home() {
     vadStreamRef.current = null;
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
+    clearAsrReadyWatchdog("SESSION_END");
+    asrGenerationRef.current += 1;
     setRealtimeState("IDLE");
-    setListeningReady(false);
+    markListeningReady(false);
     setInterimText("");
     setStatus("idle");
   };

@@ -29,6 +29,7 @@
     ,"test:assistant-turn": "tsx scripts/test-assistant-turn-coordinator.ts"
     ,"test:android-reliability": "tsx scripts/test-android-reliability.ts"
     ,"test:android-boot": "tsx scripts/test-android-boot.ts"
+    ,"test:asr-readiness": "tsx scripts/test-asr-readiness-watchdog.ts"
     ,"tts:probe": "tsx scripts/probe-tts-capabilities.ts"
     ,"tts:voice-matrix": "tsx scripts/generate-voice-test-matrix.ts"
   },
