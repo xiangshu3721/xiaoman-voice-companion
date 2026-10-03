@@ -31,6 +31,7 @@ import { VOICE_FEATURES } from "@/src/voice/feature-flags";
 import { isIOSMobileBrowser, playAudioAndWaitUntilEnded, releaseVerifiedAudioUrl, requestSeedTTS, type VerifiedVoiceEventPayload } from "@/src/voice/verified-mobile-voice-core";
 
 type Status = "idle" | "listening" | "thinking" | "preparing" | "speaking";
+type VoiceUIState = "IDLE" | "LISTENING" | "THINKING" | "PREPARING_SPEECH" | "SPEAKING" | "ERROR";
 type MicrophoneState = "unknown" | "requesting" | "granted" | "denied" | "unavailable" | "error";
 type CharacterGender = "female" | "male";
 type RecoveryReason = "PLAYBACK_ENDED" | "PLAYBACK_FAILED" | "PLAYBACK_INTERRUPTED" | "ASR_RECOVERY" | "MANUAL_RETRY" | "TEXT_FAILED";
@@ -66,6 +67,15 @@ const STATUS_COPY: Record<Status, string> = {
   thinking: "小满正在想……",
   preparing: "小满正准备开口……",
   speaking: "小满正在说……",
+};
+
+const VOICE_UI_COPY: Record<VoiceUIState, string> = {
+  IDLE: "准备好了",
+  LISTENING: "正在听你说",
+  THINKING: "Ta正在想",
+  PREPARING_SPEECH: "Ta准备开口",
+  SPEAKING: "Ta正在说",
+  ERROR: "语音暂时不可用",
 };
 
 const WELCOME: ChatMessage = {
@@ -287,6 +297,14 @@ export default function Home() {
   const selectedVoice = voiceOptions.find((voice) => voice.id === selectedVoiceId);
   const characterGender: CharacterGender = selectedVoice?.gender === "male" ? "male" : "female";
   const useVerifiedIOSVoicePath = VOICE_FEATURES.iosVerifiedVoicePath && isIOSMobileBrowser();
+  const voiceUIState = useMemo<VoiceUIState>(() => {
+    if (realtimeState === "ERROR") return "ERROR";
+    if (status === "thinking") return "THINKING";
+    if (status === "preparing") return "PREPARING_SPEECH";
+    if (status === "speaking" && ttsPlaybackState === "PLAYING") return "SPEAKING";
+    if (status === "listening" || conversationActive) return "LISTENING";
+    return "IDLE";
+  }, [conversationActive, realtimeState, status, ttsPlaybackState]);
   const characterName = "Ta";
   const listeningReady = listeningReadyRef.current;
   const visibleMessages = messages.slice(-8);
@@ -674,6 +692,7 @@ export default function Home() {
           console.debug(`[VOICE][IOS_VERIFIED] ${event.type}${detail}`);
           if (event.type === "AUDIO_PLAY_CALLED") setVerifiedState("PLAYBACK_STARTING", "AUDIO_PLAY_CALLED");
           if (event.type === "AUDIO_PLAYING" || event.type === "AUDIO_FIRST_PROGRESS") {
+            markTtsPlaybackState("PLAYING");
             setVerifiedState("PLAYING", event.type);
             setStatus("speaking");
             setRealtimeState("AI_SPEAKING");
@@ -1025,7 +1044,7 @@ export default function Home() {
           <div className="flex items-center gap-4"><button type="button" onClick={() => { setSelectedArchiveId(null); setHistoryOpen(true); }} className="text-xs text-[#9f9795] transition hover:text-[#f4efeb]">历史记录</button><button type="button" onClick={resetConversation} className="text-xs text-[#9f9795] transition hover:text-[#f4efeb]">重新开始</button></div>
         </header>
         <section className="flex flex-1 flex-col items-center pt-11 sm:pt-14">
-          <div className="flex flex-col items-center"><div className={`relative rounded-full ${status === "listening" && listeningReady ? "breathing" : ""}`}><Avatar gender={characterGender} /></div><p className="mt-6 text-sm text-[#d1c7c4]">{realtimeState === "PREPARING_MIC" ? "正在准备麦克风……" : realtimeState === "RECOVERING_ASR" ? "刚刚没听清，正在恢复……" : STATUS_COPY[status].replace("小满", characterName)}</p><p className="mt-2 text-[11px] text-[#756d6b]">麦克风：{microphoneState === "granted" ? "已授权" : microphoneState === "requesting" ? "请求中" : microphoneState === "denied" ? "未授权" : microphoneState === "error" ? "暂时不可用" : "检测中"}{micHealth.trackMuted ? "（设备静音）" : ""}</p>{status === "listening" && interimText && <p className="mt-3 max-w-xs text-center text-xs leading-5 text-[#a9a09e]">“{interimText}”</p>}<div className="mt-3 h-8">{status === "speaking" ? <Wave /> : status === "thinking" ? <div className="flex h-8 items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:120ms]" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:240ms]" /></div> : <span className="text-xs text-[#756d6b]">{scenario.shortTitle}</span>}</div></div>
+          <div className="flex flex-col items-center"><div className={`relative rounded-full ${status === "listening" && listeningReady ? "breathing" : ""}`}><Avatar gender={characterGender} /></div><p className="mt-6 text-sm text-[#d1c7c4]">{voiceUIState === "IDLE" ? STATUS_COPY[status].replace("小满", characterName) : VOICE_UI_COPY[voiceUIState]}</p><p className="mt-2 text-[11px] text-[#756d6b]">麦克风：{microphoneState === "granted" ? "已授权" : microphoneState === "requesting" ? "请求中" : microphoneState === "denied" ? "未授权" : microphoneState === "error" ? "暂时不可用" : "检测中"}{micHealth.trackMuted ? "（设备静音）" : ""}</p>{status === "listening" && interimText && <p className="mt-3 max-w-xs text-center text-xs leading-5 text-[#a9a09e]">“{interimText}”</p>}<div className="mt-3 h-8">{status === "speaking" ? <Wave /> : status === "thinking" ? <div className="flex h-8 items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:120ms]" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:240ms]" /></div> : <span className="text-xs text-[#756d6b]">{scenario.shortTitle}</span>}</div></div>
           <div className="mt-10 w-full max-w-xl space-y-4" aria-live="polite">
             {visibleMessages.map((message, index) => <div key={`${message.role}-${index}-${message.content.slice(0, 8)}`} className={`flex items-start gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>{message.role === "assistant" && <Avatar small gender={characterGender} />}<div className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === "user" ? "rounded-br-md bg-[#e98972] text-[#241615]" : "rounded-bl-md bg-[#211e1d] text-[#ded4d1]"}`}><span className="mb-1 block text-[10px] tracking-[0.12em] opacity-50">{message.role === "user" ? "我" : characterName}</span>{message.content}</div></div>)}
           </div>
