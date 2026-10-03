@@ -536,7 +536,7 @@ export class DoubaoTTSProvider implements TTSProvider {
     const responsePromise: Promise<{ response: Response | null; audioBlob?: Blob; mime?: string; voice?: string }> = cached ? Promise.resolve({ response: null, audioBlob: cached.blob, mime: cached.mime, voice: cached.voice }) : fetch(`${apiUrl("/api/tts")}${isMobileBrowser() ? "?stream=false" : ""}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...apiRequest, streaming: !isMobileBrowser() }),
+      body: JSON.stringify({ ...apiRequest, streaming: request.streaming ?? !isMobileBrowser() }),
       signal: controller.signal,
     }).then(async (response) => ({ response }));
     responsePromise.then(async ({ response, audioBlob: cachedBlob, mime: cachedMime, voice: cachedVoice }) => {
@@ -554,7 +554,7 @@ export class DoubaoTTSProvider implements TTSProvider {
       // Mobile browsers are unreliable with MediaSource and some CloudBase
       // gateways rewrite the streaming marker. Always consume a complete
       // audio blob on mobile, regardless of the response header.
-      if (!isMobileBrowser() && response.headers.get("X-TTS-Streaming") === "true" && response.body) {
+      if (request.streaming !== false && !isMobileBrowser() && response.headers.get("X-TTS-Streaming") === "true" && response.body) {
         const streamed = await this.playResponseStream(response.body, request, callbacks, startedAt, voice, generation);
         if (streamed) return;
       }

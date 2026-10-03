@@ -27,6 +27,7 @@ import { VoiceDeliveryPipeline } from "@/src/voice/voice-delivery-pipeline";
 import { AssistantTurnCoordinator, type AssistantTurnState, type AssistantTurnTrace } from "@/src/voice/assistant-turn-coordinator";
 import type { VoiceJob } from "@/src/voice/voice-delivery-pipeline";
 import { mobileBootTrace } from "@/src/boot/mobile-boot-trace";
+import { VOICE_FEATURES } from "@/src/voice/feature-flags";
 
 type Status = "idle" | "listening" | "thinking" | "preparing" | "speaking";
 type MicrophoneState = "unknown" | "requesting" | "granted" | "denied" | "unavailable" | "error";
@@ -44,17 +45,19 @@ type DebugInfo = {
   relationship?: { currentState: string; previousState: string; stateConfidence: number; stateDuration: number; conflictLocked: boolean; transitionReason: string };
   reflection?: { insightDepth: 0 | 1 | 2 | 3; mutualUnderstanding: number; surfaceConflict?: string; triggerIdentified?: string; underlyingNeed?: string; userContribution?: string; characterContribution?: string; interactionPattern?: string };
   safety?: { active: boolean; riskLevel: string; signals: string[]; confidence: number };
-  repair?: { detected: boolean; type: string; strength: number; sincerity: number; momentum: number; attackMomentum: number; userSoftening: number; rejectionCount: number; conflictBudget: number; conflictPhase: string };
+  repair?: { detected: boolean; type: string; strength: number; sincerity: number; momentum: number; attackMomentum: number; userSoftening: number; rejectionCount: number; conflictBudget: number; conflictPhase: string; explicitApology?: boolean; explicitOwnership?: boolean; apologyEvidence?: { type: string; evidenceText?: string } };
   topic?: { topic: string; status: string; agreement?: string; actionOwner?: string; actionDeadline?: string; newEvidence: boolean; repetitionCount: number; topicExhaustionScore: number; stuckTopic: boolean; reopenAllowed: boolean; lettingGoReadiness: number; topicShiftProbability: number; dailyLifeReentryStrategy?: string; reason: string };
   userState?: { anger: number; hurt: number; sadness: number; anxiety: number; aggression: number; withdrawal: number; openness: number; distress: number; intent: string[]; trend: string; voiceSignals: string; visualSignals: string };
-  realtime?: { userTurnId?: string; generationId?: number; latestUserDelta: string; explicitIntents: string[]; inferredIntents: string[]; negatedIntents: string[]; apologyEvidence: boolean; semanticDuplicateScore: number; responseNoveltyScore: number; addressesLatestDelta: boolean; dialogueAct: string };
+  realtime?: { userTurnId?: string; generationId?: number; latestUserDelta: string; explicitIntents: string[]; inferredIntents: string[]; negatedIntents: string[]; ambiguousIntents?: string[]; apologyEvidence: boolean; semanticDuplicateScore: number; responseNoveltyScore: number; addressesLatestDelta: boolean; dialogueAct: string };
+  transcript?: { rawAsrText: string; correctedText: string; finalUserText: string; confidence: number | "UNKNOWN"; alternatives: string[]; uncertainSpans: Array<{ text: string; reason: string; confidence?: number }>; corrections: Array<{ original: string; corrected: string; type: string; confidence: number; semanticRisk: string }>; quality: { score: number; level: string; issues: string[]; sessionCount: number; semanticCriticalAmbiguity: boolean; possibleDropout: boolean } };
+  semanticGrounding?: { explicitIntents: string[]; inferredIntents: string[]; negatedIntents: string[]; ambiguousIntents: string[]; notExpressed: string[]; apologyEvidence: { detected: boolean; type: string; evidenceText?: string; source: string; confidence: number }; ownershipEvidence: boolean; referenceDataUsedAsFact: false };
+  claimValidation?: { valid: boolean; claims: string[]; issues: string[]; regenerationCount: number };
 };
 
 type VoiceOption = { id: string; name: string; gender?: "female" | "male" };
 type ReviewEmotion = { label: string; level: number; evidence: string };
 type EmotionReview = { title: string; summary: string; emotions: ReviewEmotion[]; needs: string[]; suggestions: string[]; nextPrompt: string };
 type ReviewTurn = { role: "user" | "assistant"; content: string };
-
 const STATUS_COPY: Record<Status, string> = {
   idle: "准备好了",
   listening: "正在听你说……",
@@ -69,12 +72,14 @@ const WELCOME: ChatMessage = {
 };
 
 function Avatar({ small = false, gender = "female" }: { small?: boolean; gender?: CharacterGender }) {
-  const source = sitePath(gender === "male" ? "/avatars/ta-male.jpg" : "/avatars/ta-female.jpg");
-  const fallback = sitePath(gender === "male" ? "/avatars/ta-male.png" : "/avatars/ta-female.png");
+  const avatarName = gender === "male" ? "ta-male" : "ta-female";
+  const source = sitePath(`/avatars/${avatarName}-${small ? "96" : "416"}.jpg`);
+  const fallback = sitePath(`/avatars/${avatarName}-416.jpg`);
+  const srcSet = [96, 416].map((size) => `${sitePath(`/avatars/${avatarName}-${size}.jpg`)} ${size}w`).join(", ");
   const label = gender === "male" ? "Ta 的男声头像" : "Ta 的女声头像";
   return (
     <div className={`relative shrink-0 overflow-hidden rounded-full bg-[#211e1d] ${small ? "h-11 w-11" : "h-44 w-44 sm:h-52 sm:w-52"}`} aria-label={label}>
-      <img src={source} alt="" className="h-full w-full object-cover object-center" width={small ? 44 : 208} height={small ? 44 : 208} loading={small ? "lazy" : "eager"} decoding="async" onError={(event) => { if (event.currentTarget.src !== fallback) event.currentTarget.src = fallback; }} />
+      <img src={source} srcSet={srcSet} sizes={small ? "44px" : "(min-width: 640px) 208px, 176px"} alt="" className="h-full w-full object-cover object-center" width={small ? 44 : 208} height={small ? 44 : 208} loading={small ? "lazy" : "eager"} fetchPriority={small ? "low" : "high"} decoding="async" onError={(event) => { if (event.currentTarget.src !== fallback) event.currentTarget.src = fallback; }} />
       <div className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-white/10" />
     </div>
   );
@@ -91,7 +96,7 @@ function Wave() {
 function RepairDebug({ debugInfo }: { debugInfo: DebugInfo | null }) {
   if (!debugInfo?.repair) return null;
   const repair = debugInfo.repair;
-  return <details open className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-xs text-[#b7adab]"><summary className="cursor-pointer text-[#e98972]">Repair Bid Debug</summary><div className="mt-3 grid gap-2 sm:grid-cols-2"><p>Repair Bid：{repair.detected ? "yes" : "no"}</p><p>Repair Type：{repair.type}</p><p>Repair Strength：{repair.strength.toFixed(2)}</p><p>Sincerity：{repair.sincerity.toFixed(2)}</p><p>Repair Momentum：{repair.momentum}</p><p>Attack Momentum：{repair.attackMomentum}</p><p>User Softening：{repair.userSoftening}</p><p>Repair Rejections：{repair.rejectionCount}</p><p>Conflict Budget：{repair.conflictBudget}</p><p>Conflict Phase：{repair.conflictPhase}</p></div></details>;
+  return <details open className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-xs text-[#b7adab]"><summary className="cursor-pointer text-[#e98972]">Repair Bid Debug</summary><div className="mt-3 grid gap-2 sm:grid-cols-2"><p>Repair Bid：{repair.detected ? "yes" : "no"}</p><p>Repair Type：{repair.type}</p><p>Explicit Apology：{repair.explicitApology ? "yes" : "no"}</p><p>Explicit Ownership：{repair.explicitOwnership ? "yes" : "no"}</p><p>Apology Evidence：{repair.apologyEvidence?.type || "NONE"}</p><p>Repair Strength：{repair.strength.toFixed(2)}</p><p>Sincerity：{repair.sincerity.toFixed(2)}</p><p>Repair Momentum：{repair.momentum}</p><p>Attack Momentum：{repair.attackMomentum}</p><p>User Softening：{repair.userSoftening}</p><p>Repair Rejections：{repair.rejectionCount}</p><p>Conflict Budget：{repair.conflictBudget}</p><p>Conflict Phase：{repair.conflictPhase}</p></div></details>;
 }
 
 function PerformanceDebug({ plan }: { plan: EmotionPerformancePlan | null }) {
@@ -297,9 +302,7 @@ export default function Home() {
 
   const begin = async () => {
     setNotice("");
-    mobileBootTrace.mark("VOICE_RUNTIME_START");
-    // 必须在用户点击触发的同步阶段先解锁音频，移动 Safari/部分 WebView
-    // 才允许异步请求完成后播放 AI 语音。
+    // Unlock audio during the actual user gesture before any async request.
     voicePipelineRef.current.unlockAudio();
     mobileBootTrace.mark("MIC_INIT_START");
     setMicrophoneState("requesting");
@@ -472,6 +475,12 @@ export default function Home() {
   };
 
   const startVadMonitoring = () => {
+    if (!VOICE_FEATURES.advancedVad) {
+      vadRef.current.stop();
+      vadStreamRef.current = null;
+      setMicHealth((current) => ({ ...current, vadAlive: false }));
+      return;
+    }
     const stream = streamRef.current;
     if (!stream || vadStreamRef.current === stream) return;
     vadStreamRef.current = stream;
@@ -486,7 +495,7 @@ export default function Home() {
     }).then((context) => { if (context) setMicHealth((current) => ({ ...current, audioContextState: context.state })); });
   };
 
-  const requestReply = async (userText: string, baseHistory: ChatMessage[], turnId = `turn-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`) => {
+  const requestReply = async (userText: string, baseHistory: ChatMessage[], turnId = `turn-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, asrMeta?: { rawAsrText?: string; confidence?: number; alternatives?: string[]; asrSessionCount?: number; speechDurationMs?: number }) => {
     const generationId = ++generationRef.current;
     if (processedTurnIdsRef.current.has(turnId)) return;
     processedTurnIdsRef.current.add(turnId);
@@ -523,7 +532,7 @@ export default function Home() {
       const response = await fetchWithTimeout(apiUrl("/api/chat"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ history: baseHistory.slice(-20), userMessage: userText, sceneContext: scenario.context, scenarioId: scenario.id, characterGender, voiceId: selectedVoiceId || undefined, sessionId: archiveIdRef.current, sectionId: sectionIdRef.current, continuePreviousScene: false, debug: debugEnabled, userTurnId: turnId, generationId }),
+        body: JSON.stringify({ history: baseHistory.slice(-20), userMessage: userText, rawAsrText: asrMeta?.rawAsrText, asrConfidence: asrMeta?.confidence, asrAlternatives: asrMeta?.alternatives, asrSessionCount: asrMeta?.asrSessionCount, speechDurationMs: asrMeta?.speechDurationMs, sceneContext: scenario.context, scenarioId: scenario.id, characterGender, voiceId: selectedVoiceId || undefined, sessionId: archiveIdRef.current, sectionId: sectionIdRef.current, continuePreviousScene: false, debug: debugEnabled, userTurnId: turnId, generationId }),
       }, 30000);
       const data = await response.json() as { text?: string; reply?: string; mode?: "mock" | "deepseek" | "fallback" | "safety"; error?: string; debug?: DebugInfo; voice?: { emotion?: TTSRequest["emotion"]; primaryEmotion?: string; emotionScale?: number; intensity?: number; speed?: number; volume?: number; sectionId?: string; contextText?: string; speechRate?: number; loudnessRate?: number; fallbackUsed?: boolean } };
       const reply = data.text || data.reply;
@@ -531,7 +540,7 @@ export default function Home() {
       if (generationId !== generationRef.current) return;
       setMode(data.mode || "");
       if (data.debug) setDebugInfo(data.debug);
-      const ttsRequest: TTSRequest = { text: reply, emotion: data.voice?.emotion, primaryEmotion: data.voice?.primaryEmotion, emotionScale: data.voice?.emotionScale, intensity: data.voice?.intensity, speed: data.voice?.speed, volume: data.voice?.volume, speechRate: data.voice?.speechRate, loudnessRate: data.voice?.loudnessRate, sectionId: data.voice?.sectionId || sectionIdRef.current, contextText: data.voice?.contextText, fallbackUsed: data.voice?.fallbackUsed, voiceId: selectedVoiceId || undefined };
+      const ttsRequest: TTSRequest = { text: reply, emotion: VOICE_FEATURES.advancedEmotion ? data.voice?.emotion : undefined, primaryEmotion: VOICE_FEATURES.advancedEmotion ? data.voice?.primaryEmotion : undefined, emotionScale: VOICE_FEATURES.advancedEmotion ? data.voice?.emotionScale : undefined, intensity: VOICE_FEATURES.advancedEmotion ? data.voice?.intensity : undefined, speed: VOICE_FEATURES.advancedEmotion ? data.voice?.speed : undefined, volume: VOICE_FEATURES.advancedEmotion ? data.voice?.volume : undefined, speechRate: VOICE_FEATURES.advancedEmotion ? data.voice?.speechRate : undefined, loudnessRate: VOICE_FEATURES.advancedEmotion ? data.voice?.loudnessRate : undefined, streaming: VOICE_FEATURES.streamingTts, sectionId: data.voice?.sectionId || sectionIdRef.current, contextText: VOICE_FEATURES.advancedEmotion ? data.voice?.contextText : undefined, fallbackUsed: data.voice?.fallbackUsed, voiceId: selectedVoiceId || undefined };
       assistantTurnCoordinatorRef.current.commitAssistantMessage({
         text: reply,
         voiceMode: voiceSessionEnabledRef.current,
@@ -653,10 +662,7 @@ export default function Home() {
       lastAsrResultAtRef.current = resultAt;
       setMicHealth((current) => ({ ...current, asrAlive: true, lastAsrResultAt: Date.now() }));
       asrSpeechActiveRef.current = !isFinal;
-      if (interruptOnly) {
-        // 当前版本不允许用户打断 AI；播放期间的旧 ASR 回调直接丢弃。
-        return;
-      }
+      if (interruptOnly) return;
       if (realtimeState === "FINALIZING_USER_TURN" || realtimeState === "AI_GENERATING") return;
       const snapshot = accumulatorRef.current.accept(text, isFinal);
       setInterimText([snapshot.committedTranscript, snapshot.interimTranscript].filter(Boolean).join(""));
@@ -812,6 +818,7 @@ export default function Home() {
           {debugEnabled && <PerformanceDebug plan={debugInfo?.emotionPerformance || null} />}
           {debugEnabled && <details open className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-xs text-[#b7adab]"><summary className="cursor-pointer text-[#e98972]">Realtime Voice Debug</summary><div className="mt-3 grid gap-2 sm:grid-cols-2"><p>REALTIME STATE：{realtimeState}</p><p>LISTENING READY：{listeningReady ? "yes" : "no"}</p><p>MIC TRACK：{micHealth.trackState}{micHealth.trackMuted ? " / muted" : ""}</p><p>MIC PERMISSION API：{micHealth.permissionApiState || "-"}</p><p>SECURE CONTEXT：{micHealth.secureContext == null ? "-" : micHealth.secureContext ? "yes" : "no"}</p><p>STREAM：{micHealth.streamAcquired ? "acquired" : "-"}</p><p>AUDIO CONTEXT：{micHealth.audioContextState}</p><p>VAD：{micHealth.vadAlive ? "active" : "off"}</p><p>ASR：{micHealth.asrAlive ? "active" : "off"}</p><p>AudioSession：{audioSessionRef.current.getState()}</p><p>Platform Strategy：{audioSessionRef.current.getStrategy()}</p><p>ASR SESSION：{asrSessionInfo?.sessionId || "-"}</p><p>ASR SESSION COUNT：{asrSessionInfo?.sessionCount ?? "-"}</p><p>VOICE ACTIVITY：{micHealth.lastVoiceActivityAt ? new Date(micHealth.lastVoiceActivityAt).toLocaleTimeString() : "-"}</p><p>VAD THRESHOLD：{micHealth.vadThreshold || "-"}</p><p className="sm:col-span-2">COMMITTED：{interimText || "-"}</p><p>END CONFIDENCE：{endOfTurnConfidence.toFixed(2)}</p><p>ASR RESTART：{asrRestartCount}</p><p className="sm:col-span-2">ACTUALLY SPOKEN：{latestSpokenText || "-"}</p></div></details>}
           {debugEnabled && debugInfo?.realtime && <details open className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-xs text-[#b7adab]"><summary className="cursor-pointer text-[#e98972]">Semantic / Novelty Debug</summary><div className="mt-3 grid gap-2 sm:grid-cols-2"><p className="sm:col-span-2">LATEST USER DELTA：{debugInfo.realtime.latestUserDelta}</p><p>EXPLICIT：{debugInfo.realtime.explicitIntents.join(", ") || "none"}</p><p>INFERRED：{debugInfo.realtime.inferredIntents.join(", ") || "none"}</p><p>NEGATED：{debugInfo.realtime.negatedIntents.join(", ") || "none"}</p><p>APOLOGY EVIDENCE：{debugInfo.realtime.apologyEvidence ? "yes" : "no"}</p><p>DIALOGUE ACT：{debugInfo.realtime.dialogueAct}</p><p>DUPLICATE SCORE：{debugInfo.realtime.semanticDuplicateScore}</p><p>NOVELTY SCORE：{debugInfo.realtime.responseNoveltyScore}</p><p>ADDRESSES LATEST：{debugInfo.realtime.addressesLatestDelta ? "yes" : "no"}</p></div></details>}
+          {debugEnabled && debugInfo?.transcript && <details open className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-xs text-[#b7adab]"><summary className="cursor-pointer text-[#e98972]">ASR / Semantic Grounding V7</summary><div className="mt-3 grid gap-2 sm:grid-cols-2"><p className="sm:col-span-2">RAW ASR：{debugInfo.transcript.rawAsrText}</p><p className="sm:col-span-2">CORRECTED：{debugInfo.transcript.correctedText}</p><p className="sm:col-span-2">FINAL USER TEXT：{debugInfo.transcript.finalUserText}</p><p>QUALITY：{debugInfo.transcript.quality.level} / {debugInfo.transcript.quality.score.toFixed(2)}</p><p>CONFIDENCE：{debugInfo.transcript.confidence}</p><p>SESSION COUNT：{debugInfo.transcript.quality.sessionCount}</p><p>CRITICAL AMBIGUITY：{debugInfo.transcript.quality.semanticCriticalAmbiguity ? "YES" : "NO"}</p><p className="sm:col-span-2">CORRECTIONS：{debugInfo.transcript.corrections.map((item) => `${item.original}→${item.corrected}`).join("；") || "none"}</p><p className="sm:col-span-2">UNCERTAIN：{debugInfo.transcript.uncertainSpans.map((item) => `${item.text}(${item.reason})`).join("；") || "none"}</p>{debugInfo.semanticGrounding && <><p>APOLOGY：{debugInfo.semanticGrounding.apologyEvidence.type}</p><p>OWNERSHIP：{debugInfo.semanticGrounding.ownershipEvidence ? "yes" : "no"}</p><p className="sm:col-span-2">AMBIGUOUS：{debugInfo.semanticGrounding.ambiguousIntents.join(", ") || "none"}</p><p className="sm:col-span-2">NOT EXPRESSED：{debugInfo.semanticGrounding.notExpressed.join(", ") || "none"}</p></>}{debugInfo.claimValidation && <><p>CLAIM VALID：{debugInfo.claimValidation.valid ? "yes" : "no"}</p><p>REGENERATIONS：{debugInfo.claimValidation.regenerationCount}</p><p className="sm:col-span-2">CLAIM ISSUES：{debugInfo.claimValidation.issues.join(", ") || "none"}</p></>}</div></details>}
         <footer className="mt-8 flex flex-col items-center">
           {voiceInputSupported ? <>
             <button type="button" onClick={handleMic} aria-label={conversationActive ? "结束持续语音对话" : "开始持续语音对话"} className={`relative flex h-20 w-20 items-center justify-center rounded-full text-[#241615] shadow-2xl shadow-black/20 transition active:scale-[.96] ${conversationActive ? "breathing bg-[#f6a08b]" : "bg-[#e98972] hover:bg-[#f6a08b]"}`}><span className="mic-glyph" /></button>
@@ -821,7 +828,7 @@ export default function Home() {
               <input value={textDraft} onChange={(event) => setTextDraft(event.target.value)} placeholder={`先输入一句，和${characterName}聊聊……`} className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#141313] px-3 py-3 text-sm text-[#f4efeb] outline-none placeholder:text-[#756d6b] focus:border-[#e98972]/60" aria-label={`输入给${characterName}的话`} />
               <button type="submit" disabled={!textDraft.trim() || status === "thinking" || status === "speaking"} className="rounded-xl bg-[#e98972] px-4 py-2 text-sm font-medium text-[#241615] transition hover:bg-[#f6a08b] disabled:cursor-not-allowed disabled:opacity-40">发送</button>
             </div>
-            <p className="mt-2 px-1 text-[11px] leading-5 text-[#817876]">麦克风：{microphoneState === "granted" ? "已授权" : microphoneState === "denied" ? "未授权" : "未检测到"}。当前浏览器不能把麦克风转成文字，文字对话仍然可用。</p>
+            <p className="mt-2 px-1 text-[11px] leading-5 text-[#817876]">当前浏览器不能把麦克风转成文字，文字对话仍然可用。</p>
           </form>}
           {notice && <div className="mt-4 flex items-center gap-3 rounded-full border border-[#e98972]/30 bg-[#e98972]/10 px-4 py-2 text-xs text-[#f6a08b]" role="alert">{notice}<button type="button" onClick={() => setNotice("")} className="text-[#f4efeb]">×</button></div>}
           {mode && <p className="mt-3 text-[10px] text-[#5f5856]">{mode === "deepseek" ? "DeepSeek 已连接" : mode === "safety" ? "Safety Override 已接管" : "当前为本地演示回复"}</p>}

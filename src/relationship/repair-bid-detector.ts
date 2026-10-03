@@ -1,5 +1,6 @@
 import type { ChatMessage } from "@/lib/providers";
 import { analyzeUserSemantic } from "@/src/semantic/user-semantic-analyzer";
+import { apologyEvidenceForText } from "@/src/semantic/semantic-grounding";
 
 export type RepairBidType =
   | "APOLOGY"
@@ -23,10 +24,13 @@ export interface RepairBid {
   repeatedCount: number;
   points: number;
   explicitInsult: boolean;
+  explicitApology: boolean;
+  explicitOwnership: boolean;
+  apologyEvidence: ReturnType<typeof apologyEvidenceForText>;
 }
 
 const patterns: Array<{ type: RepairBidType; test: RegExp; points: number }> = [
-  { type: "APOLOGY", test: /(对不起|抱歉|我错了|是我不对|刚才是我不好|刚才我说重了|刚刚有点上头|刚刚有点情绪|跟你道歉|这次算我的|行[，,]?是我的问题)/, points: 25 },
+  { type: "APOLOGY", test: /(对不起|抱歉|不好意思|sorry|我错了|是我不对|刚才是我不好|刚才我说重了|刚刚有点上头|刚刚有点情绪|跟你道歉|这次算我的|行[，,]?是我的问题)/i, points: 25 },
   { type: "OWNERSHIP", test: /(我错了|确实怪我|承认我有问题|确实过分|不该那么说|态度不好|刚才是我不好|说话太冲|没考虑你的感受|知道你为什么生气|知道刚才那句话伤到你|我错在|我没做好|刚刚.*有点情绪)/, points: 30 },
   { type: "AFFECTION", test: /(我爱你|还是爱你的|我在乎你|怎么可能不在乎|别生气了嘛|宝宝别生气|老婆别生气|老公别生气)/, points: 15 },
   { type: "FORGIVENESS_REQUEST", test: /(原谅我吧|别生我气了|别气了好不好|这次原谅我|给我一次机会|别跟我计较了嘛)/, points: 20 },
@@ -61,6 +65,7 @@ export function detectRepairBid(input: { text: string; history?: ChatMessage[] }
   const points = Math.min(100, matched.reduce((sum, item) => sum + item.points, 0));
   const isPerfunctory = perfunctory.test(clean);
   const insult = explicitInsult.test(clean);
+  const apologyEvidence = apologyEvidenceForText(clean);
   const sincerityConfidence = isPerfunctory ? 0.22 : Math.min(0.98, 0.52 + (types.includes("OWNERSHIP") ? 0.18 : 0) + (types.includes("APOLOGY") ? 0.14 : 0) + (clean.length > 12 ? 0.08 : 0));
   const strength = isPerfunctory ? Math.min(0.28, points / 100) : Math.min(1, points / 100);
   return {
@@ -72,6 +77,9 @@ export function detectRepairBid(input: { text: string; history?: ChatMessage[] }
     repeatedCount: (input.history ? consecutiveRepairCount(input.history) : 0) + (types.length ? 1 : 0),
     points,
     explicitInsult: insult,
+    explicitApology: apologyEvidence.type === "EXPLICIT",
+    explicitOwnership: types.includes("OWNERSHIP"),
+    apologyEvidence,
   };
 }
 

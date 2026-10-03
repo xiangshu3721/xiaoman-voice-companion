@@ -13,8 +13,8 @@ export type UserSemanticAnalysis = {
   evidence: SemanticEvidence[];
 };
 
-const apology = /对不起|抱歉|我错了|是我不好|是我不对|我跟你道歉|这次怪我|我不该那么说|刚才是我不好/;
-const apologyNegation = /我才不道歉|凭什么(?:我要|让我|我得)?(?:说)?对不起|对不起个屁|我不是来道歉的|对不起什么|我又没错|没什么好道歉/;
+const apology = /对不起|抱歉|不好意思|sorry|我错了|是我不好|是我不对|我跟你道歉|这次怪我|我不该那么说|刚才是我不好|刚才我说重了/;
+const apologyNegation = /我才不(?:跟你)?道歉|我(?:没|没有)说对不起|凭什么(?:我要|让我|我得)?(?:说)?对不起|对不起个屁|我不是来道歉的|对不起什么|我又没错|没什么好道歉/;
 
 export function analyzeUserSemantic(text: string): UserSemanticAnalysis {
   const value = text.trim();
@@ -30,7 +30,7 @@ export function analyzeUserSemantic(text: string): UserSemanticAnalysis {
     add(negated ? negatedIntents : explicitIntents, "APOLOGY");
     evidence.push({ claim: "APOLOGY", source: "current_user_turn", matchedText: value.match(apology)?.[0] || value, polarity: negated ? "negated" : "positive" });
   }
-  if (/(我错了|是我不好|是我不对|这次怪我|我不该那么说|确实.*(?:我|怪我)|我承认)/.test(value) && !apologyNegation.test(value)) {
+  if (/(我错了|是我不好|是我不对|这次怪我|我不该那么说|(?:刚才我|我刚才)说重了|说话太冲|确实.*(?:我|怪我)|我承认)/.test(value) && !apologyNegation.test(value)) {
     add(explicitIntents, "OWNERSHIP");
     evidence.push({ claim: "OWNERSHIP", source: "current_user_turn", matchedText: value, polarity: "positive" });
   }
