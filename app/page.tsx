@@ -32,6 +32,7 @@ import { VOICE_FEATURES } from "@/src/voice/feature-flags";
 type Status = "idle" | "listening" | "thinking" | "preparing" | "speaking";
 type MicrophoneState = "unknown" | "requesting" | "granted" | "denied" | "unavailable" | "error";
 type CharacterGender = "female" | "male";
+type RecoveryReason = "PLAYBACK_ENDED" | "PLAYBACK_FAILED" | "PLAYBACK_INTERRUPTED" | "ASR_RECOVERY" | "MANUAL_RETRY" | "TEXT_FAILED";
 
 type DebugInfo = {
   userStrategy: string[];
@@ -230,6 +231,9 @@ export default function Home() {
   const listeningReadyRef = useRef(false);
   const asrGenerationRef = useRef(0);
   const asrStallTimerRef = useRef<number | null>(null);
+  const asrRecoveryTimerRef = useRef<number | null>(null);
+  const resumeListeningTimerRef = useRef<number | null>(null);
+  const listeningGenerationRef = useRef(0);
   const finalizeGenerationRef = useRef(0);
   const interruptModeRef = useRef(false);
   const generationRef = useRef(0);
@@ -237,6 +241,8 @@ export default function Home() {
   const spokenTextRef = useRef("");
   const vadStreamRef = useRef<MediaStream | null>(null);
   const voiceSessionEnabledRef = useRef(false);
+  const assistantTurnStateRef = useRef<AssistantTurnState>("IDLE");
+  const ttsPlaybackStateRef = useRef<TTSPlaybackState>("IDLE");
 
   const markListeningReady = (value: boolean) => {
     listeningReadyRef.current = value;
@@ -248,6 +254,31 @@ export default function Home() {
     window.clearTimeout(asrReadyTimerRef.current);
     asrReadyTimerRef.current = null;
     console.debug(`[VOICE] ASR_WATCHDOG_CLEARED reason=${reason}`);
+  };
+
+  const markTtsPlaybackState = (state: TTSPlaybackState) => {
+    ttsPlaybackStateRef.current = state;
+    setTtsPlaybackState(state);
+  };
+
+  const clearResumeListeningTimer = (reason: string) => {
+    if (resumeListeningTimerRef.current === null) return;
+    window.clearTimeout(resumeListeningTimerRef.current);
+    resumeListeningTimerRef.current = null;
+    console.debug(`[VOICE] RESUME_LISTENING_TIMER_CLEAR reason=${reason}`);
+  };
+
+  const clearNormalListeningWatchdogs = (reason: string) => {
+    clearAsrReadyWatchdog(reason);
+    clearResumeListeningTimer(reason);
+    if (asrRecoveryTimerRef.current !== null) { window.clearTimeout(asrRecoveryTimerRef.current); asrRecoveryTimerRef.current = null; }
+    if (asrStallTimerRef.current !== null) { window.clearInterval(asrStallTimerRef.current); asrStallTimerRef.current = null; }
+  };
+
+  const playbackIsActive = () => {
+    const assistantState = assistantTurnStateRef.current;
+    const ttsState = ttsPlaybackStateRef.current;
+    return Boolean(voicePipelineRef.current.getActiveJob()) || assistantState === "TTS_GENERATING" || assistantState === "TTS_READY" || assistantState === "PLAYBACK_STARTING" || assistantState === "PLAYING" || ttsState === "REQUESTING" || ttsState === "BUFFERING" || ttsState === "READY" || ttsState === "PLAYING";
   };
 
   const scenario = useMemo(() => SCENARIOS.find((item) => item.id === scenarioId) || SCENARIOS[0], [scenarioId]);
@@ -290,7 +321,7 @@ export default function Home() {
       vadStreamRef.current = null;
       streamRef.current?.getTracks().forEach((track) => track.stop());
       if (asrStallTimerRef.current !== null) window.clearInterval(asrStallTimerRef.current);
-      clearAsrReadyWatchdog("CLEANUP");
+      clearNormalListeningWatchdogs("CLEANUP");
       asrGenerationRef.current += 1;
     };
   }, []);
@@ -376,8 +407,9 @@ export default function Home() {
     lastAsrResultAtRef.current = null;
     lastFinalAtRef.current = null;
     asrSpeechActiveRef.current = false;
-    clearAsrReadyWatchdog("SESSION_RESET");
+    clearNormalListeningWatchdogs("SESSION_RESET");
     asrGenerationRef.current += 1;
+    listeningGenerationRef.current += 1;
     setRealtimeState("IDLE");
     markListeningReady(false);
     setStatus("idle");
@@ -386,7 +418,8 @@ export default function Home() {
     setMode("");
     setDebugInfo(null);
     setTtsDebug(null);
-    setTtsPlaybackState("IDLE");
+    markTtsPlaybackState("IDLE");
+    assistantTurnStateRef.current = "IDLE";
     setAssistantTurnState("IDLE");
     setAssistantTurnTrace(null);
     setAsrSessionInfo(null);
@@ -513,6 +546,24 @@ export default function Home() {
     }).then((context) => { if (context) setMicHealth((current) => ({ ...current, audioContextState: context.state })); });
   };
 
+  const postTurnRecovery = async (reason: RecoveryReason) => {
+    if (!conversationActiveRef.current) return;
+    clearNormalListeningWatchdogs(`POST_TURN_RECOVERY:${reason}`);
+    if (voicePipelineRef.current.getActiveJob()) {
+      console.debug(`[VOICE] POST_TURN_RECOVERY_BLOCKED reason=${reason} activeVoiceJob=true`);
+      return;
+    }
+    if (reason === "PLAYBACK_ENDED" || reason === "PLAYBACK_FAILED" || reason === "PLAYBACK_INTERRUPTED") {
+      const terminalStates: AssistantTurnState[] = ["COMPLETED", "COMPLETED_WITH_AUDIO_FAILURE", "INTERRUPTED"];
+      if (!terminalStates.includes(assistantTurnStateRef.current)) {
+        console.debug(`[VOICE] POST_TURN_RECOVERY_BLOCKED reason=${reason} assistantState=${assistantTurnStateRef.current}`);
+        return;
+      }
+    }
+    console.debug(`[VOICE] POST_TURN_RECOVERY reason=${reason}`);
+    await resumeListening({ reason });
+  };
+
   const requestReply = async (userText: string, baseHistory: ChatMessage[], turnId = `turn-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, asrMeta?: { rawAsrText?: string; confidence?: number; alternatives?: string[]; asrSessionCount?: number; speechDurationMs?: number }) => {
     const generationId = ++generationRef.current;
     if (processedTurnIdsRef.current.has(turnId)) return;
@@ -520,14 +571,15 @@ export default function Home() {
     const voiceModeAtRequest = voiceSessionEnabledRef.current;
     const turnCallbacks = {
       onStateChange: (state: AssistantTurnState, trace: AssistantTurnTrace) => {
+        assistantTurnStateRef.current = state;
         setAssistantTurnState(state);
         setAssistantTurnTrace(trace);
-        if (state === "TTS_GENERATING") setTtsPlaybackState("REQUESTING");
-        if (state === "TTS_READY") setTtsPlaybackState("READY");
-        if (state === "PLAYBACK_STARTING") setTtsPlaybackState("READY");
-        if (state === "PLAYING") setTtsPlaybackState("PLAYING");
-        if (state === "COMPLETED") setTtsPlaybackState("COMPLETED");
-        if (state === "COMPLETED_WITH_AUDIO_FAILURE" || state === "FAILED") setTtsPlaybackState("FAILED");
+        if (state === "TTS_GENERATING") markTtsPlaybackState("REQUESTING");
+        if (state === "TTS_READY") markTtsPlaybackState("READY");
+        if (state === "PLAYBACK_STARTING") { clearResumeListeningTimer("PLAYBACK_STARTING"); markTtsPlaybackState("READY"); }
+        if (state === "PLAYING") { clearResumeListeningTimer("PLAYING"); markTtsPlaybackState("PLAYING"); }
+        if (state === "COMPLETED") markTtsPlaybackState("COMPLETED");
+        if (state === "COMPLETED_WITH_AUDIO_FAILURE" || state === "FAILED") markTtsPlaybackState("FAILED");
         if (state === "GENERATING_TEXT" || state === "TEXT_STREAMING") { setStatus("thinking"); setRealtimeState("AI_GENERATING"); }
         else if (state === "TEXT_READY" || state === "TTS_PENDING" || state === "TTS_GENERATING" || state === "TTS_READY" || state === "PLAYBACK_STARTING") { setStatus("preparing"); setRealtimeState("AI_SPEAKING"); }
         else if (state === "PLAYING") { audioSessionRef.current.markAiSpeaking(); setStatus("speaking"); setRealtimeState("AI_SPEAKING"); }
@@ -536,13 +588,28 @@ export default function Home() {
       onVoiceJobCreated: (job: VoiceJob) => setAssistantTurnTrace((current) => current ? { ...current, voiceJobId: job.voiceJobId } : current),
       onTtsMetrics: (metrics: TTSMetrics) => setTtsDebug(metrics),
       onAudioError: (message: string) => setNotice(message),
-      onCompleted: ({ audioFailure, trace }: { audioFailure: boolean; trace: AssistantTurnTrace }) => {
-        setAssistantTurnState(trace.state);
-        setAssistantTurnTrace(trace);
+      onPlaybackEnded: (trace: AssistantTurnTrace) => {
+        if (!trace.voiceMode) return;
         interruptModeRef.current = false;
-        if (audioFailure) setNotice(trace.messageCommittedAt ? "文字已送达，但这次语音播放失败了，已恢复收音；你可以继续说。 " : "这次回复没有完成，已恢复收音；你可以再试一次。 ");
-        if (conversationActiveRef.current && voiceSessionEnabledRef.current) { setRealtimeState(audioFailure ? "RECOVERING_ASR" : "LISTENING"); void resumeListening(); }
-        else setStatus("idle");
+        void postTurnRecovery("PLAYBACK_ENDED");
+      },
+      onPlaybackFailed: ({ error, trace }: { error: string; trace: AssistantTurnTrace }) => {
+        if (!trace.voiceMode) return;
+        interruptModeRef.current = false;
+        setNotice("这次语音没有正常播放，正在恢复对话。 ");
+        void postTurnRecovery("PLAYBACK_FAILED");
+        console.debug(`[VOICE] PLAYBACK_FAILED error=${error}`);
+      },
+      onPlaybackInterrupted: ({ reason, trace }: { reason: string; trace: AssistantTurnTrace }) => {
+        if (!trace.voiceMode) return;
+        interruptModeRef.current = false;
+        console.debug(`[VOICE] PLAYBACK_INTERRUPTED reason=${reason}`);
+      },
+      onTurnFailed: ({ error, trace }: { error: string; trace: AssistantTurnTrace }) => {
+        if (!trace.voiceMode) return;
+        interruptModeRef.current = false;
+        void postTurnRecovery("TEXT_FAILED");
+        console.debug(`[VOICE] TURN_FAILED error=${error}`);
       },
     };
     assistantTurnCoordinatorRef.current.beginTextGeneration({ assistantTurnId: turnId, generationId, sessionId: archiveIdRef.current, voiceMode: voiceModeAtRequest, callbacks: turnCallbacks });
@@ -576,6 +643,8 @@ export default function Home() {
           spokenTextRef.current = "";
         },
         preparePlayback: () => {
+          clearNormalListeningWatchdogs("PLAYBACK_STARTING");
+          listeningGenerationRef.current += 1;
           interruptModeRef.current = true;
           asrRef.current.stop();
           audioSessionRef.current.prepareForPlayback(releaseMicrophoneForPlayback);
@@ -608,11 +677,12 @@ export default function Home() {
       setInterimText("");
       setNotice("刚刚没听清，再说一次？");
       setRealtimeState("RECOVERING_ASR");
-      void resumeListening();
+      void resumeListening({ reason: "ASR_RECOVERY" });
       return;
     }
     if (endTimerRef.current !== null) window.clearTimeout(endTimerRef.current);
     finalizeGenerationRef.current += 1;
+    clearNormalListeningWatchdogs("USER_TURN_FINAL");
     asrRef.current.stop();
     accumulatorRef.current.reset();
     setInterimText("");
@@ -649,6 +719,10 @@ export default function Home() {
 
   const startListening = (interruptOnly = false) => {
     if (!conversationActiveRef.current) return;
+    if (!interruptOnly && playbackIsActive()) {
+      console.debug(`[VOICE] ILLEGAL_START_LISTENING_DURING_PLAYBACK assistantState=${assistantTurnStateRef.current} ttsState=${ttsPlaybackStateRef.current}`);
+      return;
+    }
     clearAsrReadyWatchdog("NEW_ASR");
     const generation = ++asrGenerationRef.current;
     console.debug(`[VOICE] ASR_INIT generation=${generation}`);
@@ -675,7 +749,8 @@ export default function Home() {
       asrRef.current.stop();
       setRealtimeState("RECOVERING_ASR");
       setNotice("语音识别还没准备好，正在重新连接……");
-      window.setTimeout(() => { if (conversationActiveRef.current) startListening(false); }, 250);
+      if (asrRecoveryTimerRef.current !== null) window.clearTimeout(asrRecoveryTimerRef.current);
+      asrRecoveryTimerRef.current = window.setTimeout(() => { asrRecoveryTimerRef.current = null; if (conversationActiveRef.current && !playbackIsActive()) startListening(false); }, 250);
     }, 2800);
     console.debug(`[VOICE] ASR_WATCHDOG_ARMED generation=${generation}`);
     asrRef.current.start((text, isFinal) => {
@@ -696,13 +771,14 @@ export default function Home() {
     }, (message) => {
       if (/权限|麦克风/.test(message)) {
         setVoiceInputSupported(false);
-        setNotice(microphoneState === "granted" ? "麦克风已授权，但此浏览器的语音识别服务没有启动，已切换为文字输入。" : message);
+        setNotice("麦克风已授权，但此浏览器的语音识别服务没有启动，已切换为文字输入。");
         setRealtimeState("ERROR");
         setStatus("idle");
       } else {
         setRealtimeState("RECOVERING_ASR");
         setNotice("语音识别暂时中断，正在自动恢复……");
-        window.setTimeout(() => { if (conversationActiveRef.current) void resumeListening(); }, 260);
+        if (asrRecoveryTimerRef.current !== null) window.clearTimeout(asrRecoveryTimerRef.current);
+        asrRecoveryTimerRef.current = window.setTimeout(() => { asrRecoveryTimerRef.current = null; if (conversationActiveRef.current && !playbackIsActive()) void resumeListening({ reason: "ASR_RECOVERY" }); }, 260);
       }
       setInterimText("");
     }, () => {
@@ -738,25 +814,37 @@ export default function Home() {
         setNotice("检测到麦克风仍有声音，但识别通道没有回传，正在无损重连……");
         setRealtimeState("RECOVERING_ASR");
         lastAsrResultAtRef.current = Date.now();
-        window.setTimeout(() => { if (conversationActiveRef.current && !interruptModeRef.current) startListening(false); }, 120);
+        if (asrRecoveryTimerRef.current !== null) window.clearTimeout(asrRecoveryTimerRef.current);
+        asrRecoveryTimerRef.current = window.setTimeout(() => { asrRecoveryTimerRef.current = null; if (conversationActiveRef.current && !interruptModeRef.current && !playbackIsActive()) startListening(false); }, 120);
       }, 700);
     }
   };
 
-  const resumeListening = async () => {
+  const resumeListening = async ({ reason }: { reason: RecoveryReason }) => {
     if (!conversationActiveRef.current) return;
+    if (playbackIsActive()) {
+      console.debug(`[VOICE] ILLEGAL_RESUME_LISTENING_DURING_PLAYBACK reason=${reason} assistantState=${assistantTurnStateRef.current} ttsState=${ttsPlaybackStateRef.current}`);
+      return;
+    }
+    if ((reason === "PLAYBACK_ENDED" || reason === "PLAYBACK_FAILED" || reason === "PLAYBACK_INTERRUPTED") && !["COMPLETED", "COMPLETED_WITH_AUDIO_FAILURE", "INTERRUPTED"].includes(assistantTurnStateRef.current)) return;
+    clearResumeListeningTimer(`SCHEDULE:${reason}`);
+    const listeningGeneration = ++listeningGenerationRef.current;
     interruptModeRef.current = false;
     setRealtimeState("PREPARING_MIC");
     setStatus("listening");
     const ready = await audioSessionRef.current.prepareForListening(acquireMicrophoneForListening);
-    if (!ready || !conversationActiveRef.current) {
+    if (!ready || !conversationActiveRef.current || listeningGeneration !== listeningGenerationRef.current || playbackIsActive()) {
       setStatus("idle");
       return;
     }
     if (audioSessionRef.current.usesSmartHalfDuplex()) ttsProviderRef.current.setAudioSessionType("play-and-record");
     startVadMonitoring();
-    window.setTimeout(() => {
-      if (conversationActiveRef.current) startListening();
+    console.debug(`[VOICE] RESUME_LISTENING_SCHEDULED reason=${reason} generation=${listeningGeneration}`);
+    resumeListeningTimerRef.current = window.setTimeout(() => {
+      resumeListeningTimerRef.current = null;
+      console.debug(`[VOICE] RESUME_LISTENING_TIMER_FIRE reason=${reason} generation=${listeningGeneration}`);
+      if (listeningGeneration !== listeningGenerationRef.current || !conversationActiveRef.current || playbackIsActive()) return;
+      startListening();
     }, 160);
   };
 
@@ -765,7 +853,7 @@ export default function Home() {
     setConversationActive(true);
     voiceSessionEnabledRef.current = true;
     setRealtimeState("PREPARING_MIC");
-    void resumeListening();
+    void resumeListening({ reason: "MANUAL_RETRY" });
   };
 
   const endVoiceConversation = () => {
@@ -777,15 +865,18 @@ export default function Home() {
     assistantTurnCoordinatorRef.current.stop("SESSION_END");
     finalizeGenerationRef.current += 1;
     if (endTimerRef.current !== null) window.clearTimeout(endTimerRef.current);
-    if (asrStallTimerRef.current !== null) { window.clearInterval(asrStallTimerRef.current); asrStallTimerRef.current = null; }
+    clearNormalListeningWatchdogs("SESSION_END");
+    listeningGenerationRef.current += 1;
     vadRef.current.stop();
     vadStreamRef.current = null;
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
-    clearAsrReadyWatchdog("SESSION_END");
     asrGenerationRef.current += 1;
     setRealtimeState("IDLE");
     markListeningReady(false);
+    assistantTurnStateRef.current = "IDLE";
+    setAssistantTurnState("IDLE");
+    markTtsPlaybackState("IDLE");
     setInterimText("");
     setStatus("idle");
   };

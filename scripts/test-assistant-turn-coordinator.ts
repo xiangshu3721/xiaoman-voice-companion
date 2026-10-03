@@ -28,7 +28,8 @@ for (let index = 0; index < 20; index += 1) {
   const turnStates: AssistantTurnState[] = [];
   coordinator.beginTextGeneration({ assistantTurnId: `assistant-${index + 1}`, generationId: index + 1, sessionId: "test-session", voiceMode: true, callbacks: {
     onStateChange: (state) => { turnStates.push(state); states.push(state); },
-    onCompleted: ({ audioFailure }) => { if (audioFailure) failures += 1; else completed += 1; },
+    onPlaybackFailed: () => { failures += 1; },
+    onPlaybackEnded: () => { completed += 1; },
   } });
   coordinator.commitAssistantMessage({ text: "测试回复", voiceMode: true, ttsRequest: { text: "测试回复", emotion: "calm" }, commitMessage: () => undefined });
   const required: AssistantTurnState[] = ["GENERATING_TEXT", "TEXT_READY", "TTS_PENDING", "TTS_GENERATING", "TTS_READY", "PLAYBACK_STARTING", "PLAYING", "COMPLETED"];
