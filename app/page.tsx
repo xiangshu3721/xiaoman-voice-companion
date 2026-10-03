@@ -9,6 +9,7 @@ import {
   type ScenarioId,
   type TTSMetrics,
   type TTSPlaybackState,
+  type TTSPlaybackSignal,
   type TTSRequest,
   type ASRSessionEvent,
 } from "@/lib/providers";
@@ -29,6 +30,7 @@ import { VoiceRuntime } from "@/src/voice/voice-runtime";
 import { mobileBootTrace } from "@/src/boot/mobile-boot-trace";
 import { VOICE_FEATURES } from "@/src/voice/feature-flags";
 import { PlatformTTSProvider } from "@/src/voice/platform-tts-provider";
+import { VoiceTrace, type VoiceTraceEvent } from "@/src/voice/voice-trace";
 
 type Status = "idle" | "listening" | "thinking" | "preparing" | "speaking";
 type VoiceUIState = "IDLE" | "STARTING" | "LISTENING" | "THINKING" | "PREPARING_SPEECH" | "SPEAKING" | "ERROR";
@@ -222,6 +224,7 @@ export default function Home() {
   const [latestSpokenText, setLatestSpokenText] = useState("");
   const historyRef = useRef<ChatMessage[]>([WELCOME]);
   const archiveIdRef = useRef(`conversation-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`);
+  const voiceTraceRef = useRef(new VoiceTrace(archiveIdRef.current));
   const sectionIdRef = useRef(newSectionId());
   const conversationActiveRef = useRef(false);
   const asrRef = useRef(new BrowserSpeechRecognitionProvider());
@@ -272,6 +275,8 @@ export default function Home() {
     ttsPlaybackStateRef.current = state;
     setTtsPlaybackState(state);
   };
+
+  const traceVoice = (event: VoiceTraceEvent, turnId?: string) => voiceTraceRef.current.emit(event, turnId);
 
   const clearResumeListeningTimer = (reason: string) => {
     if (resumeListeningTimerRef.current === null) return;
@@ -386,6 +391,7 @@ export default function Home() {
       setMicHealth((current) => ({ ...current, permissionGranted: false, secureContext: micResult.secureContext, mediaDevicesAvailable: Boolean(navigator.mediaDevices), getUserMediaAvailable: Boolean(navigator.mediaDevices?.getUserMedia), permissionApiState: micResult.permissionApiState, streamAcquired: false, trackState: nextMicrophoneState === "denied" ? "denied" : "unavailable", trackMuted: false, errorCode: micResult.errorCode }));
     }
     setMicrophoneState(nextMicrophoneState);
+    if (micResult.stream) traceVoice("MIC_READY");
     if (!asrRef.current.isSupported()) {
       setVoiceInputSupported(false);
       setStarted(true);
@@ -450,6 +456,7 @@ export default function Home() {
     setReviewQuestion("");
     setReviewError("");
     archiveIdRef.current = `conversation-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    voiceTraceRef.current = new VoiceTrace(archiveIdRef.current);
     sectionIdRef.current = newSectionId();
     updateMessages([WELCOME]);
   };
@@ -540,6 +547,7 @@ export default function Home() {
     const track = result.stream.getAudioTracks()[0];
     bindTrackHealth(track, result.permissionApiState);
     setMicrophoneState(result.status);
+    traceVoice("MIC_READY");
     setMicHealth((current) => ({ ...current, permissionGranted: true, secureContext: result.secureContext, mediaDevicesAvailable: Boolean(navigator.mediaDevices), getUserMediaAvailable: Boolean(navigator.mediaDevices?.getUserMedia), permissionApiState: result.permissionApiState, streamAcquired: true, trackState: track?.readyState || "live", trackMuted: track?.muted || false, errorCode: undefined }));
     mobileBootTrace.mark("MIC_READY");
     return true;
@@ -589,15 +597,16 @@ export default function Home() {
     if (processedTurnIdsRef.current.has(turnId)) return;
     processedTurnIdsRef.current.add(turnId);
     const voiceModeAtRequest = voiceSessionEnabledRef.current;
+    traceVoice("AI_REQUEST", turnId);
     const turnCallbacks = {
       onStateChange: (state: AssistantTurnState, trace: AssistantTurnTrace) => {
         assistantTurnStateRef.current = state;
         setAssistantTurnState(state);
         setAssistantTurnTrace(trace);
-        if (state === "TTS_GENERATING") markTtsPlaybackState("REQUESTING");
-        if (state === "TTS_READY") markTtsPlaybackState("READY");
-        if (state === "PLAYBACK_STARTING") { clearResumeListeningTimer("PLAYBACK_STARTING"); markTtsPlaybackState("READY"); }
-        if (state === "PLAYING") { clearResumeListeningTimer("PLAYING"); markTtsPlaybackState("PLAYING"); }
+        if (state === "TTS_GENERATING") { traceVoice("TTS_REQUEST", turnId); markTtsPlaybackState("REQUESTING"); }
+        if (state === "TTS_READY") { traceVoice("TTS_READY", turnId); markTtsPlaybackState("READY"); }
+        if (state === "PLAYBACK_STARTING") { traceVoice("AUDIO_PLAY_CALL", turnId); clearResumeListeningTimer("PLAYBACK_STARTING"); markTtsPlaybackState("READY"); }
+        if (state === "PLAYING") { traceVoice("AUDIO_PLAYING", turnId); clearResumeListeningTimer("PLAYING"); markTtsPlaybackState("PLAYING"); }
         if (state === "COMPLETED") markTtsPlaybackState("COMPLETED");
         if (state === "COMPLETED_WITH_AUDIO_FAILURE" || state === "FAILED") markTtsPlaybackState("FAILED");
         if (state === "GENERATING_TEXT" || state === "TEXT_STREAMING") { setStatus("thinking"); setRealtimeState("AI_GENERATING"); }
@@ -607,9 +616,12 @@ export default function Home() {
       onTrace: (trace: AssistantTurnTrace) => setAssistantTurnTrace(trace),
       onVoiceJobCreated: (job: VoiceJob) => setAssistantTurnTrace((current) => current ? { ...current, voiceJobId: job.voiceJobId } : current),
       onTtsMetrics: (metrics: TTSMetrics) => setTtsDebug(metrics),
+      onPlaybackSignal: (signal: TTSPlaybackSignal) => { if (signal.type === "timeupdate" && (signal.currentTime || 0) > 0) traceVoice("AUDIO_PROGRESS", turnId); },
       onAudioError: (message: string) => setNotice(message),
       onPlaybackEnded: (trace: AssistantTurnTrace) => {
         if (!trace.voiceMode) return;
+        traceVoice("AUDIO_ENDED", trace.assistantTurnId);
+        traceVoice("ASR_RESTART", trace.assistantTurnId);
         interruptModeRef.current = false;
         void postTurnRecovery("PLAYBACK_ENDED");
       },
@@ -645,6 +657,7 @@ export default function Home() {
       if (generationId !== generationRef.current) return;
       setMode(data.mode || "");
       if (data.debug) setDebugInfo(data.debug);
+      traceVoice("AI_TEXT_READY", turnId);
       const ttsRequest: TTSRequest = { text: reply, emotion: VOICE_FEATURES.advancedEmotion ? data.voice?.emotion : undefined, primaryEmotion: VOICE_FEATURES.advancedEmotion ? data.voice?.primaryEmotion : undefined, emotionScale: VOICE_FEATURES.advancedEmotion ? data.voice?.emotionScale : undefined, intensity: VOICE_FEATURES.advancedEmotion ? data.voice?.intensity : undefined, speed: VOICE_FEATURES.advancedEmotion ? data.voice?.speed : undefined, volume: VOICE_FEATURES.advancedEmotion ? data.voice?.volume : undefined, speechRate: VOICE_FEATURES.advancedEmotion ? data.voice?.speechRate : undefined, loudnessRate: VOICE_FEATURES.advancedEmotion ? data.voice?.loudnessRate : undefined, streaming: VOICE_FEATURES.streamingTts, sectionId: data.voice?.sectionId || sectionIdRef.current, contextText: VOICE_FEATURES.advancedEmotion ? data.voice?.contextText : undefined, fallbackUsed: data.voice?.fallbackUsed, voiceId: selectedVoiceId || undefined };
       const commitMessage = () => {
         const next = [...baseHistory, { role: "assistant", content: reply } satisfies ChatMessage];
@@ -713,6 +726,7 @@ export default function Home() {
     lastFinalAtRef.current = null;
     setRealtimeState("FINALIZING_USER_TURN");
     const turnId = `turn-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    traceVoice("USER_FINAL", turnId);
     const baseHistory = [...historyRef.current, { role: "user", content: text } satisfies ChatMessage];
     updateMessages(baseHistory);
     void requestReply(text, baseHistory, turnId);
@@ -747,6 +761,7 @@ export default function Home() {
     clearAsrReadyWatchdog("NEW_ASR");
     const generation = ++asrGenerationRef.current;
     console.debug(`[VOICE] ASR_INIT generation=${generation}`);
+    traceVoice("ASR_START");
     mobileBootTrace.mark("ASR_INIT_START");
     setNotice("");
     if (!interruptOnly) { setInterimText(""); markListeningReady(false); setRealtimeState("PREPARING_MIC"); }
@@ -776,6 +791,7 @@ export default function Home() {
     console.debug(`[VOICE] ASR_WATCHDOG_ARMED generation=${generation}`);
     asrRef.current.start((text, isFinal) => {
       const resultAt = Date.now();
+      traceVoice("ASR_RESULT");
       finalizeGenerationRef.current += 1;
       lastVoiceAtRef.current = resultAt;
       lastAsrResultAtRef.current = resultAt;
@@ -811,6 +827,7 @@ export default function Home() {
       console.debug(`[VOICE] ASR_PROVIDER_ONREADY generation=${generation}`);
       if (generation !== asrGenerationRef.current) return;
       mobileBootTrace.mark("ASR_READY");
+      traceVoice(interruptOnly ? "ASR_READY_NEXT_TURN" : "ASR_READY");
       clearAsrReadyWatchdog("ON_READY");
       markListeningReady(true);
       setRealtimeState(interruptOnly ? "AI_SPEAKING" : "LISTENING");
@@ -871,6 +888,7 @@ export default function Home() {
   };
 
   const startVoiceConversation = () => {
+    traceVoice("VOICE_SESSION_START");
     conversationActiveRef.current = true;
     setConversationActive(true);
     voiceSessionEnabledRef.current = true;
