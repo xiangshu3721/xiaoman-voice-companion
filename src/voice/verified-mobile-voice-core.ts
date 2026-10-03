@@ -56,7 +56,7 @@ export function releaseVerifiedAudioUrl(url: string | null | undefined) {
   if (url) URL.revokeObjectURL(url);
 }
 
-export async function playAudioAndWaitUntilEnded(source: string, options: { label?: string; timeoutMs?: number; onEvent?: EventHandler } = {}) {
+export async function playAudioAndWaitUntilEnded(source: string, options: { label?: string; timeoutMs?: number; onEvent?: EventHandler; signal?: AbortSignal } = {}) {
   const label = options.label || "VERIFIED_AUDIO";
   const timeoutMs = options.timeoutMs || 30000;
   const audio = new Audio();
@@ -72,6 +72,7 @@ export async function playAudioAndWaitUntilEnded(source: string, options: { labe
   let settled = false;
   let firstProgressEmitted = false;
   let timeout: number | null = null;
+  let abortHandler: (() => void) | null = null;
   const finish = (result: "ENDED" | "FAILED") => {
     if (settled) return;
     settled = true;
@@ -82,6 +83,7 @@ export async function playAudioAndWaitUntilEnded(source: string, options: { labe
     audio.onerror = null;
     audio.onloadedmetadata = null;
     audio.oncanplay = null;
+    if (abortHandler) options.signal?.removeEventListener("abort", abortHandler);
     if (result === "FAILED") { audio.pause(); audio.removeAttribute("src"); audio.load(); }
     return result;
   };
@@ -108,6 +110,12 @@ export async function playAudioAndWaitUntilEnded(source: string, options: { labe
       emit(options.onEvent, "AUDIO_TIMEOUT", `${label} currentTime=${audio.currentTime.toFixed(2)}`);
       resolve(finish("FAILED") || "FAILED");
     }, timeoutMs);
+    abortHandler = () => {
+      emit(options.onEvent, "AUDIO_ERROR", `${label} aborted`);
+      resolve(finish("FAILED") || "FAILED");
+    };
+    if (options.signal?.aborted) abortHandler();
+    else options.signal?.addEventListener("abort", abortHandler, { once: true });
   });
 
   emit(options.onEvent, "AUDIO_PLAY_CALLED", `${label} volume=${audio.volume} muted=${audio.muted}`);

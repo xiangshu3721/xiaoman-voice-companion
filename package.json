@@ -28,6 +28,7 @@
     ,"test:tts-reliability": "tsx scripts/test-tts-reliability.ts"
     ,"test:assistant-turn": "tsx scripts/test-assistant-turn-coordinator.ts"
     ,"test:post-playback": "tsx scripts/test-post-playback-lifecycle.ts"
+    ,"test:golden-voice": "tsx scripts/test-golden-voice-path.ts"
     ,"test:android-reliability": "tsx scripts/test-android-reliability.ts"
     ,"test:android-boot": "tsx scripts/test-android-boot.ts"
     ,"test:asr-readiness": "tsx scripts/test-asr-readiness-watchdog.ts"
