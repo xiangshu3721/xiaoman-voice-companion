@@ -6,6 +6,8 @@ const projectRoot = process.cwd();
 const apiDirectory = resolve(projectRoot, "app/api");
 const backupDirectory = resolve(projectRoot, ".github-pages-api-backup");
 const nextBinary = resolve(projectRoot, "node_modules/next/dist/bin/next");
+const gitSha = process.env.NEXT_PUBLIC_BUILD_SHA || process.env.GITHUB_SHA || spawnSync("git", ["rev-parse", "HEAD"], { cwd: projectRoot, encoding: "utf8" }).stdout.trim() || "UNKNOWN";
+const buildTime = process.env.NEXT_PUBLIC_BUILD_TIME || new Date().toISOString();
 
 if (!existsSync(apiDirectory)) {
   throw new Error("Cannot create GitHub Pages build: app/api was not found.");
@@ -19,7 +21,7 @@ let exitCode = 1;
 try {
   const result = spawnSync(process.execPath, [nextBinary, "build"], {
     cwd: projectRoot,
-    env: { ...process.env, GITHUB_PAGES: "true" },
+    env: { ...process.env, GITHUB_PAGES: "true", NEXT_PUBLIC_BUILD_SHA: gitSha, NEXT_PUBLIC_BUILD_TIME: buildTime },
     stdio: "inherit",
   });
   exitCode = result.status ?? 1;
