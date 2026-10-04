@@ -71,6 +71,18 @@ const WELCOME: ChatMessage = {
   content: "你来了。今天想跟我说什么？",
 };
 
+function isIOSMobileBrowser() {
+  if (typeof navigator === "undefined") return false;
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function setIOSAudioSessionType(type: "playback" | "play-and-record") {
+  if (typeof navigator === "undefined") return;
+  const audioSession = (navigator as Navigator & { audioSession?: { type?: string } }).audioSession;
+  if (!audioSession) return;
+  try { audioSession.type = type; } catch { /* unsupported or temporarily unavailable */ }
+}
+
 function Avatar({ small = false, gender = "female" }: { small?: boolean; gender?: CharacterGender }) {
   const source = sitePath(gender === "male" ? "/avatars/ta-male.jpg" : "/avatars/ta-female.jpg");
   const label = gender === "male" ? "Ta 的男声头像" : "Ta 的女声头像";
@@ -224,6 +236,7 @@ export default function Home() {
   const generationRef = useRef(0);
   const processedTurnIdsRef = useRef(new Set<string>());
   const spokenTextRef = useRef("");
+  const iosMicReleasedRef = useRef(false);
 
   const scenario = useMemo(() => SCENARIOS.find((item) => item.id === scenarioId) || SCENARIOS[0], [scenarioId]);
   const selectedVoice = voiceOptions.find((voice) => voice.id === selectedVoiceId);
@@ -269,19 +282,52 @@ export default function Home() {
     setMessages(next);
   };
 
+  const microphoneConstraints: MediaStreamConstraints = { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } };
+
+  const keepMicrophoneStream = (stream: MediaStream) => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = stream;
+    const track = stream.getAudioTracks()[0];
+    setMicrophoneState("granted");
+    setMicHealth((current) => ({ ...current, permissionGranted: true, trackState: track?.readyState || "live", trackMuted: track?.muted || false }));
+  };
+
+  const releaseMicrophoneForIOSPlayback = () => {
+    if (!isIOSMobileBrowser() || !streamRef.current) return;
+    iosMicReleasedRef.current = true;
+    vadRef.current.stop();
+    streamRef.current.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    setIOSAudioSessionType("playback");
+    setMicHealth((current) => ({ ...current, trackState: "none", trackMuted: false, vadAlive: false, asrAlive: false }));
+  };
+
+  const restoreMicrophoneAfterIOSPlayback = async () => {
+    if (!isIOSMobileBrowser() || !iosMicReleasedRef.current || !conversationActiveRef.current) return true;
+    const micResult = await microphoneRef.current.request(microphoneConstraints);
+    if (!micResult.stream) {
+      setMicrophoneState(micResult.status);
+      setNotice(micResult.message || "AI 说完后，麦克风没有恢复；请重新点击开始语音。");
+      setRealtimeState("RECOVERING_ASR");
+      return false;
+    }
+    keepMicrophoneStream(micResult.stream);
+    iosMicReleasedRef.current = false;
+    setIOSAudioSessionType("play-and-record");
+    return true;
+  };
+
   const begin = async () => {
     setNotice("");
     // 必须在用户点击触发的同步阶段先解锁音频，移动 Safari/部分 WebView
     // 才允许异步请求完成后播放 AI 语音。
     voicePipelineRef.current.unlockAudio();
     setMicrophoneState("requesting");
-    const micResult = await microphoneRef.current.request({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    const micResult = await microphoneRef.current.request(microphoneConstraints);
     const nextMicrophoneState: MicrophoneState = micResult.status;
     if (micResult.stream) {
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-      streamRef.current = micResult.stream;
-      const track = micResult.stream.getAudioTracks()[0];
-      setMicHealth((current) => ({ ...current, permissionGranted: true, trackState: track?.readyState || "live", trackMuted: track?.muted || false }));
+      keepMicrophoneStream(micResult.stream);
+      setIOSAudioSessionType("play-and-record");
     } else {
       setMicHealth((current) => ({ ...current, permissionGranted: false, trackState: nextMicrophoneState === "denied" ? "denied" : "unavailable", trackMuted: false }));
     }
@@ -311,6 +357,8 @@ export default function Home() {
     vadRef.current.stop();
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
+    iosMicReleasedRef.current = false;
+    setIOSAudioSessionType("play-and-record");
     if (endTimerRef.current !== null) window.clearTimeout(endTimerRef.current);
     accumulatorRef.current.reset();
     asrRef.current.stop();
@@ -437,6 +485,9 @@ export default function Home() {
       interruptModeRef.current = true;
       // 暂时关闭抢话：AI 说完后才重新开启 ASR，避免用户声音和 TTS 重叠。
       asrRef.current.stop();
+      // iOS keeps getUserMedia in a call-style audio route. Release it before
+      // TTS so playback uses the loudspeaker instead of the quiet receiver.
+      releaseMicrophoneForIOSPlayback();
       voicePipelineRef.current.speak(turnId, { text: reply, emotion: data.voice?.emotion, primaryEmotion: data.voice?.primaryEmotion, emotionScale: data.voice?.emotionScale, intensity: data.voice?.intensity, speed: data.voice?.speed, volume: data.voice?.volume, speechRate: data.voice?.speechRate, loudnessRate: data.voice?.loudnessRate, sectionId: data.voice?.sectionId || sectionIdRef.current, contextText: data.voice?.contextText, fallbackUsed: data.voice?.fallbackUsed, voiceId: selectedVoiceId || undefined }, {
         onStateChange: (state) => { setTtsPlaybackState(state); if (state === "READY" || state === "PLAYING") { if (ttsGuardRef.current !== null) window.clearTimeout(ttsGuardRef.current); } if (state === "PLAYING") setStatus("speaking"); },
         onStart: () => {
@@ -610,7 +661,10 @@ export default function Home() {
     setRealtimeState("PREPARING_MIC");
     setStatus("listening");
     window.setTimeout(() => {
-      if (conversationActiveRef.current) startListening();
+      if (!conversationActiveRef.current) return;
+      void restoreMicrophoneAfterIOSPlayback().then((ready) => {
+        if (ready && conversationActiveRef.current) startListening();
+      });
     }, 160);
   };
 
@@ -638,6 +692,8 @@ export default function Home() {
     vadRef.current.stop();
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
+    iosMicReleasedRef.current = false;
+    setIOSAudioSessionType("play-and-record");
     setRealtimeState("IDLE");
     setListeningReady(false);
     setInterimText("");

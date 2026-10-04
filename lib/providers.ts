@@ -412,7 +412,7 @@ function isMobileBrowser() {
 }
 
 function isIOSBrowser() {
-  return typeof navigator !== "undefined" && /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  return typeof navigator !== "undefined" && (/iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
 }
 
 export class DoubaoTTSProvider implements TTSProvider {
@@ -421,6 +421,7 @@ export class DoubaoTTSProvider implements TTSProvider {
   private audioContext: AudioContext | null = null;
   private audioSource: AudioBufferSourceNode | null = null;
   private audioGain: GainNode | null = null;
+  private audioCompressor: DynamicsCompressorNode | null = null;
   private objectUrl: string | null = null;
   private abortController: AbortController | null = null;
   private requestGeneration = 0;
@@ -652,12 +653,24 @@ export class DoubaoTTSProvider implements TTSProvider {
       this.audioSource = source;
       source.buffer = buffer;
       const gain = context.createGain();
-      // iOS often attenuates audio routed through Web Audio after an async
-      // fetch. Keep other devices unchanged and lift only the iOS output.
-      gain.gain.value = isIOSBrowser() ? 1.35 : 1;
+      // iOS can attenuate async Web Audio noticeably. Boost the source and
+      // tame peaks so quiet TTS becomes clearly audible without harsh clipping.
+      gain.gain.value = isIOSBrowser() ? 2 : 1;
       this.audioGain = gain;
       source.connect(gain);
-      gain.connect(context.destination);
+      if (isIOSBrowser()) {
+        const compressor = context.createDynamicsCompressor();
+        compressor.threshold.value = -18;
+        compressor.knee.value = 24;
+        compressor.ratio.value = 8;
+        compressor.attack.value = 0.003;
+        compressor.release.value = 0.25;
+        this.audioCompressor = compressor;
+        gain.connect(compressor);
+        compressor.connect(context.destination);
+      } else {
+        gain.connect(context.destination);
+      }
       const startedAtAudio = context.currentTime;
       let lastPlaybackTime = 0;
       let lastMovementAt = performance.now();
@@ -673,6 +686,8 @@ export class DoubaoTTSProvider implements TTSProvider {
           try { source.stop(); } catch { /* already stopped */ }
           source.disconnect();
           gain.disconnect();
+          this.audioCompressor?.disconnect();
+          this.audioCompressor = null;
           if (this.audioGain === gain) this.audioGain = null;
           this.audioSource = null;
           callbacks.onStateChange?.("FAILED");
@@ -689,6 +704,8 @@ export class DoubaoTTSProvider implements TTSProvider {
         window.clearInterval(progressTimer);
         source.disconnect();
         gain.disconnect();
+        this.audioCompressor?.disconnect();
+        this.audioCompressor = null;
         if (this.audioGain === gain) this.audioGain = null;
         this.audioSource = null;
         callbacks.onPlaybackSignal?.({ type: "ended", currentTime: buffer.duration, duration: buffer.duration });
@@ -706,6 +723,8 @@ export class DoubaoTTSProvider implements TTSProvider {
         settled = true;
         source.disconnect();
         gain.disconnect();
+        this.audioCompressor?.disconnect();
+        this.audioCompressor = null;
         if (this.audioGain === gain) this.audioGain = null;
         this.audioSource = null;
         callbacks.onPlaybackSignal?.({ type: "error", errorName: error instanceof Error ? error.name : "UnknownError", errorMessage: error instanceof Error ? error.message : "浏览器无法启动音频播放" });
@@ -800,6 +819,8 @@ export class DoubaoTTSProvider implements TTSProvider {
     this.audioSource = null;
     this.audioGain?.disconnect();
     this.audioGain = null;
+    this.audioCompressor?.disconnect();
+    this.audioCompressor = null;
     this.audio?.pause();
     if (this.audio) {
       this.audio.removeAttribute("src");
