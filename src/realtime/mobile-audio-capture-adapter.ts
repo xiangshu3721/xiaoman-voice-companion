@@ -1,6 +1,7 @@
 import { apiUrl } from "@/lib/api";
 import { AdaptiveVadMonitor } from "@/src/realtime/adaptive-vad";
 import type { ASRAdapter, ASRAdapterHandlers, ASRPrepareResult } from "@/src/realtime/asr-adapter";
+import { BrowserASRAdapter } from "@/src/realtime/browser-asr-adapter";
 import { MicrophonePermissionManager, type MicrophoneRequestResult } from "@/src/realtime/microphone-permission";
 
 const AUDIO_CONSTRAINTS: MediaStreamConstraints = { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } };
@@ -25,6 +26,7 @@ export class MobileAudioCaptureAdapter implements ASRAdapter {
   private recordingStartedAt = 0;
   private lastRms = 0;
   private resumeCaptureAfterPlayback = false;
+  private browserFallback: BrowserASRAdapter | null = null;
   private diagnostics: Record<string, unknown> = { mode: "cloud", capture: "idle", asr: "idle", lastError: "" };
 
   async prepare(): Promise<ASRPrepareResult> {
@@ -40,6 +42,7 @@ export class MobileAudioCaptureAdapter implements ASRAdapter {
   }
 
   start() {
+    if (this.browserFallback) { this.browserFallback.start(); return; }
     if (!this.stream || this.stream.getAudioTracks()[0]?.readyState !== "live") { this.handlers.onError?.("麦克风暂时不可用，请重新点击开始语音。"); return; }
     if (this.active) return;
     const mimeType = pickMimeType();
@@ -65,6 +68,7 @@ export class MobileAudioCaptureAdapter implements ASRAdapter {
   stop() {
     this.clearTimers();
     this.active = false;
+    this.browserFallback?.stop();
     this.vad.stop();
     if (this.recorder) {
       if (this.recorder.state !== "inactive") this.recorder.stop();
@@ -86,7 +90,7 @@ export class MobileAudioCaptureAdapter implements ASRAdapter {
     return result.stream;
   }
 
-  destroy() { this.stop(); this.stream?.getTracks().forEach((track) => track.stop()); this.stream = null; this.handlers = {}; }
+  destroy() { this.stop(); this.browserFallback?.destroy(); this.browserFallback = null; this.stream?.getTracks().forEach((track) => track.stop()); this.stream = null; this.handlers = {}; }
   setHandlers(handlers: ASRAdapterHandlers) { this.handlers = handlers; }
   setStream(stream: MediaStream | null) { if (this.stream !== stream) this.stream?.getTracks().forEach((track) => track.stop()); this.stream = stream; }
   getStream() { return this.stream; }
@@ -122,6 +126,10 @@ export class MobileAudioCaptureAdapter implements ASRAdapter {
       body.append("audio", blob, `voice.${extensionForMime(mimeType)}`);
       const response = await fetch(apiUrl("/api/asr"), { method: "POST", body, cache: "no-store" });
       const payload = await response.json().catch(() => ({})) as { text?: string; error?: string };
+      if ((response.status === 404 || response.status === 503) && typeof window !== "undefined" && Boolean(window.SpeechRecognition || window.webkitSpeechRecognition)) {
+        this.startBrowserFallback();
+        return;
+      }
       if (!response.ok || !payload.text?.trim()) throw new Error(payload.error || "云端语音识别暂时不可用");
       this.diagnostics = { ...this.diagnostics, capture: "idle", asr: "ready" };
       this.handlers.onFinal?.(payload.text.trim());
@@ -147,6 +155,13 @@ export class MobileAudioCaptureAdapter implements ASRAdapter {
   }
 
   private stopPcmCapture() { this.captureProcessor?.disconnect(); this.captureSource?.disconnect(); this.captureProcessor = null; this.captureSource = null; if (this.captureContext) void this.captureContext.close().catch(() => undefined); this.captureContext = null; }
+
+  private startBrowserFallback() {
+    this.diagnostics = { ...this.diagnostics, capture: "idle", asr: "fallback-browser" };
+    this.browserFallback = new BrowserASRAdapter();
+    this.browserFallback.setHandlers(this.handlers);
+    this.browserFallback.start();
+  }
 }
 
 function pickMimeType() { if (typeof MediaRecorder === "undefined") return ""; return ["audio/mp4", "audio/ogg;codecs=opus"].find((type) => MediaRecorder.isTypeSupported(type)) || ""; }
