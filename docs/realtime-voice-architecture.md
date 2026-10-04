@@ -19,4 +19,8 @@
 
 ## 已知边界
 
-浏览器 SpeechRecognition 的实现受 Chrome / Safari / 微信 WebView 差异影响；服务端仍保留原有 DeepSeek、Conflict Engine、Seed-TTS 和 Browser SpeechSynthesis fallback。微信内置浏览器如果没有暴露标准 SpeechRecognition，页面会继续提供文字输入和明确的恢复提示。
+语音输入现在由统一 `ASRAdapter` 管理：桌面能力满足时保留浏览器 SpeechRecognition 主路径；移动端、WebView 或浏览器识别能力不足时，使用 `CapabilityDetector` 选择 WebAudio/MediaRecorder 录音、VAD 判停和服务端 `/api/asr` 云识别。权限状态只由 `getUserMedia` 的明确结果更新，ASR 网络/服务错误不会再被显示成麦克风权限错误。
+
+播放和收音由适配器协调：AI 播放前暂停并释放录音会话，真实播放结束后再重新申请收音，避免移动浏览器把 TTS 路由到听筒；TTS 使用统一的 WebAudio 增益和动态压缩链路，不按 iPhone/Android 分叉。
+
+使用 `?debugVoice=1` 可查看 Release、SHA、平台/浏览器、WebView、ASR Adapter、MIC、Capture、ASR、Playback 和内部状态。生产界面只显示“正在听你说 / Ta 正在想 / Ta 准备开口 / Ta 正在说”等统一文案。

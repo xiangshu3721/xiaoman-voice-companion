@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  BrowserSpeechRecognitionProvider,
   DoubaoTTSProvider,
   SCENARIOS,
   TTS_VOICE_STORAGE_KEY,
@@ -17,11 +16,14 @@ import { apiUrl, sitePath } from "@/lib/api";
 import { readChatArchives, upsertChatArchive, type ChatArchive } from "@/lib/chat-history";
 import type { EmotionPerformancePlan } from "@/src/emotion-performance/types";
 import { AdaptiveVadMonitor } from "@/src/realtime/adaptive-vad";
+import { createASRAdapter } from "@/src/realtime/create-asr-adapter";
+import type { ASRAdapter } from "@/src/realtime/asr-adapter";
 import { detectEndOfTurn, semanticCompleteness } from "@/src/realtime/end-of-turn";
 import { TranscriptAccumulator } from "@/src/realtime/transcript-accumulator";
 import type { MicHealth, RealtimeConversationState } from "@/src/realtime/types";
 import { MicrophonePermissionManager } from "@/src/realtime/microphone-permission";
 import { VoiceDeliveryPipeline } from "@/src/voice/voice-delivery-pipeline";
+import { BUILD_INFO } from "@/src/build-info";
 
 type Status = "idle" | "listening" | "thinking" | "speaking";
 type MicrophoneState = "unknown" | "requesting" | "granted" | "denied" | "unavailable" | "error";
@@ -71,24 +73,12 @@ const WELCOME: ChatMessage = {
   content: "你来了。今天想跟我说什么？",
 };
 
-function isIOSMobileBrowser() {
-  if (typeof navigator === "undefined") return false;
-  return /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-}
-
-function setIOSAudioSessionType(type: "playback" | "play-and-record") {
-  if (typeof navigator === "undefined") return;
-  const audioSession = (navigator as Navigator & { audioSession?: { type?: string } }).audioSession;
-  if (!audioSession) return;
-  try { audioSession.type = type; } catch { /* unsupported or temporarily unavailable */ }
-}
-
 function Avatar({ small = false, gender = "female" }: { small?: boolean; gender?: CharacterGender }) {
   const source = sitePath(gender === "male" ? "/avatars/ta-male.jpg" : "/avatars/ta-female.jpg");
   const label = gender === "male" ? "Ta 的男声头像" : "Ta 的女声头像";
   return (
     <div className={`relative shrink-0 overflow-hidden rounded-full bg-[#211e1d] ${small ? "h-11 w-11" : "h-44 w-44 sm:h-52 sm:w-52"}`} aria-label={label}>
-      <img src={source} alt="" className="h-full w-full object-cover object-center" decoding="async" />
+      <img src={source} alt="" className="h-full w-full object-cover object-center" decoding="async" loading={small ? "lazy" : "eager"} fetchPriority={small ? "low" : "high"} />
       <div className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-white/10" />
     </div>
   );
@@ -218,7 +208,8 @@ export default function Home() {
   const archiveIdRef = useRef(`conversation-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`);
   const sectionIdRef = useRef(newSectionId());
   const conversationActiveRef = useRef(false);
-  const asrRef = useRef(new BrowserSpeechRecognitionProvider());
+  const asrRef = useRef<ASRAdapter>(createASRAdapter().adapter);
+  const capabilityRef = useRef<ReturnType<typeof createASRAdapter>["capability"] | null>(null);
   const voicePipelineRef = useRef(new VoiceDeliveryPipeline(new DoubaoTTSProvider()));
   const microphoneRef = useRef(new MicrophonePermissionManager());
   const streamRef = useRef<MediaStream | null>(null);
@@ -236,7 +227,6 @@ export default function Home() {
   const generationRef = useRef(0);
   const processedTurnIdsRef = useRef(new Set<string>());
   const spokenTextRef = useRef("");
-  const iosMicReleasedRef = useRef(false);
 
   const scenario = useMemo(() => SCENARIOS.find((item) => item.id === scenarioId) || SCENARIOS[0], [scenarioId]);
   const selectedVoice = voiceOptions.find((voice) => voice.id === selectedVoiceId);
@@ -246,7 +236,12 @@ export default function Home() {
   const hasUserTurn = messages.some((message) => message.role === "user");
 
   useEffect(() => {
+    const runtime = createASRAdapter();
+    asrRef.current.destroy();
+    asrRef.current = runtime.adapter;
+    capabilityRef.current = runtime.capability;
     setDebugEnabled(new URLSearchParams(window.location.search).get("debug") === "true");
+    if (new URLSearchParams(window.location.search).get("debugVoice") === "1") setDebugEnabled(true);
     setVoiceInputSupported(asrRef.current.isSupported());
     void fetch(apiUrl("/api/tts/config"), { cache: "force-cache" }).then((response) => response.json()).then((data: { voices?: VoiceOption[] }) => {
       const nextVoices = data.voices?.length ? data.voices : FALLBACK_VOICE_OPTIONS;
@@ -261,7 +256,7 @@ export default function Home() {
     });
     return () => {
       stopMicWatch();
-      asrRef.current.stop();
+      asrRef.current.destroy();
       voicePipelineRef.current.stop("SESSION_END");
       vadRef.current.stop();
       streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -292,52 +287,29 @@ export default function Home() {
     setMicHealth((current) => ({ ...current, permissionGranted: true, trackState: track?.readyState || "live", trackMuted: track?.muted || false }));
   };
 
-  const releaseMicrophoneForIOSPlayback = () => {
-    if (!isIOSMobileBrowser() || !streamRef.current) return;
-    iosMicReleasedRef.current = true;
-    vadRef.current.stop();
-    streamRef.current.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-    setIOSAudioSessionType("playback");
-    setMicHealth((current) => ({ ...current, trackState: "none", trackMuted: false, vadAlive: false, asrAlive: false }));
-  };
-
-  const restoreMicrophoneAfterIOSPlayback = async () => {
-    if (!isIOSMobileBrowser() || !iosMicReleasedRef.current || !conversationActiveRef.current) return true;
-    const micResult = await microphoneRef.current.request(microphoneConstraints);
-    if (!micResult.stream) {
-      setMicrophoneState(micResult.status);
-      setNotice(micResult.message || "AI 说完后，麦克风没有恢复；请重新点击开始语音。");
-      setRealtimeState("RECOVERING_ASR");
-      return false;
-    }
-    keepMicrophoneStream(micResult.stream);
-    iosMicReleasedRef.current = false;
-    setIOSAudioSessionType("play-and-record");
-    return true;
-  };
-
   const begin = async () => {
     setNotice("");
     // 必须在用户点击触发的同步阶段先解锁音频，移动 Safari/部分 WebView
     // 才允许异步请求完成后播放 AI 语音。
     voicePipelineRef.current.unlockAudio();
+    const adapter = asrRef.current;
+    const prepared = await adapter.prepare();
     setMicrophoneState("requesting");
-    const micResult = await microphoneRef.current.request(microphoneConstraints);
+    const micResult = adapter.requestMicrophone ? await adapter.requestMicrophone() : await microphoneRef.current.request(microphoneConstraints);
     const nextMicrophoneState: MicrophoneState = micResult.status;
     if (micResult.stream) {
       keepMicrophoneStream(micResult.stream);
-      setIOSAudioSessionType("play-and-record");
+      adapter.setStream?.(micResult.stream);
     } else {
       setMicHealth((current) => ({ ...current, permissionGranted: false, trackState: nextMicrophoneState === "denied" ? "denied" : "unavailable", trackMuted: false }));
     }
     setMicrophoneState(nextMicrophoneState);
-    if (!asrRef.current.isSupported()) {
+    if (!prepared.ready || !adapter.isSupported()) {
       setVoiceInputSupported(false);
       setStarted(true);
       setConversationActive(false);
       setStatus("idle");
-      setNotice(nextMicrophoneState === "granted" ? "麦克风已授权，但当前浏览器没有语音识别能力，已切换为文字对话。" : `${micResult.message || "当前浏览器不支持网页语音识别"} 已切换为文字对话。`);
+      setNotice(nextMicrophoneState === "granted" ? `${prepared.message || "当前浏览器没有可用的语音识别能力"} 已切换为文字对话。` : `${micResult.message || prepared.message || "当前浏览器不支持网页语音识别"} 已切换为文字对话。`);
       return;
     }
     setVoiceInputSupported(true);
@@ -357,8 +329,6 @@ export default function Home() {
     vadRef.current.stop();
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
-    iosMicReleasedRef.current = false;
-    setIOSAudioSessionType("play-and-record");
     if (endTimerRef.current !== null) window.clearTimeout(endTimerRef.current);
     accumulatorRef.current.reset();
     asrRef.current.stop();
@@ -485,21 +455,23 @@ export default function Home() {
       interruptModeRef.current = true;
       // 暂时关闭抢话：AI 说完后才重新开启 ASR，避免用户声音和 TTS 重叠。
       asrRef.current.stop();
-      // iOS keeps getUserMedia in a call-style audio route. Release it before
-      // TTS so playback uses the loudspeaker instead of the quiet receiver.
-      releaseMicrophoneForIOSPlayback();
+      asrRef.current.suspendForPlayback?.();
+      if (asrRef.current.mode === "cloud") {
+        streamRef.current = null;
+        setMicHealth((current) => ({ ...current, trackState: "none", vadAlive: false, asrAlive: false }));
+      }
       voicePipelineRef.current.speak(turnId, { text: reply, emotion: data.voice?.emotion, primaryEmotion: data.voice?.primaryEmotion, emotionScale: data.voice?.emotionScale, intensity: data.voice?.intensity, speed: data.voice?.speed, volume: data.voice?.volume, speechRate: data.voice?.speechRate, loudnessRate: data.voice?.loudnessRate, sectionId: data.voice?.sectionId || sectionIdRef.current, contextText: data.voice?.contextText, fallbackUsed: data.voice?.fallbackUsed, voiceId: selectedVoiceId || undefined }, {
         onStateChange: (state) => { setTtsPlaybackState(state); if (state === "READY" || state === "PLAYING") { if (ttsGuardRef.current !== null) window.clearTimeout(ttsGuardRef.current); } if (state === "PLAYING") setStatus("speaking"); },
         onStart: () => {
           setRealtimeState("AI_SPEAKING");
         },
         onProgress: ({ spokenText }) => { spokenTextRef.current = spokenText; setLatestSpokenText(spokenText); },
-        onEnd: () => { if (ttsGuardRef.current !== null) window.clearTimeout(ttsGuardRef.current); interruptModeRef.current = false; setRealtimeState("LISTENING"); resumeListening(); },
+        onEnd: () => { if (ttsGuardRef.current !== null) window.clearTimeout(ttsGuardRef.current); interruptModeRef.current = false; void resumeCaptureAndResumeListening(); },
         onError: (message) => {
           if (ttsGuardRef.current !== null) window.clearTimeout(ttsGuardRef.current);
           interruptModeRef.current = false;
           setNotice(message);
-          resumeListening();
+          void resumeCaptureAndResumeListening();
         },
         onMetrics: (metrics) => setTtsDebug(metrics),
       });
@@ -508,11 +480,11 @@ export default function Home() {
         voicePipelineRef.current.stop("SYSTEM_ERROR");
         interruptModeRef.current = false;
         setNotice("语音播放超时，已恢复收音；你可以继续说。 ");
-        resumeListening();
+        void resumeCaptureAndResumeListening();
       }, 18000);
     } catch {
       setNotice("连接出了点问题，重新试试？");
-      if (conversationActiveRef.current) { interruptModeRef.current = false; setRealtimeState("RECOVERING_ASR"); resumeListening(); }
+      if (conversationActiveRef.current) { interruptModeRef.current = false; setRealtimeState("RECOVERING_ASR"); void resumeCaptureAndResumeListening(); }
       else setStatus("idle");
     }
   };
@@ -595,16 +567,43 @@ export default function Home() {
         window.setTimeout(() => { if (conversationActiveRef.current) startListening(false); }, 250);
       }
     }, 2800);
-    asrRef.current.start((text, isFinal) => {
+    asrRef.current.setHandlers({
+      onInterim: (text) => handleASRResult(text, false),
+      onFinal: (text) => handleASRResult(text, true),
+      onError: (message) => {
+        setRealtimeState("RECOVERING_ASR");
+        setNotice(message.includes("权限") ? "语音识别暂时不可用，但麦克风授权状态不受影响；正在重试。" : "语音识别暂时中断，正在自动恢复……");
+        setInterimText("");
+        if (conversationActiveRef.current) window.setTimeout(() => resumeListening(), 260);
+      },
+      onEnd: () => {
+        asrSpeechActiveRef.current = false;
+        setMicHealth((current) => ({ ...current, asrAlive: false }));
+        if (!conversationActiveRef.current) setStatus((current) => current === "listening" ? "idle" : current);
+        if (asrRef.current.mode === "cloud" && conversationActiveRef.current && !accumulatorRef.current.finalText()) window.setTimeout(() => resumeListening(), 160);
+      },
+      onReady: () => {
+        if (asrReadyTimerRef.current !== null) window.clearTimeout(asrReadyTimerRef.current);
+        setListeningReady(true);
+        setRealtimeState(interruptOnly ? "AI_SPEAKING" : "LISTENING");
+        setMicHealth((current) => ({ ...current, asrAlive: true }));
+      },
+      onActivity: (event) => {
+        setMicHealth((current) => ({ ...current, lastAsrResultAt: Date.now() }));
+        if (event === "speechstart") asrSpeechActiveRef.current = true;
+        if (event === "speechend") asrSpeechActiveRef.current = false;
+        if (event === "end" || event === "restart") setAsrRestartCount((count) => count + 1);
+      },
+    });
+    asrRef.current.start();
+  };
+
+  const handleASRResult = (text: string, isFinal: boolean) => {
       const resultAt = Date.now();
       lastVoiceAtRef.current = resultAt;
       lastAsrResultAtRef.current = resultAt;
       setMicHealth((current) => ({ ...current, asrAlive: true, lastAsrResultAt: Date.now() }));
       asrSpeechActiveRef.current = !isFinal;
-      if (interruptOnly) {
-        // 当前版本不允许用户打断 AI；播放期间的旧 ASR 回调直接丢弃。
-        return;
-      }
       if (realtimeState === "FINALIZING_USER_TURN" || realtimeState === "AI_GENERATING") return;
       const snapshot = accumulatorRef.current.accept(text, isFinal);
       setInterimText([snapshot.committedTranscript, snapshot.interimTranscript].filter(Boolean).join(""));
@@ -612,47 +611,6 @@ export default function Home() {
       if (isFinal) lastFinalAtRef.current = Date.now();
       setRealtimeState(isFinal ? "POSSIBLE_END" : "USER_SPEAKING");
       scheduleEndOfTurn();
-    }, (message) => {
-      if (/语音识别服务|语音识别未能启动/.test(message)) {
-        conversationActiveRef.current = false;
-        setConversationActive(false);
-        asrRef.current.stop();
-        setVoiceInputSupported(false);
-        setNotice(message);
-        setRealtimeState("ERROR");
-        setStatus("idle");
-      } else if (/权限|麦克风/.test(message)) {
-        conversationActiveRef.current = false;
-        setConversationActive(false);
-        asrRef.current.stop();
-        setVoiceInputSupported(false);
-        setNotice(microphoneState === "granted" ? "麦克风已授权，但此浏览器的语音识别服务没有启动，已切换为文字输入。" : message);
-        setRealtimeState("ERROR");
-        setStatus("idle");
-      } else {
-        setRealtimeState("RECOVERING_ASR");
-        setNotice("语音识别暂时中断，正在自动恢复……");
-        window.setTimeout(() => { if (conversationActiveRef.current) resumeListening(); }, 260);
-      }
-      setInterimText("");
-    }, () => {
-      asrSpeechActiveRef.current = false;
-      setMicHealth((current) => ({ ...current, asrAlive: false }));
-      if (!conversationActiveRef.current) setStatus((current) => current === "listening" ? "idle" : current);
-    }, { onReady: () => {
-      if (asrReadyTimerRef.current !== null) window.clearTimeout(asrReadyTimerRef.current);
-      setListeningReady(true);
-      setRealtimeState(interruptOnly ? "AI_SPEAKING" : "LISTENING");
-      setMicHealth((current) => ({ ...current, asrAlive: true }));
-    }, onActivity: (event) => {
-      setMicHealth((current) => ({ ...current, lastAsrResultAt: Date.now() }));
-      if (event === "speechstart") asrSpeechActiveRef.current = true;
-      if (event === "speechend") asrSpeechActiveRef.current = false;
-      if (event === "end") setAsrRestartCount((count) => count + 1);
-    }, onSessionEvent: (event) => {
-      setAsrSessionInfo(event);
-      if (event.type === "restart") setAsrRestartCount(event.restartCount);
-    } });
   };
 
   const resumeListening = () => {
@@ -660,19 +618,42 @@ export default function Home() {
     interruptModeRef.current = false;
     setRealtimeState("PREPARING_MIC");
     setStatus("listening");
-    window.setTimeout(() => {
-      if (!conversationActiveRef.current) return;
-      void restoreMicrophoneAfterIOSPlayback().then((ready) => {
-        if (ready && conversationActiveRef.current) startListening();
-      });
-    }, 160);
+    window.setTimeout(() => { if (conversationActiveRef.current) startListening(); }, 160);
   };
 
-  const startVoiceConversation = () => {
+  const resumeCaptureAndResumeListening = async () => {
+    if (!conversationActiveRef.current) return;
+    try {
+      const stream = await asrRef.current.resumeAfterPlayback?.();
+      if (stream) {
+        keepMicrophoneStream(stream);
+        asrRef.current.setStream?.(stream);
+      }
+      resumeListening();
+    } catch (error) {
+      setMicrophoneState("error");
+      setNotice(error instanceof Error ? error.message : "麦克风没有恢复，请重新点击开始语音。");
+      setRealtimeState("ERROR");
+    }
+  };
+
+  const startVoiceConversation = async () => {
+    if (asrRef.current.mode === "cloud" && asrRef.current.getStream?.()?.getAudioTracks()[0]?.readyState !== "live") {
+      setMicrophoneState("requesting");
+      const result = await asrRef.current.requestMicrophone?.();
+      if (!result?.stream) {
+        setMicrophoneState(result?.status || "error");
+        setNotice(result?.message || "麦克风暂时不可用，请重新允许后再试。");
+        return;
+      }
+      keepMicrophoneStream(result.stream);
+      asrRef.current.setStream?.(result.stream);
+      setMicrophoneState("granted");
+    }
     conversationActiveRef.current = true;
     setConversationActive(true);
     setRealtimeState("PREPARING_MIC");
-    if (streamRef.current) void vadRef.current.start(streamRef.current, (update) => {
+    if (asrRef.current.mode === "browser" && streamRef.current) void vadRef.current.start(streamRef.current, (update) => {
       const now = Date.now();
       if (update.active) {
         lastVoiceAtRef.current = now;
@@ -692,8 +673,6 @@ export default function Home() {
     vadRef.current.stop();
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
-    iosMicReleasedRef.current = false;
-    setIOSAudioSessionType("play-and-record");
     setRealtimeState("IDLE");
     setListeningReady(false);
     setInterimText("");
@@ -746,7 +725,7 @@ export default function Home() {
           <div className="flex items-center gap-4"><button type="button" onClick={() => { setSelectedArchiveId(null); setHistoryOpen(true); }} className="text-xs text-[#9f9795] transition hover:text-[#f4efeb]">历史记录</button><button type="button" onClick={resetConversation} className="text-xs text-[#9f9795] transition hover:text-[#f4efeb]">重新开始</button></div>
         </header>
         <section className="flex flex-1 flex-col items-center pt-11 sm:pt-14">
-          <div className="flex flex-col items-center"><div className={`relative rounded-full ${status === "listening" && listeningReady ? "breathing" : ""}`}><Avatar gender={characterGender} /></div><p className="mt-6 text-sm text-[#d1c7c4]">{realtimeState === "PREPARING_MIC" ? "正在准备麦克风……" : realtimeState === "RECOVERING_ASR" ? "刚刚没听清，正在恢复……" : STATUS_COPY[status].replace("小满", characterName)}</p><p className="mt-2 text-[11px] text-[#756d6b]">麦克风：{microphoneState === "granted" ? "已授权" : microphoneState === "requesting" ? "请求中" : microphoneState === "denied" ? "未授权" : microphoneState === "error" ? "暂时不可用" : "检测中"}{micHealth.trackMuted ? "（设备静音）" : ""}</p>{status === "listening" && interimText && <p className="mt-3 max-w-xs text-center text-xs leading-5 text-[#a9a09e]">“{interimText}”</p>}<div className="mt-3 h-8">{status === "speaking" ? <Wave /> : status === "thinking" ? <div className="flex h-8 items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:120ms]" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:240ms]" /></div> : <span className="text-xs text-[#756d6b]">{scenario.shortTitle}</span>}</div></div>
+          <div className="flex flex-col items-center"><div className={`relative rounded-full ${status === "listening" && listeningReady ? "breathing" : ""}`}><Avatar gender={characterGender} /></div><p className="mt-6 text-sm text-[#d1c7c4]">{STATUS_COPY[status].replace("小满", characterName)}</p><p className="mt-2 text-[11px] text-[#756d6b]">麦克风：{microphoneState === "granted" ? "已授权" : microphoneState === "requesting" ? "请求中" : microphoneState === "denied" ? "未授权" : microphoneState === "error" ? "暂时不可用" : "检测中"}{micHealth.trackMuted ? "（设备静音）" : ""}</p>{status === "listening" && interimText && <p className="mt-3 max-w-xs text-center text-xs leading-5 text-[#a9a09e]">“{interimText}”</p>}<div className="mt-3 h-8">{status === "speaking" ? <Wave /> : status === "thinking" ? <div className="flex h-8 items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:120ms]" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:240ms]" /></div> : <span className="text-xs text-[#756d6b]">{scenario.shortTitle}</span>}</div></div>
           <div className="mt-10 w-full max-w-xl space-y-4" aria-live="polite">
             {visibleMessages.map((message, index) => <div key={`${message.role}-${index}-${message.content.slice(0, 8)}`} className={`flex items-start gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>{message.role === "assistant" && <Avatar small gender={characterGender} />}<div className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === "user" ? "rounded-br-md bg-[#e98972] text-[#241615]" : "rounded-bl-md bg-[#211e1d] text-[#ded4d1]"}`}><span className="mb-1 block text-[10px] tracking-[0.12em] opacity-50">{message.role === "user" ? "我" : characterName}</span>{message.content}</div></div>)}
           </div>
@@ -754,7 +733,7 @@ export default function Home() {
         </section>
           {debugEnabled && <RepairDebug debugInfo={debugInfo} />}
           {debugEnabled && <PerformanceDebug plan={debugInfo?.emotionPerformance || null} />}
-          {debugEnabled && <details open className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-xs text-[#b7adab]"><summary className="cursor-pointer text-[#e98972]">Realtime Voice Debug</summary><div className="mt-3 grid gap-2 sm:grid-cols-2"><p>REALTIME STATE：{realtimeState}</p><p>LISTENING READY：{listeningReady ? "yes" : "no"}</p><p>MIC TRACK：{micHealth.trackState}{micHealth.trackMuted ? " / muted" : ""}</p><p>AUDIO CONTEXT：{micHealth.audioContextState}</p><p>VAD：{micHealth.vadAlive ? "active" : "off"}</p><p>ASR：{micHealth.asrAlive ? "active" : "off"}</p><p>ASR SESSION：{asrSessionInfo?.sessionId || "-"}</p><p>ASR SESSION COUNT：{asrSessionInfo?.sessionCount ?? "-"}</p><p>VOICE ACTIVITY：{micHealth.lastVoiceActivityAt ? new Date(micHealth.lastVoiceActivityAt).toLocaleTimeString() : "-"}</p><p>VAD THRESHOLD：{micHealth.vadThreshold || "-"}</p><p className="sm:col-span-2">COMMITTED：{interimText || "-"}</p><p>END CONFIDENCE：{endOfTurnConfidence.toFixed(2)}</p><p>ASR RESTART：{asrRestartCount}</p><p className="sm:col-span-2">ACTUALLY SPOKEN：{latestSpokenText || "-"}</p></div></details>}
+          {debugEnabled && <details open className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-xs text-[#b7adab]"><summary className="cursor-pointer text-[#e98972]">Realtime Voice Debug</summary><div className="mt-3 grid gap-2 sm:grid-cols-2"><p>Release：{BUILD_INFO.releaseNumber}</p><p className="break-all">SHA：{BUILD_INFO.gitSha}</p><p>Build：{BUILD_INFO.buildTime}</p><p>Platform：{capabilityRef.current?.platform || "-"}</p><p>Device：{capabilityRef.current?.device || "-"}</p><p>Browser：{capabilityRef.current?.browser || "-"}</p><p>WebView：{capabilityRef.current?.webView ? "yes" : "no"}</p><p>ASR Adapter：{asrRef.current.mode}</p><p>ASR Capability：{capabilityRef.current?.preferredASR || "-"}</p><p>MIC：{microphoneState}</p><p>Capture：{String(asrRef.current.getDiagnostics?.().capture || "-")}</p><p>ASR：{String(asrRef.current.getDiagnostics?.().asr || (micHealth.asrAlive ? "active" : "off"))}</p><p>Playback：{ttsPlaybackState}</p><p>REALTIME STATE：{realtimeState}</p><p>LISTENING READY：{listeningReady ? "yes" : "no"}</p><p>MIC TRACK：{micHealth.trackState}{micHealth.trackMuted ? " / muted" : ""}</p><p>AUDIO CONTEXT：{micHealth.audioContextState}</p><p>VAD：{micHealth.vadAlive ? "active" : "off"}</p><p>VOICE ACTIVITY：{micHealth.lastVoiceActivityAt ? new Date(micHealth.lastVoiceActivityAt).toLocaleTimeString() : "-"}</p><p>VAD THRESHOLD：{micHealth.vadThreshold || "-"}</p><p className="sm:col-span-2">COMMITTED：{interimText || "-"}</p><p>END CONFIDENCE：{endOfTurnConfidence.toFixed(2)}</p><p>ASR RESTART：{asrRestartCount}</p><p className="sm:col-span-2">ACTUALLY SPOKEN：{latestSpokenText || "-"}</p></div></details>}
           {debugEnabled && debugInfo?.realtime && <details open className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-xs text-[#b7adab]"><summary className="cursor-pointer text-[#e98972]">Semantic / Novelty Debug</summary><div className="mt-3 grid gap-2 sm:grid-cols-2"><p className="sm:col-span-2">LATEST USER DELTA：{debugInfo.realtime.latestUserDelta}</p><p>EXPLICIT：{debugInfo.realtime.explicitIntents.join(", ") || "none"}</p><p>INFERRED：{debugInfo.realtime.inferredIntents.join(", ") || "none"}</p><p>NEGATED：{debugInfo.realtime.negatedIntents.join(", ") || "none"}</p><p>APOLOGY EVIDENCE：{debugInfo.realtime.apologyEvidence ? "yes" : "no"}</p><p>DIALOGUE ACT：{debugInfo.realtime.dialogueAct}</p><p>DUPLICATE SCORE：{debugInfo.realtime.semanticDuplicateScore}</p><p>NOVELTY SCORE：{debugInfo.realtime.responseNoveltyScore}</p><p>ADDRESSES LATEST：{debugInfo.realtime.addressesLatestDelta ? "yes" : "no"}</p></div></details>}
         <footer className="mt-8 flex flex-col items-center">
           {voiceInputSupported ? <>

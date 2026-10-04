@@ -36,6 +36,7 @@ GitHub Pages 只托管静态前端；DeepSeek 和火山引擎凭证放在腾讯�
 - `.github/workflows/deploy-pages.yml`：推送到 `main` 后自动构建并发布 Pages。
 - `lib/api.ts`：前端通过 `NEXT_PUBLIC_API_BASE_URL` 请求腾讯云 API。
 - `/api/chat`、`/api/tts`、`/api/tts/config`：服务端 API，并已加入 CORS 响应。
+- `/api/asr`：移动端短录音云识别接口，并已加入 CORS 响应。
 
 ### 1. 腾讯云只配置服务端变量
 
@@ -48,6 +49,8 @@ VOLCENGINE_TTS_RESOURCE_ID=seed-tts-2.0
 VOLCENGINE_TTS_MODEL=seed-tts-2.0-standard
 VOLCENGINE_TTS_VOICE=zh_female_vv_uranus_bigtts
 VOLCENGINE_TTS_VOICE_NAME=vivi 2.0（官方预置·通用场景女声）
+VOLCENGINE_ASR_API_KEY=你的火山引擎 ASR API Key
+VOLCENGINE_ASR_RESOURCE_ID=volc.seedasr.sauc.duration
 DEFAULT_FEMALE_SPEAKER=zh_female_vv_uranus_bigtts
 DEFAULT_MALE_SPEAKER=zh_male_dayi_saturn_bigtts
 CORS_ORIGIN=https://你的 GitHub 用户名.github.io
@@ -102,7 +105,7 @@ CORS_ORIGIN=https://你的用户名.github.io
 
 ## 当前实现
 
-- ASR：`SpeechRecognition / webkitSpeechRecognition`，中文 `zh-CN`
+- ASR：桌面优先使用 `SpeechRecognition / webkitSpeechRecognition`；移动端使用能力探测后的 WebAudio/MediaRecorder 短录音，经服务端 `/api/asr` 调用云端 ASR，中文 `zh-CN`
 - TTS：`DoubaoTTSProvider` → 火山引擎 Seed-TTS 2.0；失败自动 fallback 到 `BrowserSpeechSynthesisProvider`
 - Voice Lab：`/voice-lab` 提供候选音色筛选、Runtime Probe、Emotion Scale、语速/音量、Context Instruction 和 36 条实际试听矩阵；能力未验证的音色不会被标记为支持 Emotion。
 - Emotion Performance：Relationship Engine → Emotion Performance Plan → Seed-TTS 2.0；内部情绪只映射到当前 speaker 已验证的 API emotion，不支持时自动改用 context / 语速 / 音量并记录 fallback。
@@ -159,6 +162,10 @@ VOLCENGINE_TTS_RESOURCE_ID=seed-tts-2.0
 VOLCENGINE_TTS_MODEL=seed-tts-2.0-standard
 VOLCENGINE_TTS_VOICE=zh_female_vv_uranus_bigtts
 VOLCENGINE_TTS_VOICE_NAME=vivi 2.0（官方预置·通用场景女声）
+
+# 移动端云 ASR（服务端变量，不要加 NEXT_PUBLIC_）
+VOLCENGINE_ASR_API_KEY=你的火山引擎 ASR API Key
+VOLCENGINE_ASR_RESOURCE_ID=volc.seedasr.sauc.duration
 ```
 
 不要把 API Key 写成 `NEXT_PUBLIC_*`，也不要提交 `.env.local`。Vercel 环境变量修改后需要重新部署才会对新版本生效。部署后访问首页，再打开 `https://你的域名/api/tts/config`，确认返回 `configured: true` 和音色列表。

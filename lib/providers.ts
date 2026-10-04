@@ -407,12 +407,8 @@ function ttsDebugFields(request: TTSRequest, fallbackUsed = request.fallbackUsed
   };
 }
 
-function isMobileBrowser() {
-  return typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod|MicroMessenger/i.test(navigator.userAgent);
-}
-
-function isIOSBrowser() {
-  return typeof navigator !== "undefined" && (/iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
+function supportsStreamingPlayback() {
+  return typeof window !== "undefined" && typeof window.MediaSource !== "undefined" && window.MediaSource.isTypeSupported("audio/mpeg");
 }
 
 export class DoubaoTTSProvider implements TTSProvider {
@@ -487,10 +483,11 @@ export class DoubaoTTSProvider implements TTSProvider {
     this.abortController = controller;
     const requestTimeout = window.setTimeout(() => controller.abort(), 18000);
     callbacks.onMetrics?.({ provider: "volcengine", voice: request.voiceId || "volcengine-default", emotion: request.emotion, intensity: request.intensity, streaming: false, ...ttsDebugFields(request) });
-    fetch(`${apiUrl("/api/tts")}${isMobileBrowser() ? "?stream=false" : ""}`, {
+    const canStream = supportsStreamingPlayback();
+    fetch(`${apiUrl("/api/tts")}${canStream ? "" : "?stream=false"}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...request, streaming: !isMobileBrowser() }),
+      body: JSON.stringify({ ...request, streaming: canStream }),
       signal: controller.signal,
     }).then(async (response) => {
       if (generation !== this.requestGeneration) return;
@@ -501,7 +498,7 @@ export class DoubaoTTSProvider implements TTSProvider {
       // Mobile browsers are unreliable with MediaSource and some CloudBase
       // gateways rewrite the streaming marker. Always consume a complete
       // audio blob on mobile, regardless of the response header.
-      if (!isMobileBrowser() && response.headers.get("X-TTS-Streaming") === "true" && response.body) {
+      if (canStream && response.headers.get("X-TTS-Streaming") === "true" && response.body) {
         const streamed = await this.playResponseStream(response.body, request, callbacks, startedAt, voice, generation);
         if (streamed) return;
       }
@@ -653,24 +650,22 @@ export class DoubaoTTSProvider implements TTSProvider {
       this.audioSource = source;
       source.buffer = buffer;
       const gain = context.createGain();
-      // iOS can attenuate async Web Audio noticeably. Boost the source and
-      // tame peaks so quiet TTS becomes clearly audible without harsh clipping.
-      gain.gain.value = isIOSBrowser() ? 2 : 1;
+      // Keep one playback path for every browser. A moderate, normalized gain
+      // plus a compressor makes remote TTS intelligible on small speakers
+      // without relying on an iPhone/Android-specific branch.
+      const requestedGain = 1 + Math.max(0, Math.min(1, ((request.volume ?? 1) - 1) * 0.6));
+      gain.gain.value = Math.min(2.4, Math.max(1.8, requestedGain));
       this.audioGain = gain;
       source.connect(gain);
-      if (isIOSBrowser()) {
-        const compressor = context.createDynamicsCompressor();
-        compressor.threshold.value = -18;
-        compressor.knee.value = 24;
-        compressor.ratio.value = 8;
-        compressor.attack.value = 0.003;
-        compressor.release.value = 0.25;
-        this.audioCompressor = compressor;
-        gain.connect(compressor);
-        compressor.connect(context.destination);
-      } else {
-        gain.connect(context.destination);
-      }
+      const compressor = context.createDynamicsCompressor();
+      compressor.threshold.value = -18;
+      compressor.knee.value = 24;
+      compressor.ratio.value = 8;
+      compressor.attack.value = 0.003;
+      compressor.release.value = 0.25;
+      this.audioCompressor = compressor;
+      gain.connect(compressor);
+      compressor.connect(context.destination);
       const startedAtAudio = context.currentTime;
       let lastPlaybackTime = 0;
       let lastMovementAt = performance.now();
@@ -793,7 +788,7 @@ export class DoubaoTTSProvider implements TTSProvider {
         this.cleanupAudio();
         callbacks.onStateChange?.("FAILED");
         reject(new Error("移动浏览器没有真正开始播放音频"));
-      }, isMobileBrowser() ? 4500 : 8000);
+      }, supportsStreamingPlayback() ? 8000 : 4500);
     });
     try {
       await mediaReady;

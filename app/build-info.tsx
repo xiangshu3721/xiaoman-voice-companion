@@ -8,7 +8,8 @@ export function BuildInfo() {
   const time = displayBuildTime(BUILD_INFO.buildTime);
 
   useEffect(() => {
-    setDebug(new URLSearchParams(window.location.search).get("debug") === "true");
+    const params = new URLSearchParams(window.location.search);
+    setDebug(params.get("debug") === "true" || params.get("debugVoice") === "1");
   }, []);
 
   const summary = [
