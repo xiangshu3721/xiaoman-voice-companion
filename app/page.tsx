@@ -50,6 +50,15 @@ type ReviewEmotion = { label: string; level: number; evidence: string };
 type EmotionReview = { title: string; summary: string; emotions: ReviewEmotion[]; needs: string[]; suggestions: string[]; nextPrompt: string };
 type ReviewTurn = { role: "user" | "assistant"; content: string };
 
+const FALLBACK_VOICE_OPTIONS: VoiceOption[] = [
+  { id: "zh_female_vv_uranus_bigtts", name: "vivi 2.0", gender: "female" },
+  { id: "zh_female_santongyongns_saturn_bigtts", name: "流畅女声", gender: "female" },
+  { id: "zh_female_mizai_saturn_bigtts", name: "咪仔", gender: "female" },
+  { id: "zh_female_meilinvyou_saturn_bigtts", name: "魅力女友", gender: "female" },
+  { id: "zh_male_dayi_saturn_bigtts", name: "大壹", gender: "male" },
+  { id: "zh_male_ruyayichen_saturn_bigtts", name: "儒雅逸辰", gender: "male" },
+];
+
 const STATUS_COPY: Record<Status, string> = {
   idle: "准备好了",
   listening: "正在听你说……",
@@ -63,7 +72,7 @@ const WELCOME: ChatMessage = {
 };
 
 function Avatar({ small = false, gender = "female" }: { small?: boolean; gender?: CharacterGender }) {
-  const source = sitePath(gender === "male" ? "/avatars/ta-male.png" : "/avatars/ta-female.png");
+  const source = sitePath(gender === "male" ? "/avatars/ta-male.jpg" : "/avatars/ta-female.jpg");
   const label = gender === "male" ? "Ta 的男声头像" : "Ta 的女声头像";
   return (
     <div className={`relative shrink-0 overflow-hidden rounded-full bg-[#211e1d] ${small ? "h-11 w-11" : "h-44 w-44 sm:h-52 sm:w-52"}`} aria-label={label}>
@@ -174,8 +183,8 @@ export default function Home() {
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
   const [ttsDebug, setTtsDebug] = useState<TTSMetrics | null>(null);
   const [ttsPlaybackState, setTtsPlaybackState] = useState<TTSPlaybackState>("IDLE");
-  const [selectedVoiceId, setSelectedVoiceId] = useState("");
-  const [voiceOptions, setVoiceOptions] = useState<VoiceOption[]>([]);
+  const [selectedVoiceId, setSelectedVoiceId] = useState(FALLBACK_VOICE_OPTIONS[0].id);
+  const [voiceOptions, setVoiceOptions] = useState<VoiceOption[]>(FALLBACK_VOICE_OPTIONS);
   const [mode, setMode] = useState<"mock" | "deepseek" | "fallback" | "safety" | "">("");
   const [reviewOpen, setReviewOpen] = useState(false);
   const [review, setReview] = useState<EmotionReview | null>(null);
@@ -226,11 +235,11 @@ export default function Home() {
   useEffect(() => {
     setDebugEnabled(new URLSearchParams(window.location.search).get("debug") === "true");
     setVoiceInputSupported(asrRef.current.isSupported());
-    void fetch(apiUrl("/api/tts/config")).then((response) => response.json()).then((data: { voices?: VoiceOption[] }) => {
-      const nextVoices = data.voices || [];
+    void fetch(apiUrl("/api/tts/config"), { cache: "force-cache" }).then((response) => response.json()).then((data: { voices?: VoiceOption[] }) => {
+      const nextVoices = data.voices?.length ? data.voices : FALLBACK_VOICE_OPTIONS;
       const storedVoice = window.localStorage.getItem(TTS_VOICE_STORAGE_KEY);
       setVoiceOptions(nextVoices);
-      setSelectedVoiceId(storedVoice && nextVoices.some((voice) => voice.id === storedVoice) ? storedVoice : nextVoices[0]?.id || "");
+      setSelectedVoiceId(storedVoice && nextVoices.some((voice) => voice.id === storedVoice) ? storedVoice : nextVoices[0].id);
     }).catch(() => undefined);
     const stopMicWatch = microphoneRef.current.watchDeviceChanges(() => {
       const track = streamRef.current?.getAudioTracks()[0];
@@ -553,7 +562,18 @@ export default function Home() {
       setRealtimeState(isFinal ? "POSSIBLE_END" : "USER_SPEAKING");
       scheduleEndOfTurn();
     }, (message) => {
-      if (/权限|麦克风/.test(message)) {
+      if (/语音识别服务|语音识别未能启动/.test(message)) {
+        conversationActiveRef.current = false;
+        setConversationActive(false);
+        asrRef.current.stop();
+        setVoiceInputSupported(false);
+        setNotice(message);
+        setRealtimeState("ERROR");
+        setStatus("idle");
+      } else if (/权限|麦克风/.test(message)) {
+        conversationActiveRef.current = false;
+        setConversationActive(false);
+        asrRef.current.stop();
         setVoiceInputSupported(false);
         setNotice(microphoneState === "granted" ? "麦克风已授权，但此浏览器的语音识别服务没有启动，已切换为文字输入。" : message);
         setRealtimeState("ERROR");

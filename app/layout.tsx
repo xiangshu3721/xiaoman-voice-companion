@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { BuildInfo } from "./build-info";
 
 export const metadata: Metadata = {
   title: "小满｜你的伴侣",
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="zh-CN">
-      <body>{children}</body>
+      <body>{children}<BuildInfo /></body>
     </html>
   );
 }

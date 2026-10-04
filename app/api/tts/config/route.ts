@@ -20,5 +20,5 @@ export async function GET() {
     speakers: getSpeakerRegistry().map((speaker) => getRuntimeSpeaker(speaker.speakerId) || speaker),
     defaultFemaleSpeaker: process.env.DEFAULT_FEMALE_SPEAKER || DOUBAO_TTS_DEFAULTS.voiceId,
     defaultMaleSpeaker: process.env.DEFAULT_MALE_SPEAKER || getConfiguredTTSVoices().find((voice) => voice.gender === "male")?.id || "",
-  }, { headers: corsHeaders() });
+  }, { headers: { ...corsHeaders(), "Cache-Control": "public, max-age=60, stale-while-revalidate=300" } });
 }

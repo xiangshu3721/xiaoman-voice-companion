@@ -273,7 +273,9 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
         this.active = false;
         this.lastError = event.error;
         this.callbacks?.onSessionEvent?.({ type: "error", sessionId: this.sessionId, sessionCount: this.sessionCount, restartCount: this.restartCount, at: Date.now(), error: event.error });
-        this.callbacks?.onError("麦克风权限被拒绝了，请在浏览器地址栏重新允许麦克风。");
+        this.callbacks?.onError(event.error === "service-not-allowed"
+          ? "当前浏览器的语音识别服务不可用，已切换为文字输入；请使用系统 Chrome。"
+          : "语音识别服务没有启动，已切换为文字输入；请使用系统 Chrome。");
       } else if (event.error === "audio-capture") {
         this.active = false;
         this.lastError = event.error;
@@ -409,11 +411,16 @@ function isMobileBrowser() {
   return typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod|MicroMessenger/i.test(navigator.userAgent);
 }
 
+function isIOSBrowser() {
+  return typeof navigator !== "undefined" && /iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
 export class DoubaoTTSProvider implements TTSProvider {
   private fallback = new BrowserSpeechSynthesisProvider();
   private audio: HTMLAudioElement | null = null;
   private audioContext: AudioContext | null = null;
   private audioSource: AudioBufferSourceNode | null = null;
+  private audioGain: GainNode | null = null;
   private objectUrl: string | null = null;
   private abortController: AbortController | null = null;
   private requestGeneration = 0;
@@ -644,7 +651,13 @@ export class DoubaoTTSProvider implements TTSProvider {
       const source = context.createBufferSource();
       this.audioSource = source;
       source.buffer = buffer;
-      source.connect(context.destination);
+      const gain = context.createGain();
+      // iOS often attenuates audio routed through Web Audio after an async
+      // fetch. Keep other devices unchanged and lift only the iOS output.
+      gain.gain.value = isIOSBrowser() ? 1.35 : 1;
+      this.audioGain = gain;
+      source.connect(gain);
+      gain.connect(context.destination);
       const startedAtAudio = context.currentTime;
       let lastPlaybackTime = 0;
       let lastMovementAt = performance.now();
@@ -659,6 +672,8 @@ export class DoubaoTTSProvider implements TTSProvider {
           window.clearInterval(progressTimer);
           try { source.stop(); } catch { /* already stopped */ }
           source.disconnect();
+          gain.disconnect();
+          if (this.audioGain === gain) this.audioGain = null;
           this.audioSource = null;
           callbacks.onStateChange?.("FAILED");
           reject(new Error("PLAYBACK_STALLED"));
@@ -673,6 +688,8 @@ export class DoubaoTTSProvider implements TTSProvider {
         settled = true;
         window.clearInterval(progressTimer);
         source.disconnect();
+        gain.disconnect();
+        if (this.audioGain === gain) this.audioGain = null;
         this.audioSource = null;
         callbacks.onPlaybackSignal?.({ type: "ended", currentTime: buffer.duration, duration: buffer.duration });
         callbacks.onMetrics?.({ provider: "volcengine", voice, emotion: request.emotion, intensity: request.intensity, streaming: false, totalLatencyMs: Math.round(performance.now() - startedAt), generationSuccess: true, playbackSuccess: true, ...ttsDebugFields(request) });
@@ -688,6 +705,8 @@ export class DoubaoTTSProvider implements TTSProvider {
       } catch (error) {
         settled = true;
         source.disconnect();
+        gain.disconnect();
+        if (this.audioGain === gain) this.audioGain = null;
         this.audioSource = null;
         callbacks.onPlaybackSignal?.({ type: "error", errorName: error instanceof Error ? error.name : "UnknownError", errorMessage: error instanceof Error ? error.message : "浏览器无法启动音频播放" });
         reject(error instanceof Error ? error : new Error("浏览器无法启动音频播放"));
@@ -779,6 +798,8 @@ export class DoubaoTTSProvider implements TTSProvider {
       try { this.audioSource.disconnect(); } catch { /* already disconnected */ }
     }
     this.audioSource = null;
+    this.audioGain?.disconnect();
+    this.audioGain = null;
     this.audio?.pause();
     if (this.audio) {
       this.audio.removeAttribute("src");
