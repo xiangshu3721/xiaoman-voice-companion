@@ -141,7 +141,7 @@ export default function VoiceLab() {
     <main className="min-h-[100dvh] bg-[#141313] px-5 py-6 text-[#f4efeb] sm:px-8">
       <div className="mx-auto max-w-6xl">
         <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
-          <div><p className="text-xs tracking-[0.18em] text-[#e98972]">VOICE LAB / SEED-TTS 2.0</p><h1 className="mt-2 text-2xl font-medium">小满的声音与情绪试听</h1><p className="mt-2 text-sm text-[#9f9795]">只显示服务端 Registry 已登记的候选音色；未验证能力不会被伪装成支持。</p></div>
+          <div><p className="text-xs tracking-[0.18em] text-[#e98972]">VOICE LAB / SEED-TTS 2.0</p><h1 className="mt-2 text-2xl font-medium">怼怼的声音与情绪试听</h1><p className="mt-2 text-sm text-[#9f9795]">只显示服务端 Registry 已登记的候选音色；未验证能力不会被伪装成支持。</p></div>
           <div className="flex items-center gap-4"><span className={`rounded-full px-3 py-1 text-xs ${configured ? "bg-emerald-400/10 text-emerald-300" : "bg-[#e98972]/10 text-[#f6a08b]"}`}>{configured ? "火山凭证已配置" : "未配置 · 将 fallback"}</span><a href={sitePath("/")} className="text-xs text-[#9f9795] transition hover:text-[#f4efeb]">返回对话</a></div>
         </header>
 

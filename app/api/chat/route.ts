@@ -214,7 +214,7 @@ export async function POST(request: Request) {
     const safeValidation = { valid: true, issues: [] as string[] };
     const safeVoice = { emotion: "calm" as const, primaryEmotion: "warm", intensity: earlySafety.riskLevel === "CRITICAL" ? 0.18 : 0.24, sectionId, contextText: "语气稳定、清楚、温和，不继续刺激对方。", fallbackUsed: false };
     const debug = debugForRelationship(relationship, classification, safeStrategy, safeValidation);
-    return NextResponse.json({ text: safetyResponse({ name: "Ta", riskLevel: earlySafety.riskLevel }), reply: safetyResponse({ name: "Ta", riskLevel: earlySafety.riskLevel }), mode: "safety", voice: safeVoice, ...(debugRequested ? { debug } : {}) }, { headers: corsHeaders() });
+    return NextResponse.json({ text: safetyResponse({ name: "怼怼", riskLevel: earlySafety.riskLevel }), reply: safetyResponse({ name: "怼怼", riskLevel: earlySafety.riskLevel }), mode: "safety", voice: safeVoice, ...(debugRequested ? { debug } : {}) }, { headers: corsHeaders() });
   }
   const previousState = history.some((message) => message.role === "user") ? replayUserHistory(history, "Pursuer") : createNeutralBaselineState();
   const state = updateConflictState(previousState, classification.labels, userMessage, "Pursuer");
@@ -230,7 +230,7 @@ export async function POST(request: Request) {
     ? []
     : retrieveSimilarEpisodes({ scene, archetype: "Pursuer", labels: classification.labels, intensity: state.conflictIntensity, currentState: relationship.currentState, intent: relationship.userState.intent, interactionPattern: relationship.reflection.interactionPattern, limit: 3 });
   const characterGender = body.characterGender === "male" ? "male" : "female";
-  const characterName = "Ta";
+  const characterName = "怼怼";
   const referenceTexts = retrieved.map((item) => `${item.episode.id}：${item.episode.turns.slice(0, 6).map((turn) => turn.text).join(" / ")}`);
   const prompt = buildConflictPrompt({ scene, state: effectiveState, classification, strategy, retrieved, history, userMessage, characterGender, characterName, relationship, sessionBoundary, referenceTexts });
   const apiKey = process.env.DEEPSEEK_API_KEY;

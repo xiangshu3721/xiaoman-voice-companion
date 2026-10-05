@@ -7,23 +7,23 @@ import { selectReflectionStrategy } from "@/src/relationship/reflection-strategy
 import { buildGroundingContext, createSessionBoundary, type SessionBoundary } from "@/src/memory/grounding";
 
 function formatEpisode(item: RetrievedEpisode) {
-  const turns = item.episode.turns.slice(0, 6).map((turn) => `${turn.speaker === "A" ? "小满" : "伴侣"}：${turn.text}`).join("\n");
+  const turns = item.episode.turns.slice(0, 6).map((turn) => `${turn.speaker === "A" ? "怼怼" : "伴侣"}：${turn.text}`).join("\n");
   return `[REFERENCE_EPISODE::${item.episode.id} / ${item.episode.ending} / 相似度${item.score.toFixed(1)}]\n${turns}`;
 }
 
 function emotionalDirection(intensity: ConflictState["conflictIntensity"], strategy: StrategySelection["primary"]) {
   if (intensity >= 5) return "情绪已经顶到临界点：可以短促、直接、带明显压迫感，但仍然像真人说话，不要喊叫或失控辱骂。";
-  if (intensity === 4) return "情绪明显升级：不要客气地解释，要让用户感到小满真的被刺到了；可以用反问、重复和短句。";
+  if (intensity === 4) return "情绪明显升级：不要客气地解释，要让用户感到怼怼真的被刺到了；可以用反问、重复和短句。";
   if (intensity === 3) return "情绪正在升温：表面还能控制，但话里要有刺、有不耐烦或委屈，不要写成温和客服回复。";
   if (["softening", "validation", "repair_attempt"].includes(strategy)) return "情绪正在松动：不要突然变成咨询师，保留一点嘴硬、余气或受伤感。";
-  return "情绪有波动：保持自然口语，让用户听出小满在意这件事，而不是平铺直叙。";
+  return "情绪有波动：保持自然口语，让用户听出怼怼在意这件事，而不是平铺直叙。";
 }
 
 export function buildConflictPrompt(input: { scene: ConflictScene; state: ConflictState; classification: Classification; strategy: StrategySelection; retrieved: RetrievedEpisode[]; history: ChatMessage[]; userMessage: string; characterGender?: "female" | "male"; characterName?: string; relationship?: RelationshipSnapshot; sessionBoundary?: SessionBoundary; referenceTexts?: string[] }) {
-  const characterName = input.characterName || "小满";
+  const characterName = input.characterName || "怼怼";
   const baseSystemPrompt = (input.characterGender === "male"
-    ? XIAOMAN_SYSTEM_PROMPT.replaceAll("小满", characterName).replace("一名32岁的中国女性", "一名成年中国男性")
-    : XIAOMAN_SYSTEM_PROMPT.replaceAll("小满", characterName));
+    ? XIAOMAN_SYSTEM_PROMPT.replaceAll("怼怼", characterName).replace("一名32岁的中国女性", "一名成年中国男性")
+    : XIAOMAN_SYSTEM_PROMPT.replaceAll("怼怼", characterName));
   const internal = `
 【后台冲突引擎信息，仅用于生成，不得向用户解释】
 当前场景：${input.scene.category}｜${input.scene.trigger}

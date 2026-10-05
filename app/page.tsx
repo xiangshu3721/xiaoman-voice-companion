@@ -64,8 +64,8 @@ const FALLBACK_VOICE_OPTIONS: VoiceOption[] = [
 const STATUS_COPY: Record<Status, string> = {
   idle: "准备好了",
   listening: "正在听你说……",
-  thinking: "小满正在想……",
-  speaking: "小满正在说……",
+  thinking: "怼怼正在想……",
+  speaking: "怼怼正在说……",
 };
 
 const WELCOME: ChatMessage = {
@@ -75,7 +75,7 @@ const WELCOME: ChatMessage = {
 
 function Avatar({ small = false, gender = "female" }: { small?: boolean; gender?: CharacterGender }) {
   const source = sitePath(gender === "male" ? "/avatars/ta-male.jpg" : "/avatars/ta-female.jpg");
-  const label = gender === "male" ? "Ta 的男声头像" : "Ta 的女声头像";
+  const label = gender === "male" ? "怼怼的男声头像" : "怼怼的女声头像";
   return (
     <div className={`relative shrink-0 overflow-hidden rounded-full bg-[#211e1d] ${small ? "h-11 w-11" : "h-44 w-44 sm:h-52 sm:w-52"}`} aria-label={label}>
       <img src={source} alt="" className="h-full w-full object-cover object-center" decoding="async" loading={small ? "lazy" : "eager"} fetchPriority={small ? "low" : "high"} />
@@ -109,7 +109,7 @@ function VoiceSelector({ voices, selectedVoiceId, onChange }: { voices: VoiceOpt
   return (
     <div className="mt-5 rounded-2xl border border-white/10 bg-[#1b1818] p-4 text-left">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div><p className="text-xs tracking-[0.12em] text-[#9f9795]">Ta 的声音 · {selectedVoice.gender === "male" ? "男版" : "女版"}</p><p className="mt-1 text-sm text-[#f4efeb]">Ta · {selectedVoice.name}</p></div>
+        <div><p className="text-xs tracking-[0.12em] text-[#9f9795]">怼怼的声音 · {selectedVoice.gender === "male" ? "男版" : "女版"}</p><p className="mt-1 text-sm text-[#f4efeb]">怼怼 · {selectedVoice.name}</p></div>
         <a href={sitePath("/voice-lab")} className="text-xs text-[#f6a08b] underline decoration-[#f6a08b]/30 underline-offset-4">试听更多音色</a>
       </div>
       <select value={selectedVoiceId || selectedVoice.id} onChange={(event) => onChange(event.target.value)} className="mt-3 w-full rounded-xl border border-white/10 bg-[#141313] px-3 py-3 text-sm text-[#f4efeb] outline-none transition focus:border-[#e98972]">
@@ -139,7 +139,7 @@ function ChatHistoryPanel({ archives, selectedArchiveId, onSelect, onBack, onClo
         </header>
         {selectedArchive ? <>
           <div className="flex items-center gap-3 border-b border-white/10 px-5 py-3"><button type="button" onClick={onBack} className="text-xs text-[#f6a08b]">← 返回记录</button><span className="text-xs text-[#817876]">{formatArchiveDate(selectedArchive.updatedAt)}</span></div>
-          <div className="overflow-y-auto px-5 py-4"><h3 className="text-base leading-6 text-[#f4efeb]">{selectedArchive.title}</h3><p className="mt-1 text-xs text-[#817876]">{Math.floor(selectedArchive.messages.filter((message) => message.role === "user").length)} 轮对话</p><div className="mt-5 space-y-3">{selectedArchive.messages.map((message, index) => <div key={`${message.role}-${index}`} className={`flex items-start gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>{message.role === "assistant" && <Avatar small gender={gender} />}<div className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === "user" ? "rounded-br-md bg-[#e98972] text-[#241615]" : "rounded-bl-md bg-[#211e1d] text-[#ded4d1]"}`}><span className="mb-1 block text-[10px] tracking-[0.12em] opacity-50">{message.role === "user" ? "我" : "Ta"}</span>{message.content}</div></div>)}</div></div>
+          <div className="overflow-y-auto px-5 py-4"><h3 className="text-base leading-6 text-[#f4efeb]">{selectedArchive.title}</h3><p className="mt-1 text-xs text-[#817876]">{Math.floor(selectedArchive.messages.filter((message) => message.role === "user").length)} 轮对话</p><div className="mt-5 space-y-3">{selectedArchive.messages.map((message, index) => <div key={`${message.role}-${index}`} className={`flex items-start gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>{message.role === "assistant" && <Avatar small gender={gender} />}<div className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === "user" ? "rounded-br-md bg-[#e98972] text-[#241615]" : "rounded-bl-md bg-[#211e1d] text-[#ded4d1]"}`}><span className="mb-1 block text-[10px] tracking-[0.12em] opacity-50">{message.role === "user" ? "我" : "怼怼"}</span>{message.content}</div></div>)}</div></div>
         </> : <div className="overflow-y-auto px-5 py-4">{archives.length === 0 ? <div className="py-12 text-center"><p className="text-sm text-[#c7bdb9]">还没有历史记录</p><p className="mt-2 text-xs leading-5 text-[#817876]">完成一轮对话后，会自动保存在这台设备的浏览器里。</p></div> : <div className="space-y-2">{archives.map((archive) => <button key={archive.id} type="button" onClick={() => onSelect(archive.id)} className="w-full rounded-2xl border border-white/10 bg-[#211e1d] px-4 py-3 text-left transition hover:border-[#e98972]/50"><div className="flex items-center justify-between gap-3"><span className="line-clamp-2 text-sm leading-6 text-[#f4efeb]">{archive.title}</span><span className="shrink-0 text-[10px] text-[#817876]">{formatArchiveDate(archive.updatedAt)}</span></div><p className="mt-1 text-xs text-[#817876]">{archive.messages.filter((message) => message.role === "user").length} 轮 · 点击查看</p></button>)}</div>}<p className="mt-5 text-center text-[10px] leading-5 text-[#756d6b]">记录只保存在本机浏览器，不会自动上传。</p></div>}
       </section>
     </div>
@@ -153,7 +153,7 @@ function EmotionReviewPanel({ review, turns, question, loading, error, onQuestio
         <div><p className="text-[10px] tracking-[0.16em] text-[#e98972]">AI / 当前这一轮</p><h2 className="mt-2 text-lg font-medium text-[#f4efeb]">情绪复盘</h2></div>
         <button type="button" onClick={onClose} className="rounded-full px-2 py-1 text-xl leading-none text-[#817876] transition hover:bg-white/5 hover:text-[#f4efeb]" aria-label="关闭情绪复盘">×</button>
       </div>
-      {loading && !review && <div className="space-y-3 py-5" aria-live="polite"><div className="h-5 w-3/4 animate-pulse rounded bg-white/10" /><div className="h-12 animate-pulse rounded bg-white/5" /><div className="grid grid-cols-3 gap-2"><div className="h-16 animate-pulse rounded-xl bg-white/5" /><div className="h-16 animate-pulse rounded-xl bg-white/5" /><div className="h-16 animate-pulse rounded-xl bg-white/5" /></div><p className="text-xs text-[#9f9795]">小满正在把这一轮对话拆开看看……</p></div>}
+      {loading && !review && <div className="space-y-3 py-5" aria-live="polite"><div className="h-5 w-3/4 animate-pulse rounded bg-white/10" /><div className="h-12 animate-pulse rounded bg-white/5" /><div className="grid grid-cols-3 gap-2"><div className="h-16 animate-pulse rounded-xl bg-white/5" /><div className="h-16 animate-pulse rounded-xl bg-white/5" /><div className="h-16 animate-pulse rounded-xl bg-white/5" /></div><p className="text-xs text-[#9f9795]">怼怼正在把这一轮对话拆开看看……</p></div>}
       {error && !review && <div className="py-5"><p className="text-sm leading-6 text-[#f6a08b]">{error}</p><button type="button" onClick={onRetry} className="mt-3 rounded-full border border-[#e98972]/40 px-4 py-2 text-xs text-[#f6a08b] transition hover:bg-[#e98972]/10">再试一次</button></div>}
       {review && <>
         <div className="grid grid-cols-2 gap-2 border-b border-white/10 py-4 sm:grid-cols-4">{["梳理事件经过", "识别情绪类型", "看见真实需求", "给出可行建议"].map((item) => <div key={item} className="flex items-center gap-2 rounded-lg bg-white/5 px-2 py-2 text-[11px] text-[#c7bdb9]"><span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#4caf68] text-[10px] text-[#141313]">✓</span>{item}</div>)}</div>
@@ -231,7 +231,7 @@ export default function Home() {
   const scenario = useMemo(() => SCENARIOS.find((item) => item.id === scenarioId) || SCENARIOS[0], [scenarioId]);
   const selectedVoice = voiceOptions.find((voice) => voice.id === selectedVoiceId);
   const characterGender: CharacterGender = selectedVoice?.gender === "male" ? "male" : "female";
-  const characterName = "Ta";
+  const characterName = "怼怼";
   const visibleMessages = messages.slice(-8);
   const hasUserTurn = messages.some((message) => message.role === "user");
 
@@ -725,7 +725,7 @@ export default function Home() {
           <div className="flex items-center gap-4"><button type="button" onClick={() => { setSelectedArchiveId(null); setHistoryOpen(true); }} className="text-xs text-[#9f9795] transition hover:text-[#f4efeb]">历史记录</button><button type="button" onClick={resetConversation} className="text-xs text-[#9f9795] transition hover:text-[#f4efeb]">重新开始</button></div>
         </header>
         <section className="flex flex-1 flex-col items-center pt-11 sm:pt-14">
-          <div className="flex flex-col items-center"><div className={`relative rounded-full ${status === "listening" && listeningReady ? "breathing" : ""}`}><Avatar gender={characterGender} /></div><p className="mt-6 text-sm text-[#d1c7c4]">{STATUS_COPY[status].replace("小满", characterName)}</p><p className="mt-2 text-[11px] text-[#756d6b]">麦克风：{microphoneState === "granted" ? "已授权" : microphoneState === "requesting" ? "请求中" : microphoneState === "denied" ? "未授权" : microphoneState === "error" ? "暂时不可用" : "检测中"}{micHealth.trackMuted ? "（设备静音）" : ""}</p>{status === "listening" && interimText && <p className="mt-3 max-w-xs text-center text-xs leading-5 text-[#a9a09e]">“{interimText}”</p>}<div className="mt-3 h-8">{status === "speaking" ? <Wave /> : status === "thinking" ? <div className="flex h-8 items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:120ms]" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:240ms]" /></div> : <span className="text-xs text-[#756d6b]">{scenario.shortTitle}</span>}</div></div>
+          <div className="flex flex-col items-center"><div className={`relative rounded-full ${status === "listening" && listeningReady ? "breathing" : ""}`}><Avatar gender={characterGender} /></div><p className="mt-6 text-sm text-[#d1c7c4]">{STATUS_COPY[status].replace("怼怼", characterName)}</p><p className="mt-2 text-[11px] text-[#756d6b]">麦克风：{microphoneState === "granted" ? "已授权" : microphoneState === "requesting" ? "请求中" : microphoneState === "denied" ? "未授权" : microphoneState === "error" ? "暂时不可用" : "检测中"}{micHealth.trackMuted ? "（设备静音）" : ""}</p>{status === "listening" && interimText && <p className="mt-3 max-w-xs text-center text-xs leading-5 text-[#a9a09e]">“{interimText}”</p>}<div className="mt-3 h-8">{status === "speaking" ? <Wave /> : status === "thinking" ? <div className="flex h-8 items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:120ms]" /><i className="h-1.5 w-1.5 rounded-full bg-[#e98972] motion-safe:animate-bounce [animation-delay:240ms]" /></div> : <span className="text-xs text-[#756d6b]">{scenario.shortTitle}</span>}</div></div>
           <div className="mt-10 w-full max-w-xl space-y-4" aria-live="polite">
             {visibleMessages.map((message, index) => <div key={`${message.role}-${index}-${message.content.slice(0, 8)}`} className={`flex items-start gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>{message.role === "assistant" && <Avatar small gender={characterGender} />}<div className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === "user" ? "rounded-br-md bg-[#e98972] text-[#241615]" : "rounded-bl-md bg-[#211e1d] text-[#ded4d1]"}`}><span className="mb-1 block text-[10px] tracking-[0.12em] opacity-50">{message.role === "user" ? "我" : characterName}</span>{message.content}</div></div>)}
           </div>

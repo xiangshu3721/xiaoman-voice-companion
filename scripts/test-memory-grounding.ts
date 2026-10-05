@@ -78,7 +78,7 @@ const prompt = buildConflictPrompt({
   retrieved: [],
   history: emptyHistory,
   userMessage: "你好",
-  characterName: "Ta",
+  characterName: "怼怼",
   relationship: greetingSnapshot,
 });
 assert.match(prompt.systemPrompt, /NO EVIDENCE = NO MEMORY CLAIM/);

@@ -23,4 +23,4 @@
 
 播放和收音由适配器协调：AI 播放前暂停并释放录音会话，真实播放结束后再重新申请收音，避免移动浏览器把 TTS 路由到听筒；TTS 使用统一的 WebAudio 增益和动态压缩链路，不按 iPhone/Android 分叉。
 
-使用 `?debugVoice=1` 可查看 Release、SHA、平台/浏览器、WebView、ASR Adapter、MIC、Capture、ASR、Playback 和内部状态。生产界面只显示“正在听你说 / Ta 正在想 / Ta 准备开口 / Ta 正在说”等统一文案。
+使用 `?debugVoice=1` 可查看 Release、SHA、平台/浏览器、WebView、ASR Adapter、MIC、Capture、ASR、Playback 和内部状态。生产界面只显示“正在听你说 / 怼怼正在想 / 怼怼准备开口 / 怼怼正在说”等统一文案。

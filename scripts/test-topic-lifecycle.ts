@@ -87,7 +87,7 @@ seriousCases.forEach((result) => {
 
 const promptTrace = snapshot([...beforeAgreement, user("我9点去做"), assistant("行，我记着。")], "对不起，我爱你");
 const strategy = selectRelationshipStrategy({ snapshot: promptTrace, labels: classifyUserMessage("对不起，我爱你").labels, archetype: "Pursuer" });
-const prompt = buildConflictPrompt({ scene, state: promptTrace.conflictState, classification: classifyUserMessage("对不起，我爱你"), strategy, retrieved: [], history: [...beforeAgreement, user("我9点去做"), assistant("行，我记着。")], userMessage: "对不起，我爱你", characterName: "Ta", relationship: promptTrace });
+const prompt = buildConflictPrompt({ scene, state: promptTrace.conflictState, classification: classifyUserMessage("对不起，我爱你"), strategy, retrieved: [], history: [...beforeAgreement, user("我9点去做"), assistant("行，我记着。")], userMessage: "对不起，我爱你", characterName: "怼怼", relationship: promptTrace });
 assert.match(prompt.systemPrompt, /协议已建立/);
 assert.match(prompt.systemPrompt, /生活化转场/);
 assert.equal(retrieveSimilarEpisodes({ scene, archetype: "Pursuer", labels: [], intensity: 2, currentState: promptTrace.currentState, limit: 3 }).length > 0, true);

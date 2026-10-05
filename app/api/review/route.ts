@@ -110,16 +110,16 @@ export async function POST(request: Request) {
   const history = (body.history || []).filter((message) => message.role === "user" || message.role === "assistant").slice(-12);
   const round = latestRound(history);
   const question = body.question?.trim();
-  const transcript = round.map((message) => `${message.role === "user" ? "用户" : "小满"}：${message.content}`).join("\n");
+  const transcript = round.map((message) => `${message.role === "user" ? "用户" : "怼怼"}：${message.content}`).join("\n");
   if (!history.some((message) => message.role === "user")) {
-    return NextResponse.json({ error: "先和小满聊一轮，再来做情绪复盘吧。" }, { status: 400, headers: corsHeaders() });
+    return NextResponse.json({ error: "先和怼怼聊一轮，再来做情绪复盘吧。" }, { status: 400, headers: corsHeaders() });
   }
 
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (question) {
     if (!apiKey) return NextResponse.json({ answer: mockFollowup(question), mode: "mock" }, { headers: corsHeaders() });
     try {
-      const answer = await callDeepSeek(apiKey, `这是刚才这一轮对话：\n${transcript}\n\n用户想继续复盘的问题：${question}\n\n请用 2 到 4 段简短中文回答。先回应问题，再给一个用户此刻就能尝试的小动作。不要诊断，不要替用户决定要不要分手，不要把小满的角色扮演内容当成现实事实。`);
+      const answer = await callDeepSeek(apiKey, `这是刚才这一轮对话：\n${transcript}\n\n用户想继续复盘的问题：${question}\n\n请用 2 到 4 段简短中文回答。先回应问题，再给一个用户此刻就能尝试的小动作。不要诊断，不要替用户决定要不要分手，不要把怼怼的角色扮演内容当成现实事实。`);
       return NextResponse.json({ answer, mode: "deepseek" }, { headers: corsHeaders() });
     } catch (error) {
       console.error("emotion review follow-up error", error);
