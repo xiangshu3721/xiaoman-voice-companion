@@ -408,7 +408,10 @@ function ttsDebugFields(request: TTSRequest, fallbackUsed = request.fallbackUsed
 }
 
 function supportsStreamingPlayback() {
-  return typeof window !== "undefined" && typeof window.MediaSource !== "undefined" && window.MediaSource.isTypeSupported("audio/mpeg");
+  // Keep the complete-audio path as the stable baseline for desktop and mobile.
+  // MediaSource can report support while audio.play() still fails or stalls
+  // after an asynchronous TTS response, leaving the UI at READY with no sound.
+  return false;
 }
 
 export class DoubaoTTSProvider implements TTSProvider {
@@ -576,6 +579,7 @@ export class DoubaoTTSProvider implements TTSProvider {
     const reader = stream.getReader();
     let firstChunk = true;
     let settled = false;
+    let playbackError: Error | null = null;
     const finish = () => {
       if (settled || generation !== this.requestGeneration) return;
       settled = true;
@@ -587,7 +591,10 @@ export class DoubaoTTSProvider implements TTSProvider {
     audio.oncanplay = () => callbacks.onPlaybackSignal?.({ type: "canplay", currentTime: audio.currentTime, duration: audio.duration, readyState: audio.readyState, networkState: audio.networkState });
     audio.onplaying = () => callbacks.onPlaybackSignal?.({ type: "playing", currentTime: audio.currentTime, duration: audio.duration, readyState: audio.readyState, networkState: audio.networkState });
     audio.onended = () => { callbacks.onPlaybackSignal?.({ type: "ended", currentTime: audio.currentTime, duration: audio.duration, readyState: audio.readyState, networkState: audio.networkState }); finish(); };
-    audio.onerror = () => { callbacks.onPlaybackSignal?.({ type: "error", currentTime: audio.currentTime, duration: audio.duration, readyState: audio.readyState, networkState: audio.networkState, errorName: "MediaError", errorMessage: "流式音频播放失败" }); if (!settled) settled = true; };
+    audio.onerror = () => {
+      playbackError = new Error("流式音频播放失败");
+      callbacks.onPlaybackSignal?.({ type: "error", currentTime: audio.currentTime, duration: audio.duration, readyState: audio.readyState, networkState: audio.networkState, errorName: "MediaError", errorMessage: playbackError.message });
+    };
     const waitForPlayback = () => new Promise<void>((resolve, reject) => {
       const startedWaiting = performance.now();
       const poll = () => {
@@ -601,6 +608,7 @@ export class DoubaoTTSProvider implements TTSProvider {
       let first = await reader.read();
       if (first.done || !first.value?.byteLength) throw new Error("火山引擎返回了空音频");
       while (!first.done) {
+        if (playbackError) throw playbackError;
         const chunk = first.value;
         if (!chunk?.byteLength) throw new Error("火山引擎返回了空音频片段");
         await new Promise<void>((resolve, reject) => {
@@ -629,6 +637,7 @@ export class DoubaoTTSProvider implements TTSProvider {
           await waitForPlayback();
         }
         first = await reader.read();
+        if (playbackError) throw playbackError;
       }
       if (mediaSource.readyState === "open") mediaSource.endOfStream();
       return true;
