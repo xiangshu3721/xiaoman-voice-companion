@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.cloudbase.net/cli/cloudbaserc.schema.json",
   "version": "2.1",
-  "envId": "littlemo-d2gy2ecx0dd102163",
+  "envId": "root-journey-prod-d4d7pzd0a8f805",
   "functions": [
     {
       "name": "xiaoman-api",
@@ -23,7 +23,7 @@
         "VOLCENGINE_ASR_RESOURCE_ID": "{{env.VOLCENGINE_ASR_RESOURCE_ID}}",
         "DEFAULT_FEMALE_SPEAKER": "{{env.DEFAULT_FEMALE_SPEAKER}}",
         "DEFAULT_MALE_SPEAKER": "{{env.DEFAULT_MALE_SPEAKER}}",
-          "CORS_ORIGIN": "https://xiangshu3721.github.io"
+        "CORS_ORIGIN": "https://xiangshu3721.github.io"
       }
     }
   ]
