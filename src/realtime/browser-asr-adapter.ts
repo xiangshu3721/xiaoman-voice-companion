@@ -15,7 +15,7 @@ export class BrowserASRAdapter implements ASRAdapter {
   start() {
     this.provider.start(
       (text, isFinal) => isFinal ? this.handlers.onFinal?.(text) : this.handlers.onInterim?.(text),
-      (message) => this.handlers.onError?.(message),
+      (message, fatal) => this.handlers.onError?.(message, fatal),
       () => this.handlers.onEnd?.(),
       {
         onReady: () => this.handlers.onReady?.(),

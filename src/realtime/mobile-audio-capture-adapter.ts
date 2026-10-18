@@ -1,9 +1,11 @@
 import { apiUrl } from "@/lib/api";
 import { AdaptiveVadMonitor } from "@/src/realtime/adaptive-vad";
-import type { ASRAdapter, ASRAdapterHandlers, ASRPrepareResult } from "@/src/realtime/asr-adapter";
+import type { ASRAdapter, ASRAdapterHandlers, ASRFatalMode, ASRPrepareResult } from "@/src/realtime/asr-adapter";
 import { BrowserASRAdapter } from "@/src/realtime/browser-asr-adapter";
 import { MicrophonePermissionManager, type MicrophoneRequestResult } from "@/src/realtime/microphone-permission";
 
+const SERVICE_DOWN_STATUSES = new Set([404, 410, 502, 503, 504]);
+const SERVICE_UNAVAILABLE_MESSAGE = "云端语音识别服务暂时连不上，已暂停收音，请稍后再点麦克风重试。";
 const AUDIO_CONSTRAINTS: MediaStreamConstraints = { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } };
 
 export class MobileAudioCaptureAdapter implements ASRAdapter {
@@ -124,22 +126,30 @@ export class MobileAudioCaptureAdapter implements ASRAdapter {
     try {
       const body = new FormData();
       body.append("audio", blob, `voice.${extensionForMime(mimeType)}`);
-      const response = await fetch(apiUrl("/api/asr"), { method: "POST", body, cache: "no-store" });
+      let response: Response;
+      try {
+        response = await fetch(apiUrl("/api/asr"), { method: "POST", body, cache: "no-store" });
+      } catch {
+        // 网络断开或后端整体不可用（例如云函数停服返回 410 且不带 CORS 头）时，浏览器只会抛 TypeError。
+        this.fail(SERVICE_UNAVAILABLE_MESSAGE, true, "stop");
+        return;
+      }
       const payload = await response.json().catch(() => ({})) as { text?: string; error?: string };
       if ((response.status === 404 || response.status === 503) && typeof window !== "undefined" && Boolean(window.SpeechRecognition || window.webkitSpeechRecognition)) {
         this.startBrowserFallback();
         return;
       }
+      if (SERVICE_DOWN_STATUSES.has(response.status)) { this.fail(SERVICE_UNAVAILABLE_MESSAGE, true, "stop"); return; }
       if (!response.ok || !payload.text?.trim()) throw new Error(payload.error || "云端语音识别暂时不可用");
       this.diagnostics = { ...this.diagnostics, capture: "idle", asr: "ready" };
       this.handlers.onFinal?.(payload.text.trim());
     } catch (error) { this.fail(error instanceof Error ? error.message : "云端语音识别暂时不可用", true); }
   }
 
-  private fail(message: string, asrError: boolean) {
+  private fail(message: string, asrError: boolean, fatal?: ASRFatalMode) {
     this.clearTimers(); this.active = false; this.vad.stop(); this.stopPcmCapture();
     this.diagnostics = { ...this.diagnostics, capture: "idle", asr: asrError ? "error" : "idle", lastError: message };
-    this.handlers.onError?.(message); this.handlers.onEnd?.();
+    this.handlers.onError?.(message, fatal); this.handlers.onEnd?.();
   }
 
   private clearTimers() { if (this.silenceTimer !== null) window.clearTimeout(this.silenceTimer); if (this.maxTimer !== null) window.clearTimeout(this.maxTimer); this.silenceTimer = null; this.maxTimer = null; }

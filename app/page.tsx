@@ -433,7 +433,8 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ history: baseHistory.slice(-20), userMessage: userText, sceneContext: scenario.context, scenarioId: scenario.id, characterGender, voiceId: selectedVoiceId || undefined, sessionId: archiveIdRef.current, sectionId: sectionIdRef.current, continuePreviousScene: false, debug: debugEnabled, userTurnId: turnId, generationId }),
-      });
+      }).catch(() => { throw new Error("SERVICE_DOWN"); });
+      if ([404, 410, 502, 503, 504].includes(response.status)) throw new Error("SERVICE_DOWN");
       const data = await response.json() as { text?: string; reply?: string; mode?: "mock" | "deepseek" | "fallback" | "safety"; error?: string; debug?: DebugInfo; voice?: { emotion?: TTSRequest["emotion"]; primaryEmotion?: string; emotionScale?: number; intensity?: number; speed?: number; volume?: number; sectionId?: string; contextText?: string; speechRate?: number; loudnessRate?: number; fallbackUsed?: boolean } };
       const reply = data.text || data.reply;
       if (!response.ok || !reply) throw new Error(data.error || "reply failed");
@@ -482,7 +483,13 @@ export default function Home() {
         setNotice("语音播放超时，已恢复收音；你可以继续说。 ");
         void resumeCaptureAndResumeListening();
       }, 18000);
-    } catch {
+    } catch (error) {
+      if (error instanceof Error && error.message === "SERVICE_DOWN") {
+        // 后端整体不可用时不再自动重连收音，避免页面一直“正在听”却没有任何结果。
+        endVoiceConversation();
+        setNotice(`${characterName}的服务器暂时连不上，回复和语音都暂停了，请稍后再试。`);
+        return;
+      }
       setNotice("连接出了点问题，重新试试？");
       if (conversationActiveRef.current) { interruptModeRef.current = false; setRealtimeState("RECOVERING_ASR"); void resumeCaptureAndResumeListening(); }
       else setStatus("idle");
@@ -570,7 +577,14 @@ export default function Home() {
     asrRef.current.setHandlers({
       onInterim: (text) => handleASRResult(text, false),
       onFinal: (text) => handleASRResult(text, true),
-      onError: (message) => {
+      onError: (message, fatal) => {
+        if (fatal) {
+          // 不可自动恢复的错误（服务停用、权限/服务被拒、持续网络失败）：停止循环重连，给出明确提示。
+          endVoiceConversation();
+          if (fatal === "text") setVoiceInputSupported(false);
+          setNotice(message);
+          return;
+        }
         setRealtimeState("RECOVERING_ASR");
         setNotice(message.includes("权限") ? "语音识别暂时不可用，但麦克风授权状态不受影响；正在重试。" : "语音识别暂时中断，正在自动恢复……");
         setInterimText("");

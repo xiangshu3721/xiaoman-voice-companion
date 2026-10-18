@@ -108,7 +108,7 @@ export interface LLMProvider {
 
 export interface ASRProvider {
   isSupported(): boolean;
-  start(onResult: (text: string, isFinal: boolean) => void, onError: (message: string) => void, onEnd: () => void, options?: ASRStartOptions): void;
+  start(onResult: (text: string, isFinal: boolean) => void, onError: (message: string, fatal?: "stop" | "text") => void, onEnd: () => void, options?: ASRStartOptions): void;
   stop(): void;
 }
 
@@ -183,7 +183,7 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
   private lastError = "";
   private callbacks: {
     onResult: (text: string, isFinal: boolean) => void;
-    onError: (message: string) => void;
+    onError: (message: string, fatal?: "stop" | "text") => void;
     onEnd: () => void;
     onReady?: () => void;
     onActivity?: (event: string) => void;
@@ -194,7 +194,7 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
     return typeof window !== "undefined" && Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
   }
 
-  start(onResult: (text: string, isFinal: boolean) => void, onError: (message: string) => void, onEnd: () => void, options?: ASRStartOptions) {
+  start(onResult: (text: string, isFinal: boolean) => void, onError: (message: string, fatal?: "stop" | "text") => void, onEnd: () => void, options?: ASRStartOptions) {
     if (!this.isSupported()) {
       onError("当前浏览器不支持语音识别，建议使用 Chrome。");
       return;
@@ -275,12 +275,12 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
         this.callbacks?.onSessionEvent?.({ type: "error", sessionId: this.sessionId, sessionCount: this.sessionCount, restartCount: this.restartCount, at: Date.now(), error: event.error });
         this.callbacks?.onError(event.error === "service-not-allowed"
           ? "当前浏览器的语音识别服务不可用，已切换为文字输入；请使用系统 Chrome。"
-          : "语音识别服务没有启动，已切换为文字输入；请使用系统 Chrome。");
+          : "语音识别服务没有启动，已切换为文字输入；请使用系统 Chrome。", "text");
       } else if (event.error === "audio-capture") {
         this.active = false;
         this.lastError = event.error;
         this.callbacks?.onSessionEvent?.({ type: "error", sessionId: this.sessionId, sessionCount: this.sessionCount, restartCount: this.restartCount, at: Date.now(), error: event.error });
-        this.callbacks?.onError("没有找到可用的麦克风，请检查系统输入设备。");
+        this.callbacks?.onError("没有找到可用的麦克风，请检查系统输入设备。", "stop");
       } else if (event.error === "network") {
         this.lastError = event.error;
         this.callbacks?.onSessionEvent?.({ type: "error", sessionId: this.sessionId, sessionCount: this.sessionCount, restartCount: this.restartCount, at: Date.now(), error: event.error });
@@ -304,7 +304,11 @@ export class BrowserSpeechRecognitionProvider implements ASRProvider {
     this.retries += 1;
     if (this.retries > 3) {
       this.active = false;
-      this.callbacks.onError("语音识别连续中断了，请停一下后再试。");
+      // Chrome 的网页语音识别依赖 Google 在线服务；中国大陆网络下会持续报 network，
+      // 继续自动重连只会让页面一直显示“正在听”，所以明确告诉用户并停止收音。
+      this.callbacks.onError(this.lastError === "network"
+        ? "浏览器自带的语音识别连不上服务器（Chrome 网页语音识别依赖 Google 服务，中国大陆网络下通常用不了）。已切换为文字对话。"
+        : "语音识别连续中断了，已暂停收音，请稍后点麦克风重试。", this.lastError === "network" ? "text" : "stop");
       this.callbacks.onEnd();
       return;
     }
